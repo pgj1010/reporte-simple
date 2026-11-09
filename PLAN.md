@@ -42,7 +42,7 @@ Rama: `etapa-2-alineacion`
 - [x] Verificar que `cds build --production` **no** incluye `test/data` (sin CSV ni carpetas `test/`/`data/`; perfil `production` → destination `S4_BACKEND`, desarrollo → mock)
 - [ ] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3)
 - [ ] Mensajes en español por defecto (R10, D11)
-- [ ] Tests para R1, R2, R3, R4, R5, R6, R10
+- [ ] Tests para R1, R2, R3, R4, R5, R6, R10 — hecho: R5 (`test/r5-datos.test.ts`, D14)
 - [ ] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar) con `npm run test:mutacion` (D10)
 - [ ] Crear `test/PRUEBAS_MANUALES.md` (R8, R9)
 
@@ -58,6 +58,7 @@ Salida: `npm test` en verde; mutaciones detectadas; `cds watch` sigue mostrando 
 - D10 — Mutación en script aparte (`npm run test:mutacion`) sobre una copia temporal del proyecto; nunca modifica los archivos reales. Aprobado por el usuario.
 - D12 — `npm test` corre con `CDS_PLUGIN_UI5_ACTIVE=false`: con el plugin UI5 el proceso de test no termina (y con `tsx` se caía por memoria); los tests cubren el servicio OData, no la app.
 - D13 — TypeScript nativo de Node 24, sin `tsx` (reemplaza a D6). `tsx` + `cds-plugin-ui5` agota la memoria en `cds watch` y en tests. `npm run watch` = `CDS_TYPESCRIPT=false cds watch` (no se puede fijar por `.env` ni `package.json`). `tsconfig`: `erasableSyntaxOnly`, `verbatimModuleSyntax`, `rewriteRelativeImportExtensions`. Aprobado por el usuario, con esos ajustes.
+- D14 — El test de R5 corre `cds build --production` **dentro de `npm test`** (~2 s), sin script aparte. Si llegara a pasar de ~15 s, se separaría en `npm run test:build`.
 - D11 — R10: idioma por defecto **español**; los mensajes salen en español aunque el navegador pida otro idioma. Decisión del usuario.
 
 ## Etapa 3 — App Fiori Elements (List Report + Object Page)
