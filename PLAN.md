@@ -38,8 +38,8 @@ Rama: `etapa-2-alineacion`
 - [x] Inicializar Git, primer commit en `main` con lo actual (incluye `app/conexiones` ya generada); crear rama de la etapa
 - [x] Configurar `npm test` (`cds.test` + `node:test` + `tsx`, D6) — adelantado (D9). Requiere `@cap-js/cds-test`; arranque con `--with-mocks --in-memory`; plugin UI5 desactivado en tests (D12)
 - [x] Migrar a TypeScript: `cds add typescript`, `service.js` → `service.ts`, tipos con cds-typer (`pretest` los genera). TypeScript nativo de Node 24, sin `tsx` (D13)
-- [ ] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan
-- [ ] Verificar que `cds build --production` **no** incluye `test/data`
+- [x] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan (4 conexiones, 5 vuelos: `init from test/data/...`)
+- [x] Verificar que `cds build --production` **no** incluye `test/data` (sin CSV ni carpetas `test/`/`data/`; perfil `production` → destination `S4_BACKEND`, desarrollo → mock)
 - [ ] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3)
 - [ ] Mensajes en español por defecto (R10, D11)
 - [ ] Tests para R1, R2, R3, R4, R5, R6, R10
@@ -96,7 +96,7 @@ Rama: `etapa-5-despliegue`
 - [ ] Roles en `xs-security.json` coherentes con `@requires` / `@restrict`
 - [ ] Reutilizar o crear instancias `destination` / `connectivity` (lite)
 - [ ] Configuración de despliegue de la app Fiori (HTML5 repo)
-- [ ] Verificar que `cds build --production` compila el TypeScript correctamente sin `tsx` (`gen/srv` con `service.js`, imports `#cds-models` resueltos, sin `.ts` en el runtime) — D13
+- [ ] Verificar que `cds build --production` compila el TypeScript correctamente sin `tsx` (`gen/srv` con `service.js`, imports `#cds-models` resueltos, sin `.ts` en el runtime) — D13. **Hallazgo 2026-11-09 (Etapa 2, paso 4):** hoy el build copia `srv/service.ts` sin compilar y no incluye `@cds-models` → el despliegue fallaría al arrancar. También genera artefactos HANA (`src/gen`, `cds.outbox.Messages`) aunque el reporte no tiene base de datos propia: revisar si hacen falta
 - [ ] `mbt build` y **pedir aprobación** antes de `cf deploy`
 - [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
 - [ ] Confirmar en Cloud Connector → Monitor que llegan las peticiones
@@ -159,4 +159,5 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-09 — Etapa 2 iniciada: Git inicializado (commit `dfdccd6` en `main`), rama `etapa-2-alineacion`. CAP no traduce `ENTITY_IS_READ_ONLY` al español → textos propios (D11).
 - 2026-11-09 — Etapa 2, paso 3: `tsx` + `cds-plugin-ui5` agota la memoria → TypeScript nativo de Node 24 (D13, reemplaza a D6).
 - 2026-11-09 — Criterio del usuario: un commit por paso con `npm test` en verde (regla de proceso 4b de CLAUDE.md).
+- 2026-11-09 — Etapa 2, pasos 4 y 5: CSV en `test/data/`; el build de producción no los incluye. El build deja `service.ts` sin compilar (pendiente de Etapa 5). Avisos `SAP__UI.* is not a known vocabulary type` en el build, provenientes de `srv/external` (generado, no se edita): revisar en Etapa 4.
 - 2026-11-09 — D8: tabla "Semántica del reporte" como fuente de verdad de anotaciones (filtros, obligatorios, columnas, medidas, textos, value helps), para servicios que no vienen enriquecidos. Nueva regla R11 y sección "Análisis del servicio origen". Se detecta que el value help de aeropuertos no funciona en CAP (apunta a otro servicio). Etapa 7 se amplía a "generalización" por pedido del usuario.
