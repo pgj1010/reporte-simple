@@ -44,7 +44,7 @@ Rama: `etapa-2-alineacion`
 - [x] Mensajes en español por defecto (R10, D11, D15): `srv/server.ts` + `_i18n/messages_es.properties`. Los textos fijos del parser OData de CAP quedan fuera de R10 (D17)
 - [x] Tests para R1, R2, R3, R4, R5, R6, R10 — `test/r<N>-*.test.ts` (uno por regla) + `test/helpers.ts`. R5 incluye el build (D14); R4 según D16
 - [x] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar): manual en el árbol real + `npm run test:mutacion` (D10 ampliada). R2 requirió D18
-- [ ] Crear `test/PRUEBAS_MANUALES.md` (R8, R9)
+- [x] Crear `test/PRUEBAS_MANUALES.md` (R8, R9): pasos y resultados esperados definidos; se ejecutan en las Etapas 3 (R8) y 4 (R9)
 
 Salida: `npm test` en verde; mutaciones detectadas; `cds watch` sigue mostrando los datos mock.
 
