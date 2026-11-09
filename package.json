@@ -22,7 +22,9 @@
     "watch-conexiones": "CDS_TYPESCRIPT=false cds watch --open conexiones/index.html?sap-ui-xx-viewCache=false --livereload false",
     "test": "CDS_PLUGIN_UI5_ACTIVE=false node --test 'test/**/*.test.ts'",
     "pretest": "cds-typer '*' --outputDirectory @cds-models",
-    "watch": "CDS_TYPESCRIPT=false cds watch"
+    "watch": "CDS_TYPESCRIPT=false cds watch",
+    "pretest:mutacion": "cds-typer '*' --outputDirectory @cds-models",
+    "test:mutacion": "node test/mutacion.ts"
   },
   "private": true,
   "cds": {
