@@ -30,7 +30,7 @@ describe('R4 — delegación al servicio remoto', () => {
 
   it('en producción no se crea ninguna tabla ni vista para el reporte ni para el remoto', async () => {
     // DDL del perfil production, sin los mocks de desarrollo: es lo que se despliega.
-    const { stdout } = await cdsCli('compile', '*', '--to', 'sql', '--profile', 'production');
+    const { stdout } = await cdsCli(['compile', '*', '--to', 'sql', '--profile', 'production']);
     const creados = stdout.match(/^CREATE (TABLE|VIEW) \S+/gm) ?? [];
     assert.ok(creados.length > 0, 'control: el DDL de producción no está vacío');
     assert.deepEqual(creados.filter(c => /(ReporteService|ZMAKS_SB_CONEXIONES)_/.test(c)), []);

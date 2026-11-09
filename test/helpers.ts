@@ -23,5 +23,5 @@ export async function estado(peticion: Promise<{ status: number }>): Promise<num
 }
 
 /** Ejecuta el CLI `cds` (cds-dk global) en la raíz del proyecto, sin tsx (D13). */
-export const cdsCli = (...args: string[]) =>
-  promisify(execFile)('cds', args, { cwd: raiz, env: { ...process.env, CDS_TYPESCRIPT: 'false' } });
+export const cdsCli = (args: string[], env: Record<string, string> = {}) =>
+  promisify(execFile)('cds', args, { cwd: raiz, env: { ...process.env, CDS_TYPESCRIPT: 'false', ...env } });
