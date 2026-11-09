@@ -1,0 +1,49 @@
+{
+  "name": "reporte-simple",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@sap/cds": "^10",
+    "@sap-cloud-sdk/connectivity": "^4",
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^3",
+    "cds-plugin-ui5": "^0.17.0"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch-conexiones": "cds watch --open conexiones/index.html?sap-ui-xx-viewCache=false --livereload false"
+  },
+  "private": true,
+  "cds": {
+    "remote": {
+      "native_fetch": false
+    },
+    "requires": {
+      "ZMAKS_SB_CONEXIONES": {
+        "kind": "odata",
+        "model": "srv/external/ZMAKS_SB_CONEXIONES",
+        "[production]": {
+          "credentials": {
+            "destination": "S4_BACKEND",
+            "path": "/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd/sap/zmaks_sd_conexiones/0001"
+          }
+        },
+        "[hybrid]": {
+          "credentials": {
+            "destination": "S4_BACKEND",
+            "path": "/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd/sap/zmaks_sd_conexiones/0001"
+          }
+        }
+      }
+    }
+  },
+  "workspaces": [
+    "app/*"
+  ],
+  "sapux": [
+    "app/conexiones"
+  ]
+}

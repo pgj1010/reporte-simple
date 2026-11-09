@@ -1,0 +1,6 @@
+CarrierId;CarrierId_Text;ConnectionId;FlightDate;Price;CurrencyCode;PlaneTypeId;SeatsMax;SeatsOccupied;CarrierName
+AA;American Airlines;0017;2026-12-01;422.94;USD;747-400;385;372;American Airlines
+AA;American Airlines;0017;2026-12-15;422.94;USD;747-400;385;201;American Airlines
+LH;Lufthansa;0400;2026-12-03;666.00;EUR;A340-600;330;314;Lufthansa
+UA;United Airlines;0058;2026-12-05;1090.00;USD;767-200;260;188;United Airlines
+SQ;Singapore Airlines;0001;2026-12-10;849.00;SGD;A380-800;475;460;Singapore Airlines

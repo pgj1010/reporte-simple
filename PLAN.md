@@ -1,0 +1,151 @@
+# PLAN.md — reporte-simple
+
+Objetivo: reporte de **Conexiones y Vuelos** en CAP (TypeScript) + Fiori Elements, leyendo el servicio RAP `ZMAKS_SB_CONEXIONES`, desplegado en Cloud Foundry, y dejarlo como **plantilla para futuros reportes**.
+
+Reglas del plan (ver `CLAUDE.md`):
+- Una etapa a la vez, en su propia rama `etapa-N-<nombre>`. Merge a `main` solo tras revisión del usuario.
+- Proponer plan y esperar aprobación antes de tocar archivos.
+- Al terminar cada paso: `npm test`, mostrar resultado, actualizar este archivo.
+- Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
+- Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
+
+**Etapa activa:** 2
+
+---
+
+## Etapa 0 — Proyecto base ✅
+- [x] `cds init` + `cds add nodejs` + `npm install`
+- [x] Abrir `reporte-simple` como raíz del workspace en BAS
+
+Salida: `cds watch` arranca sin errores.
+
+## Etapa 1 — Servicio remoto y datos mock ✅
+- [x] Descargar `$metadata` (V4, ruta `srvd`) e importar con `cds import --as cds`
+- [x] `npm install` para instalar el Cloud SDK
+- [x] `srv/service.cds` con proyecciones `@readonly` de `Conexiones` y `Vuelos`
+- [x] `srv/service.js` (ESM) delegando `READ` al servicio remoto
+- [x] Credenciales solo en perfiles `[production]` / `[hybrid]`; `remote.native_fetch: false`
+- [x] CSV mock (provisionalmente en `srv/external/data/`)
+
+Salida: `/odata/v4/reporte/Conexiones` y `/Vuelos` devuelven los datos de los CSV.
+
+### Decisiones de la etapa
+- D4 — No usar `hybrid` desde BAS para datos reales.
+- D5 — `native_fetch: false`.
+
+## Etapa 2 — Alineación con reglas del equipo
+Rama: `etapa-2-alineacion`
+- [ ] Inicializar Git, primer commit en `main` con lo actual; crear rama de la etapa
+- [ ] Migrar a TypeScript: `cds add typescript`, `service.js` → `service.ts`, tipos con cds-typer
+- [ ] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan
+- [ ] Verificar que `cds build --production` **no** incluye `test/data`
+- [ ] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3)
+- [ ] Configurar `npm test` (`cds.test` + `node:test` + `tsx`, D6)
+- [ ] Tests para R1, R2, R3, R4, R5, R6, R10
+- [ ] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar)
+- [ ] Crear `test/PRUEBAS_MANUALES.md` (R8, R9)
+
+Salida: `npm test` en verde; mutaciones detectadas; `cds watch` sigue mostrando los datos mock.
+
+### Decisiones de la etapa
+- D7 — Cada reporte es un proyecto CAP independiente (decisión del usuario).
+- D1 — Clean core flexible (aprobado por el usuario).
+- D2 — Migrar a TypeScript ahora (aprobado por el usuario).
+- D3 — Mutación solo para R2 y R3 (aprobado por el usuario).
+- D6 — `node:test` + `tsx` para los tests.
+
+## Etapa 3 — App Fiori Elements (List Report + Object Page)
+Rama: `etapa-3-fiori`
+- [ ] Generar app con *Fiori: Open Application Generator* → List Report, CAP local, entidad `Conexiones` → `app/conexiones`
+- [ ] Corregir rutas del `manifest.json` a **relativas** (`odata/v4/reporte/`)
+- [ ] Verificar tabla, filtros (R8) y textos heredados del RAP
+- [ ] Resolver la asociación `_Flight` (condición `CarrierId` + `ConnectionId`) para que el detalle muestre vuelos (R7)
+- [ ] Probar drilldown a la página de detalle
+
+Salida: la app abre, lista las conexiones mock y navega al detalle con sus vuelos; `npm test` en verde.
+
+### Decisiones de la etapa
+- _(anotar aquí al tomarlas)_
+
+## Etapa 4 — Presentación del reporte
+Rama: `etapa-4-presentacion`
+- [ ] Revisar con el usuario la tabla **Semántica del reporte** de `SPEC.md` y cerrar los "por definir" (medidas / totales, orden de columnas)
+- [ ] Generar o ajustar `app/conexiones/annotations.cds` a partir de la tabla (D8)
+- [ ] Si hay totales: confirmar `$apply` en mock y probar la tabla con sumatorias
+- [ ] Resolver el value help de aeropuertos (importar el servicio `/dmo/i_airport_stdvh` o `@Common.ValueList` propio)
+- [ ] Test R11: anotaciones efectivas = tabla de semántica
+- [ ] Decidir drilldown (sí/no, hasta qué nivel) en `manifest.json`
+- [ ] Opcional: exportar a Excel, variantes, tabla responsive vs grid
+- [ ] Actualizar `test/PRUEBAS_MANUALES.md` (R8, R9)
+
+Salida: el reporte se ve y navega como dice la tabla de semántica, con datos mock; R11 en verde.
+
+### Decisiones de la etapa
+- D8 — Tabla "Semántica del reporte" como fuente de verdad de las anotaciones (decisión del usuario, tomada antes de iniciar la etapa).
+
+## Etapa 5 — Despliegue a Cloud Foundry
+Rama: `etapa-5-despliegue`
+- [ ] `cds add mta` (+ `xsuaa`, `destination`, `connectivity`, app router o managed app router según `etiquetas`)
+- [ ] Roles en `xs-security.json` coherentes con `@requires` / `@restrict`
+- [ ] Reutilizar o crear instancias `destination` / `connectivity` (lite)
+- [ ] Configuración de despliegue de la app Fiori (HTML5 repo)
+- [ ] `mbt build` y **pedir aprobación** antes de `cf deploy`
+- [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
+- [ ] Confirmar en Cloud Connector → Monitor que llegan las peticiones
+
+Salida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CLIENTE>.
+
+### Decisiones de la etapa
+- _(anotar aquí al tomarlas)_
+
+## Etapa 6 — Seguridad y limpieza
+Rama: `etapa-6-limpieza`
+- [ ] Regenerar service key de connectivity (`cf delete-service-key ...` + `cds bind`)
+- [ ] Deshabilitar SSH en `etiquetas-srv` si no se usa (`cf disable-ssh etiquetas-srv`)
+- [ ] Eliminar recurso redundante `/sap/opu/odata4/` del Cloud Connector (opcional)
+- [ ] Revisar `.gitignore`
+
+Salida: sin secretos expuestos; repo limpio.
+
+### Decisiones de la etapa
+- _(anotar aquí al tomarlas)_
+
+## Etapa 7 — Generalización y plantilla para nuevos reportes
+Rama: `etapa-7-plantilla`
+
+> Pedido del usuario: apenas termine esta app, hacer una mejora para que **todo sea genérico** y reutilizable.
+
+- [ ] Crear versiones **plantilla** de `CLAUDE.md`, `SPEC.md` y `PLAN.md` con marcadores (`<REPORTE>`, `<SERVICIO>`, `<DESTINATION>`, `<REGLAS>`), manteniendo fijas las reglas del equipo y las lecciones aprendidas
+- [ ] Plantilla de `SPEC.md` con las secciones **"Análisis del servicio origen"** y **"Semántica del reporte"** vacías, listas para llenar
+- [ ] Evaluar qué partes del código son genéricas (handler de delegación, test R11 que lee la tabla de semántica, configuración de perfiles) y dejarlas listas para copiar o reutilizar
+- [ ] Guardar la plantilla donde el equipo la encuentre (repo de plantillas o proyecto de Claude)
+- [ ] Probarla con el siguiente reporte real
+
+Receta "nuevo reporte" (D7: siempre proyecto independiente):
+1. Crear un **proyecto nuevo en Claude** (p. ej. "Reporte TRM Posiciones") y subir la plantilla
+2. Entregar a Claude: servicio (binding / definition o API liberada, V2/V4, `$metadata`), sistema y destination, decisión de clean core, y qué debe mostrar el reporte (columnas, filtros, totales, drilldown, roles)
+3. Claude ajusta `CLAUDE.md`, `SPEC.md` y `PLAN.md`
+4. En BAS (mismo Dev Space): `cd ~/projects && cds init <reporte> && cd <reporte> && cds add nodejs,typescript`; copiar los 3 documentos a la raíz
+5. Confirmar si hay API liberada; si no, documentar el servicio Z en `SPEC.md` (D1)
+6. Descargar `$metadata` (V4: `/sap/opu/odata4/sap/<binding>/srvd/sap/<service_def>/0001/$metadata`)
+7. `cds import <SERVICIO>.edmx --as cds` + `npm install`
+8. Llenar **"Análisis del servicio origen"** en `SPEC.md`: ¿trae `@UI`?, ¿soporta `$apply`?, ¿tiene parámetros?, ¿value helps disponibles?
+9. Llenar **"Semántica del reporte"** con el usuario: filtros, obligatorios, columnas y orden, medidas/totales, textos, unidades, value helps
+10. Credenciales en `[production]` / `[hybrid]` con la destination y el `path`; `remote.native_fetch: false`
+11. Proyecciones `@readonly` + `@requires` en `srv/service.cds`; `READ` delegado en `service.ts`
+12. CSV mock `test/data/<SERVICIO>-<Entidad>.csv`
+13. Reglas en `SPEC.md` + sus tests (incluido R11 contra la tabla de semántica)
+14. Generar app Fiori Elements, rutas relativas, `annotations.cds` a partir de la tabla de semántica
+
+Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta.
+
+### Decisiones de la etapa
+- _(anotar aquí al tomarlas)_
+
+---
+
+## Bitácora
+- 2026-11-09 — Etapas 0 y 1 completas. `hybrid` desde BAS no llega al on‑premise (ni con túnel SSH); plan B: mock local + pruebas reales desplegando.
+- 2026-11-09 — Se adoptan las reglas del equipo. Aprobados: TypeScript (D2), mutación solo en R2/R3 (D3), clean core flexible (D1). Nueva Etapa 2 de alineación; la app Fiori pasa a Etapa 3.
+- 2026-11-09 — D7: cada reporte será un proyecto CAP independiente con su propio proyecto en Claude. La Etapa 7 pasa a ser "plantilla" en vez de "segundo reporte dentro de este proyecto".
+- 2026-11-09 — D8: tabla "Semántica del reporte" como fuente de verdad de anotaciones (filtros, obligatorios, columnas, medidas, textos, value helps), para servicios que no vienen enriquecidos. Nueva regla R11 y sección "Análisis del servicio origen". Se detecta que el value help de aeropuertos no funciona en CAP (apunta a otro servicio). Etapa 7 se amplía a "generalización" por pedido del usuario.

@@ -1,0 +1,5 @@
+CarrierId;CarrierId_Text;ConnectionId;AirportFromId;AirportToId;DepartureTime;ArrivalTime;Distance;DistanceUnit;CarrierName
+AA;American Airlines;0017;JFK;SFO;11:00:00;14:01:00;2572;MI;American Airlines
+LH;Lufthansa;0400;FRA;JFK;10:10:00;11:34:00;6162;KM;Lufthansa
+UA;United Airlines;0058;SFO;FRA;20:25:00;15:50:00;9100;KM;United Airlines
+SQ;Singapore Airlines;0001;SFO;SIN;17:00:00;19:05:00;13523;KM;Singapore Airlines

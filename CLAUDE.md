@@ -1,0 +1,113 @@
+# CLAUDE.md — reporte-simple
+
+Aplicación SAP CAP (Node.js, **TypeScript**) que consume un servicio OData V4 de RAP desde un sistema S/4HANA on‑premise y lo presenta con Fiori Elements. Sirve como **base reutilizable para reportes**.
+
+**Convención (D7):** cada reporte es un **proyecto CAP independiente** (carpeta propia en `~/projects/`, repo propio, despliegue propio) con su **propio proyecto en Claude** y sus propios `CLAUDE.md`, `SPEC.md` y `PLAN.md`. No se agregan reportes nuevos dentro de este proyecto.
+
+Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etapa activa**.
+
+---
+
+## Reglas del equipo
+
+### Proceso
+1. **Antes de crear o cambiar archivos, propón un plan y espera aprobación.**
+2. Si una regla admite dos interpretaciones que producen datos distintos, **pregunta**.
+3. Cada etapa se trabaja en **su propia rama** (`etapa-N-<nombre>`); el merge a `main` se hace después de la revisión del usuario.
+4. Al terminar cada paso: corre `npm test`, muestra el resultado y actualiza `PLAN.md`.
+5. **Nunca ejecutes `cf deploy` sin aprobación explícita.**
+
+### Decisiones
+6. Toda decisión propia se registra en `SPEC.md` (sección Decisiones).
+7. Además, se anota en la sección **"Decisiones de la etapa"** de `PLAN.md` **en el momento de tomarla**, no al final. El informe de cierre de la etapa se arma copiando esa sección.
+8. Al terminar cada etapa, lista todas las decisiones tomadas por tu cuenta, con **la regla que afectan** y **qué pasaría si fueran al revés**.
+
+### Técnicas
+9. CAP Node.js en **TypeScript**. Nunca CAP Java.
+10. **Clean core flexible** (decisión D1 en `SPEC.md`): preferir APIs liberadas de S/4HANA. Si el cliente requiere algo que SAP no tiene liberado, se permite un servicio **RAP propio (Z) expuesto por OData**. Nunca RFC ni acceso directo a tablas desde BTP. Cada servicio Z usado se documenta en `SPEC.md` con el motivo.
+11. Toda lectura de S/4 pasa por una **destination de BTP**; nunca credenciales en el código.
+12. La lógica de negocio va en el **handler** del servicio; el modelo CDS se mantiene declarativo.
+13. Cada regla de `SPEC.md` tiene un **test automático en `test/`**; las marcadas `[manual]` tienen sus pasos en `test/PRUEBAS_MANUALES.md`.
+14. Cada etapa incluye una **prueba de mutación** de sus reglas principales. En este proyecto (solo lectura) se aplica a las reglas de **solo lectura** y **autorización** (decisión D3).
+15. La autorización la aplica solo CAP con **`@requires` y `@restrict`**; no se escriben capas de autorización propias.
+16. Mensajes al usuario en **español**.
+17. Rutas de la app al servicio siempre **relativas** (nunca empiezan con `/`), p. ej. `"uri": "odata/v4/reporte/"` en `manifest.json`.
+18. Los datos simulados de S/4 van en **`test/data/`** y nunca viajan a producción.
+
+---
+
+## Entorno
+
+- **IDE:** SAP Business Application Studio, Dev Space *Full Stack Cloud Application*.
+- **Proyecto:** `/home/user/projects/reporte-simple` (abrir esta carpeta como raíz del workspace).
+- **CAP:** `@sap/cds` 10.x, `@sap/cds-dk` 10.x global, Node 24.
+- **Módulos:** `"type": "module"` → ESM (`import` / `export default`). Nunca `require` ni `module.exports`.
+- **Cloud Foundry:** API `<CF_API>`, org `<CF_ORG>`, space `dev`. Login con `cf login --sso`.
+
+## Sistema origen (RAP)
+
+| Dato | Valor |
+|---|---|
+| Host interno | `<S4_HOST>:<S4_PUERTO>` (HTTP), cliente `<S4_CLIENTE>` |
+| Service binding | `ZMAKS_SB_CONEXIONES` (OData V4 – UI → ruta usa `srvd`, no `srvd_a2x`) |
+| Service definition | `ZMAKS_SD_CONEXIONES` |
+| Ruta del servicio | `/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd/sap/zmaks_sd_conexiones/0001` |
+| Entidades | `Conexiones` (key CarrierId, ConnectionId) → `_Flight` → `Vuelos` (key CarrierId, ConnectionId, FlightDate) |
+| Destination BTP | `S4_BACKEND` (OnPremise, BasicAuthentication, sin Location ID) |
+| Cloud Connector | Recurso `/sap/opu/odata` con *Path and all sub-paths* (cubre también `odata4`) |
+
+## Estructura
+
+```
+reporte-simple/
+├── app/<reporte>/               # apps Fiori Elements (una por reporte)
+├── srv/
+│   ├── external/<SERVICIO>.cds  # GENERADO por cds import — NO EDITAR
+│   ├── service.cds              # proyecciones expuestas + @requires/@restrict
+│   └── service.ts               # delegación de lecturas al servicio remoto
+├── test/
+│   ├── data/*.csv               # datos mock: <SERVICIO>-<Entidad>.csv (solo dev/test)
+│   ├── *.test.ts                # tests automáticos (uno o más por regla de SPEC.md)
+│   └── PRUEBAS_MANUALES.md      # pasos de reglas [manual]
+├── CLAUDE.md
+├── SPEC.md
+└── PLAN.md
+```
+
+## Reglas de desarrollo
+
+- **No editar** `srv/external/*.cds`. Para regenerar: `cds import <archivo>.edmx --as cds --force`.
+- Exponer entidades remotas como proyecciones `@readonly` en `srv/service.cds`.
+- Lecturas remotas delegadas en `service.ts` con `this.on('READ', [...], req => remote.run(req.query))`.
+- **Semántica primero (D8):** columnas, orden, filtros, filtros obligatorios, medidas/totales, textos, unidades y value helps se definen en la tabla **"Semántica del reporte"** de `SPEC.md`. Después se generan o ajustan las anotaciones en `app/<reporte>/annotations.cds` con `annotate ReporteService.<Entidad> with ...`, y se actualiza el test R11. No modificar el RAP para temas de presentación.
+- **Análisis del servicio origen** (al inicio de cada reporte, en `SPEC.md`): revisar en el `$metadata` si trae `@UI` y etiquetas, si soporta `$apply` (necesario para totales delegados), si tiene parámetros CDS y si sus value helps apuntan a servicios disponibles.
+- Anotaciones de referencia: filtros `@UI.SelectionFields`; obligatorios `@Capabilities.FilterRestrictions.RequiredProperties`; columnas `@UI.LineItem`; textos `@Common.Text` + `@UI.TextArrangement`; F4 `@Common.ValueList`; totales `@Analytics.Measure` + `@Aggregation.default: #SUM` + `@Aggregation.ApplySupported`; importes/unidades `@Measures.ISOCurrency` / `@Measures.Unit`.
+- Si el backend **no soporta `$apply`**, los totales se calculan en el handler (y se registra como decisión). Si hay **parámetros CDS**, preferir que en el RAP sean filtros y marcarlos obligatorios en CAP; si deben seguir como parámetros, manejarlos en el handler.
+- Navegación / drilldown, tipo de tabla y comportamiento → `app/<reporte>/webapp/manifest.json`.
+- Credenciales del servicio remoto **solo** en perfiles `[production]` y `[hybrid]` del `package.json`. Sin perfil → CAP usa mock con `test/data`.
+- Mantener `"cds": { "remote": { "native_fetch": false } }` → fuerza SAP Cloud SDK (native fetch ignora proxies OnPremise).
+- Nunca commitear `.cdsrc-private.json`, service keys, tokens ni contraseñas. No pegar `clientsecret` ni `Proxy-Authorization` en chats o logs.
+
+## Cómo correr
+
+| Modo | Comando | Datos |
+|---|---|---|
+| Local (default) | `cds watch` | CSV en `test/data/` |
+| Tests | `npm test` | CSV en `test/data/` |
+| Desplegado | `mbt build && cf deploy mta_archives/*.mtar` (**solo con aprobación**) | RAP real vía destination + connectivity |
+
+- Si el puerto 4004 está ocupado: `pkill -f "cds"` y volver a arrancar. Solo un `cds watch` a la vez.
+- Abrir: `Ctrl+Shift+P` → *Ports: Preview* → 4004. Usuario mock: `alice` sin contraseña.
+- Servicio: `/odata/v4/reporte/<Entidad>`. App: `/<reporte>/webapp/index.html`.
+- Logs de llamadas remotas: `DEBUG=remote cds watch`.
+
+## Lecciones aprendidas (no repetir)
+
+- `cds init` en cds-dk 10 no crea `package.json` → ejecutar `cds add nodejs`.
+- Después de `cds import`, correr **`npm install`**: el import agrega dependencias del Cloud SDK al `package.json` pero no las instala.
+- **Modo `hybrid` desde BAS no llega a sistemas on‑premise**: ni directo ni por túnel `cf ssh` (las peticiones no llegan al Cloud Connector). Probar datos reales **solo desplegando** a Cloud Foundry.
+- El "Check Connection" de la destination solo valida el host, no las rutas.
+- El 404 en `/odata/v4/zmaks-sb-conexiones/...` es normal fuera de modo mock; usar siempre `/odata/v4/reporte/...`.
+- La asociación `_Flight` se importó sin condición `on` (`{ }`); revisar antes de depender del `$expand` en la página de detalle.
+- El generador de Fiori suele crear rutas absolutas (`/odata/v4/...`) → corregir a relativas (regla 17).
+- Los value helps del RAP (`@Common.ValueListReferences`) apuntan a **otros servicios** (p. ej. `/dmo/i_airport_stdvh`) que `cds import` no trae: el F4 no funciona en CAP hasta importar ese servicio o definir un `@Common.ValueList` propio.
