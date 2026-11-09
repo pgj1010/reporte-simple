@@ -41,7 +41,7 @@ Rama: `etapa-2-alineacion`
 - [x] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan (4 conexiones, 5 vuelos: `init from test/data/...`)
 - [x] Verificar que `cds build --production` **no** incluye `test/data` (sin CSV ni carpetas `test/`/`data/`; perfil `production` → destination `S4_BACKEND`, desarrollo → mock)
 - [x] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3) — sin usuario 401, con `alice` 200 (test + `npm run watch`)
-- [x] Mensajes en español por defecto (R10, D11, D15): `srv/server.ts` + `_i18n/messages_es.properties`. **Abierto:** si los textos fijos del parser OData de CAP (sin clave i18n) entran en R10
+- [x] Mensajes en español por defecto (R10, D11, D15): `srv/server.ts` + `_i18n/messages_es.properties`. Los textos fijos del parser OData de CAP quedan fuera de R10 (D17)
 - [x] Tests para R1, R2, R3, R4, R5, R6, R10 — `test/r<N>-*.test.ts` (uno por regla) + `test/helpers.ts`. R5 incluye el build (D14); R4 según D16
 - [ ] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar) con `npm run test:mutacion` (D10)
 - [ ] Crear `test/PRUEBAS_MANUALES.md` (R8, R9)
@@ -61,6 +61,8 @@ Salida: `npm test` en verde; mutaciones detectadas; `cds watch` sigue mostrando 
 - D14 — El test de R5 corre `cds build --production` **dentro de `npm test`** (~2 s), sin script aparte. Si llegara a pasar de ~15 s, se separaría en `npm run test:build`.
 - D15 — R10 se implementa con (1) un middleware en `srv/server.ts` que fija `req.locale = 'es'` en toda petición y (2) `_i18n/messages_es.properties` con **todas** las claves de `@sap/cds/_i18n/messages.properties` traducidas (un test vigila que no falte ninguna). Los textos fijos del parser OData de CAP (sin clave i18n) quedan fuera del alcance de i18n.
 - D16 — R4 "CAP no guarda copia" se prueba así: (a) cada GET llega al servicio remoto; (b) el DDL del perfil `production` no crea tablas ni vistas para `ReporteService` ni `ZMAKS_SB_CONEXIONES`; (c) en desarrollo `ReporteService_*` son **vistas** sobre el mock del remoto. Las tablas `ZMAKS_SB_CONEXIONES_*` del mock son la simulación del S/4, no una copia.
+- D17 — R10 excluye los textos fijos del parser OData de CAP (solo aparecen con URLs manuales, no desde la app Fiori). Decisión del usuario.
+- D16 aprobada por el usuario.
 - D11 — R10: idioma por defecto **español**; los mensajes salen en español aunque el navegador pida otro idioma. Decisión del usuario.
 
 ## Etapa 3 — App Fiori Elements (List Report + Object Page)
