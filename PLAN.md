@@ -41,8 +41,8 @@ Rama: `etapa-2-alineacion`
 - [x] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan (4 conexiones, 5 vuelos: `init from test/data/...`)
 - [x] Verificar que `cds build --production` **no** incluye `test/data` (sin CSV ni carpetas `test/`/`data/`; perfil `production` → destination `S4_BACKEND`, desarrollo → mock)
 - [x] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3) — sin usuario 401, con `alice` 200 (test + `npm run watch`)
-- [ ] Mensajes en español por defecto (R10, D11)
-- [ ] Tests para R1, R2, R3, R4, R5, R6, R10 — hecho: R5 (`test/r5-datos.test.ts`, D14), R3 (`test/r3-autenticacion.test.ts`: `Conexiones`, `Vuelos` y `$metadata`)
+- [x] Mensajes en español por defecto (R10, D11, D15): `srv/server.ts` + `_i18n/messages_es.properties`. **Abierto:** si los textos fijos del parser OData de CAP (sin clave i18n) entran en R10
+- [ ] Tests para R1, R2, R3, R4, R5, R6, R10 — hecho: R5 (`test/r5-datos.test.ts`, D14), R3 (`test/r3-autenticacion.test.ts`: `Conexiones`, `Vuelos` y `$metadata`), R10 (`test/r10-mensajes.test.ts`)
 - [ ] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar) con `npm run test:mutacion` (D10)
 - [ ] Crear `test/PRUEBAS_MANUALES.md` (R8, R9)
 
@@ -59,6 +59,7 @@ Salida: `npm test` en verde; mutaciones detectadas; `cds watch` sigue mostrando 
 - D12 — `npm test` corre con `CDS_PLUGIN_UI5_ACTIVE=false`: con el plugin UI5 el proceso de test no termina (y con `tsx` se caía por memoria); los tests cubren el servicio OData, no la app.
 - D13 — TypeScript nativo de Node 24, sin `tsx` (reemplaza a D6). `tsx` + `cds-plugin-ui5` agota la memoria en `cds watch` y en tests. `npm run watch` = `CDS_TYPESCRIPT=false cds watch` (no se puede fijar por `.env` ni `package.json`). `tsconfig`: `erasableSyntaxOnly`, `verbatimModuleSyntax`, `rewriteRelativeImportExtensions`. Aprobado por el usuario, con esos ajustes.
 - D14 — El test de R5 corre `cds build --production` **dentro de `npm test`** (~2 s), sin script aparte. Si llegara a pasar de ~15 s, se separaría en `npm run test:build`.
+- D15 — R10 se implementa con (1) un middleware en `srv/server.ts` que fija `req.locale = 'es'` en toda petición y (2) `_i18n/messages_es.properties` con **todas** las claves de `@sap/cds/_i18n/messages.properties` traducidas (un test vigila que no falte ninguna). Los textos fijos del parser OData de CAP (sin clave i18n) quedan fuera del alcance de i18n.
 - D11 — R10: idioma por defecto **español**; los mensajes salen en español aunque el navegador pida otro idioma. Decisión del usuario.
 
 ## Etapa 3 — App Fiori Elements (List Report + Object Page)
