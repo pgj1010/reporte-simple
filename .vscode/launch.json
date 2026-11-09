@@ -14,7 +14,10 @@
       ],
       "skipFiles": [
         "<node_internals>/**"
-      ]
+      ],
+      "env": {
+        "CDS_TYPESCRIPT": "false"
+      }
     }
   ]
 }
