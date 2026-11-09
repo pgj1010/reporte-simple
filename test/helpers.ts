@@ -25,3 +25,15 @@ export async function estado(peticion: Promise<{ status: number }>): Promise<num
 /** Ejecuta el CLI `cds` (cds-dk global) en la raíz del proyecto, sin tsx (D13). */
 export const cdsCli = (args: string[], env: Record<string, string> = {}) =>
   promisify(execFile)('cds', args, { cwd: raiz, env: { ...process.env, CDS_TYPESCRIPT: 'false', ...env } });
+
+/** Ejecuta una petición que debe fallar y devuelve el código HTTP y el código de error OData. */
+export async function rechazo(peticion: Promise<unknown>): Promise<{ status: number; code?: string }> {
+  try {
+    await peticion;
+  } catch (e: any) {
+    const status = e.response?.status ?? e.status;
+    if (typeof status !== 'number') throw e;
+    return { status, code: e.response?.data?.error?.code ?? e.code };
+  }
+  throw new Error('se esperaba que la petición fuera rechazada');
+}

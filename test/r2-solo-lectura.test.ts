@@ -1,8 +1,11 @@
 // R2 — Ambas entidades son de solo lectura: POST, PATCH y DELETE se rechazan.
 // Se usa un usuario autenticado para que el rechazo venga de @readonly y no de R3.
+// D18: además del 405 se exige el código ENTITY_IS_READ_ONLY, es decir, que el rechazo
+// venga del @readonly de CAP y no solo de las restricciones heredadas del RAP
+// (@Capabilities.*Restrictions → ENTITY_IS_NOT_CRUD).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { iniciar, alice, estado } from './helpers.ts';
+import { iniciar, alice, estado, rechazo } from './helpers.ts';
 
 const { GET, POST, PATCH, DELETE } = iniciar();
 
@@ -17,6 +20,8 @@ const entidades = {
   },
 };
 
+const solo_lectura = { status: 405, code: 'ENTITY_IS_READ_ONLY' };
+
 describe('R2 — solo lectura', () => {
   for (const [entidad, { clave, nuevo }] of Object.entries(entidades)) {
     const coleccion = `/odata/v4/reporte/${entidad}`;
@@ -27,16 +32,16 @@ describe('R2 — solo lectura', () => {
         assert.equal(await estado(GET(registro, alice)), 200);
       });
 
-      it('POST se rechaza con 405', async () => {
-        assert.equal(await estado(POST(coleccion, nuevo, alice)), 405);
+      it('POST se rechaza con 405 por @readonly', async () => {
+        assert.deepEqual(await rechazo(POST(coleccion, nuevo, alice)), solo_lectura);
       });
 
-      it('PATCH se rechaza con 405', async () => {
-        assert.equal(await estado(PATCH(registro, { CarrierName: 'cambiado' }, alice)), 405);
+      it('PATCH se rechaza con 405 por @readonly', async () => {
+        assert.deepEqual(await rechazo(PATCH(registro, { CarrierName: 'cambiado' }, alice)), solo_lectura);
       });
 
-      it('DELETE se rechaza con 405', async () => {
-        assert.equal(await estado(DELETE(registro, alice)), 405);
+      it('DELETE se rechaza con 405 por @readonly', async () => {
+        assert.deepEqual(await rechazo(DELETE(registro, alice)), solo_lectura);
       });
 
       it('después de los intentos, los datos siguen iguales', async () => {

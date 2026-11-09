@@ -63,6 +63,7 @@ Salida: `npm test` en verde; mutaciones detectadas; `cds watch` sigue mostrando 
 - D16 — R4 "CAP no guarda copia" se prueba así: (a) cada GET llega al servicio remoto; (b) el DDL del perfil `production` no crea tablas ni vistas para `ReporteService` ni `ZMAKS_SB_CONEXIONES`; (c) en desarrollo `ReporteService_*` son **vistas** sobre el mock del remoto. Las tablas `ZMAKS_SB_CONEXIONES_*` del mock son la simulación del S/4, no una copia.
 - D17 — R10 excluye los textos fijos del parser OData de CAP (solo aparecen con URLs manuales, no desde la app Fiori). Decisión del usuario.
 - D16 aprobada por el usuario.
+- D18 — El test de R2 exige además el código `ENTITY_IS_READ_ONLY` (no solo el 405): el RAP ya trae `Insertable/Updatable/Deletable: false` y sin `@readonly` CAP rechaza igual con `ENTITY_IS_NOT_CRUD`, así que el 405 solo no detectaba la mutación. Decisión del usuario (opción A).
 - D11 — R10: idioma por defecto **español**; los mensajes salen en español aunque el navegador pida otro idioma. Decisión del usuario.
 
 ## Etapa 3 — App Fiori Elements (List Report + Object Page)
