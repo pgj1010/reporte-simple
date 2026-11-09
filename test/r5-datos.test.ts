@@ -3,21 +3,12 @@
 import cds from '@sap/cds';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { iniciar, alice, cdsCli } from './helpers.ts';
 
-const raiz = path.resolve(import.meta.dirname, '..');
-const run = promisify(execFile);
-const alice = { auth: { username: 'alice', password: '' } };
-
-// `cds` (cds-dk global) ejecutado como en la línea de comandos, sin tsx (D13).
-const cdsCli = (...args: string[]) =>
-  run('cds', args, { cwd: raiz, env: { ...process.env, CDS_TYPESCRIPT: 'false' } });
-
-const { GET } = cds.test('serve', '--project', raiz, '--with-mocks', '--in-memory');
+const { GET } = iniciar();
 
 describe('R5 — origen de los datos', () => {
   describe('desarrollo / test: datos mock de test/data/', () => {
