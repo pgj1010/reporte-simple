@@ -40,9 +40,9 @@ Rama: `etapa-2-alineacion`
 - [x] Migrar a TypeScript: `cds add typescript`, `service.js` → `service.ts`, tipos con cds-typer (`pretest` los genera). TypeScript nativo de Node 24, sin `tsx` (D13)
 - [x] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan (4 conexiones, 5 vuelos: `init from test/data/...`)
 - [x] Verificar que `cds build --production` **no** incluye `test/data` (sin CSV ni carpetas `test/`/`data/`; perfil `production` → destination `S4_BACKEND`, desarrollo → mock)
-- [ ] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3)
+- [x] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3) — sin usuario 401, con `alice` 200 (test + `npm run watch`)
 - [ ] Mensajes en español por defecto (R10, D11)
-- [ ] Tests para R1, R2, R3, R4, R5, R6, R10 — hecho: R5 (`test/r5-datos.test.ts`, D14)
+- [ ] Tests para R1, R2, R3, R4, R5, R6, R10 — hecho: R5 (`test/r5-datos.test.ts`, D14), R3 (`test/r3-autenticacion.test.ts`: `Conexiones`, `Vuelos` y `$metadata`)
 - [ ] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar) con `npm run test:mutacion` (D10)
 - [ ] Crear `test/PRUEBAS_MANUALES.md` (R8, R9)
 
