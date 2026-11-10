@@ -109,7 +109,7 @@ Rama: `etapa-3-fiori`
 - [ ] Probar drilldown a la página de detalle
 - [ ] Ejecutar R8 de `test/PRUEBAS_MANUALES.md` y registrar el resultado
 - [ ] Arrancar siempre con `npm run watch` (D13); no instalar `tsx`
-- [ ] **Pendiente (revisión de la app):** `webapp/index.html` tiene `lang="en"` → `lang="es"` (D11). Relacionado: el UI5 tooling avisa `Generated supported locales ('') for bundle 'i18n/i18n.properties' do not contain default fallback locale 'en'` (falta `supportedLocales` / `fallbackLocale` en `manifest.json`, o `i18n_es.properties`)
+- [x] ~~**Pendiente (revisión de la app):** `webapp/index.html` tiene `lang="en"` → `lang="es"` (D11). Relacionado: el UI5 tooling avisa `Generated supported locales ('') for bundle 'i18n/i18n.properties' do not contain default fallback locale 'en'` (falta `supportedLocales` / `fallbackLocale` en `manifest.json`, o `i18n_es.properties`)~~ **Hecho (2026-11-10):** R13 — `lang="es"` y `data-sap-ui-language="es"` en `index.html`; `supportedLocales: [""]` + `fallbackLocale: ""` en los 3 bundles de `manifest.json`, manteniendo `i18n.properties` (D33, D34). El aviso de locales desapareció del manifiesto servido. Test `r13-idioma-app` (mutaciones detectadas: `lang="en"`, sin `fallbackLocale`, `i18n_en.properties`). Prueba manual R13 hecha por el usuario (Chrome en inglés, ventana normal con recarga forzada): pasos 1–3 ✔
 - [ ] **Pendiente (revisión de la app):** `annotations.cds` vacío (solo `using`) · UI5 1.154.0 cargado desde el CDN en `index.html` · `sap.fiori.archeType: transactional` en una app de solo lectura · `.appGenInfo.json` conserva `http://localhost:4004/...` (registro del generador, no se toca, D20)
 - [ ] **Pendiente (de Etapa 2):** `cds add typescript` instaló TypeScript 7 y `@sap-ux/eslint-plugin-fiori-tools` (vía `typescript-eslint`) pide `typescript <6.1`. Afecta solo al lint de la app; decidir cómo resolverlo
 
@@ -131,6 +131,8 @@ Salida: la app abre, lista las conexiones mock y navega al detalle con sus vuelo
 - D30 — `include: ["srv", "@cds-models"]` en `tsconfig.json` (el build ya no lleva `test/`) y `tsconfig.test.json` para revisar los tipos de los tests. Adelantado de la Etapa 5. Decisión del usuario (opción a).
 - D31 — `Price` con `@odata.Type` + `@odata.Precision: 16` + `@odata.Scale: 'variable'`, igual que el RAP; R12 compara todos los `Edm.Decimal`. Decisión del usuario (opción a).
 - D32 — La anotación de D31 va en `srv/service.cds`, no en `annotations.cds`. Decisión del usuario.
+- D33 — App de un solo idioma: `supportedLocales: [""]` + `fallbackLocale: ""` con `i18n.properties` sin sufijo (en vez de renombrar a `i18n_es.properties`): es lo que el UI5 tooling ya generaba y donde escribe Fiori tools. Decisión propia tras comparar las dos opciones, pedida por el usuario.
+- D34 — R13 como regla aparte de R10; idioma de UI5 fijo en `index.html`. Límite: en Work Zone / Launchpad manda el idioma del launchpad (verificar en Etapa 5). Decisión del usuario.
 
 ## Etapa 4 — Presentación del reporte
 Rama: `etapa-4-presentacion`
@@ -157,6 +159,7 @@ Rama: `etapa-5-despliegue`
 - [ ] Roles en `xs-security.json` coherentes con `@requires` / `@restrict`
 - [ ] Reutilizar o crear instancias `destination` / `connectivity` (lite)
 - [ ] Configuración de despliegue de la app Fiori (HTML5 repo)
+- [ ] R13 desplegado (D34): si la app se publica en Work Zone / Launchpad, verificar con el launchpad en inglés qué textos y formatos salen en español (los de la app sí, por D33; los de Fiori y el formato dependen del idioma del launchpad) y decidir si hace falta fijarlo ahí
 - [ ] Verificar que `cds build --production` compila el TypeScript correctamente sin `tsx` (`gen/srv` con `service.js`, imports `#cds-models` resueltos, sin `.ts` en el runtime) — D13. **Hallazgo 2026-11-09 (Etapa 2):** con `cds build -o <dir>` el build copia `srv/service.ts` sin compilar y no incluye `@cds-models`. Con el destino normal (`gen/`, o `CDS_BUILD_TARGET` **relativo**) sí compila el TS, pero como `tsconfig.json` no tiene `include`, compila **todo** el proyecto: los tests (`test/*.test.js`) terminan en `gen/srv/test/` y viajarían a producción. Con un `CDS_BUILD_TARGET` absoluto, `tsc` escribe dentro del proyecto (`./tmp/...`). ~~Revisar `include` / un `tsconfig` de build.~~ Resuelto en la Etapa 3 (D30). También genera artefactos HANA (`src/gen`, `cds.outbox.Messages`) aunque el reporte no tiene base de datos propia: revisar si hacen falta
 - [ ] Verificar con XSUAA que el 401 sale por la clave i18n traducida ("No autenticado")
 - [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global
@@ -236,3 +239,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-10 — D30 (usuario, opción a): `include` en `tsconfig.json` + `tsconfig.test.json`; el build ya no lleva `test/`. D28 y D29 aprobadas. `npm test` 82/82.
 - 2026-11-10 — R7 verificado en el navegador (AA 0017; LH 0402 sin confirmar). Hallazgo del usuario: `Price` sale sin decimales (423 USD). Causa: `cds import` convierte `Scale="variable"` en `Decimal(16)` (escala 0) y CAP publica `Precision="16"` sin `Scale`. Nueva regla R12; D31 (`@odata.Type`/`Precision`/`Scale: 'variable'`) y D32 (en `srv/service.cds`) aprobadas.
 - 2026-11-10 — Verificación del usuario en el navegador: R7 completo (LH 0402 vacía con "Todavía no hay entradas", sin error) y R12 (AA 0017 con decimales). Próximo paso aprobado: idioma de UI5 fijo en español (R13, D33, D34).
+- 2026-11-10 — R13: idioma de UI5 fijo en español (D34). D33: se compararon `[""]` sin sufijo y `i18n_es.properties` + `["es"]`; se eligió `[""]` (el tooling ya lo generaba, Fiori tools escribe en `i18n.properties`). El aviso de locales desapareció.
