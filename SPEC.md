@@ -30,7 +30,7 @@ Se completa al inicio de cada reporte, revisando el `$metadata` / el `.cds` impo
 
 | Pregunta | Resultado para `ZMAKS_SB_CONEXIONES` |
 |---|---|
-| ¿Trae anotaciones `@UI` (LineItem, SelectionFields, Facets, HeaderInfo)? | ✅ Sí, completas, heredadas del RAP |
+| ¿Trae anotaciones `@UI` (LineItem, SelectionFields, Facets, HeaderInfo)? | ⚠️ Sí, completas, pero **no utilizables tal cual**: el RAP declara el vocabulario UI con el alias `SAP__UI` y `cds import` copia `$Type: 'SAP__UI.DataField'` / `'SAP__UI.ReferenceFacet'` (34 registros). CAP publica el vocabulario con el alias `UI`, así que Fiori descarta esos registros (tabla sin columnas, detalle vacío) y los `Target` de los facets salen como `Path` en vez de `AnnotationPath`. Solo `SelectionFields` y los `DataPoint` (sin `$Type`) funcionan. Se redefinen en `app/conexiones/annotations.cds` (D22) |
 | ¿Trae etiquetas (`@Common.Label`) y textos (`@Common.Text`)? | ✅ Sí (`CarrierId` → `CarrierId_Text`) |
 | ¿Soporta agregación (`$apply`)? | ✅ Sí: `aggregate`, `groupby`, `filter` |
 | ¿Tiene parámetros CDS (vistas con `parameters`)? | ❌ No |
@@ -44,6 +44,8 @@ Se completa al inicio de cada reporte, revisando el `$metadata` / el `.cds` impo
 
 Fuente de verdad para las anotaciones del reporte. Columna **Origen**: `RAP` = viene del servicio; `CAP` = se define o sobrescribe en `app/conexiones/annotations.cds`. Cambiar esta tabla primero; luego las anotaciones; luego el test R11.
 
+> **Columnas, secciones y cabecera = `CAP` (D22):** el RAP las trae con el alias `SAP__UI`, que CAP no reconoce. Etiquetas y orden se toman del RAP, pero se definen en `annotations.cds`. La columna **Origen** de las tablas de abajo se refiere a la etiqueta, el filtro, el texto y la unidad del campo; las columnas (`UI.LineItem`) son siempre `CAP`. La columna **Etiqueta** es a la vez la etiqueta de la columna (`UI.DataField.Label`) y la del campo (`@Common.Label`, la que usan el selector de columnas, los filtros y los value helps) (D24).
+
 ### Conexiones (List Report)
 
 | Campo | Etiqueta | Filtro | Obligatorio | Columna (orden) | Medida | Texto de / Unidad | Value help | Origen |
@@ -54,7 +56,7 @@ Fuente de verdad para las anotaciones del reporte. Columna **Origen**: `RAP` = v
 | AirportToId | Aeropuerto destino | ✅ | — | 4 | — | — | Aeropuertos ⚠️ | RAP |
 | DepartureTime | Hora salida | — | — | 5 | — | — | — | RAP |
 | ArrivalTime | Hora llegada | — | — | 6 | — | — | — | RAP |
-| Distance | Distancia | — | — | 7 | _por definir_ | unidad: `DistanceUnit` | — | RAP |
+| Distance | Distancia | — | — | 7 | _por definir_ | unidad: `DistanceUnit` | — | RAP; unidad CAP (D23) |
 | DistanceUnit | Medida | — | — | 8 | — | — | — | RAP |
 | CarrierName | Nombre aerolínea | — | — | (título del detalle) | — | — | — | RAP |
 
@@ -62,14 +64,29 @@ Fuente de verdad para las anotaciones del reporte. Columna **Origen**: `RAP` = v
 
 | Campo | Etiqueta | Filtro | Obligatorio | Columna (orden) | Medida | Texto de / Unidad | Value help | Origen |
 |---|---|---|---|---|---|---|---|---|
-| CarrierId | Id aerolínea | — | — | 1 | — | texto: `CarrierId_Text` | — | RAP |
-| ConnectionId | Número vuelo | — | — | 2 | — | — | — | RAP |
-| FlightDate | Fecha vuelo | — | — | 3 | — | — | — | RAP |
-| Price | Precio vuelo | — | — | 4 | _por definir_ | moneda: `CurrencyCode` | — | RAP |
-| PlaneTypeId | Tipo vuelo | — | — | 5 | — | — | — | RAP |
-| SeatsMax | Capacidad máxima | — | — | 6 | _por definir_ | — | — | RAP |
-| SeatsOccupied | Ocupación asientos | — | — | 7 | _por definir_ | — | — | RAP |
-| CarrierName | Nombre aerolínea | — | — | 8 | — | — | — | RAP |
+| CarrierId | Id aerolínea | — | — | 1 | — | texto: `CarrierId_Text` | — | RAP; etiqueta CAP (D24) |
+| ConnectionId | Número vuelo | — | — | 2 | — | — | — | RAP; etiqueta CAP (D24) |
+| FlightDate | Fecha vuelo | — | — | 3 | — | — | — | RAP; etiqueta CAP (D24) |
+| Price | Precio vuelo | — | — | 4 | _por definir_ | moneda: `CurrencyCode` | — | RAP; etiqueta CAP (D24) |
+| PlaneTypeId | Tipo vuelo | — | — | 5 | — | — | — | RAP; etiqueta CAP (D24) |
+| SeatsMax | Capacidad máxima | — | — | 6 | _por definir_ | — | — | RAP; etiqueta CAP (D24) |
+| SeatsOccupied | Ocupación asientos | — | — | 7 | _por definir_ | — | — | RAP; etiqueta CAP (D24) |
+| CarrierName | Nombre aerolínea | — | — | 8 | — | — | — | RAP; etiqueta CAP (D24) |
+
+### Página de detalle (Object Page) — Origen `CAP` (D22), contenido tomado del RAP
+
+| Página | Elemento | Contenido (en orden) |
+|---|---|---|
+| Conexión | Título (`HeaderInfo.Title`) | `CarrierName` |
+| Conexión | Descripción (`HeaderInfo.Description`) | `ConnectionId` |
+| Conexión | Tipo (`TypeName` / `TypeNamePlural`) | Conexión / Conexiones (RAP, sin `$Type`: funciona) |
+| Conexión | Cabecera (`HeaderFacets`) | 1. Aeropuerto Salida (`DataPoint#tqAirportFrom` → `AirportFromId`) · 2. Aeropuerto Destino (`DataPoint#tqAirportTo` → `AirportToId`) |
+| Conexión | Sección 1 "Detalles de conexión" (`idConnection` → `UI.Identification`) | Hora salida (`DepartureTime`) · Hora llegada (`ArrivalTime`) · Distancia (`Distance`) · Medida (`DistanceUnit`) |
+| Conexión | Sección 2 "Detalles de vuelos" (`idFlight` → `_Flight/@UI.LineItem`) | Tabla de vuelos con las columnas de la tabla **Vuelos** (requiere R7) |
+| Vuelo | Título (`HeaderInfo.Title`) | `CarrierName` |
+| Vuelo | Tipo (`TypeName` / `TypeNamePlural`) | Vuelo / Vuelos (RAP) |
+| Vuelo | Cabecera (`HeaderFacets`) | 1. Número vuelo (`DataPoint#tqFlightNumber` → `ConnectionId`) · 2. Fecha vuelo (`DataPoint#tqFlightDate` → `FlightDate`) |
+| Vuelo | Sección 1 "Detalle vuelo" (`idFlight` → `UI.Identification`) | Precio vuelo (`Price`) · Tipo vuelo (`PlaneTypeId`) · Capacidad máxima (`SeatsMax`) · Ocupación asientos (`SeatsOccupied`) |
 
 Pendientes para la Etapa 4: decidir medidas y totales (p. ej. `SUM` de `SeatsOccupied` / `SeatsMax`), si se cambia el orden de columnas y cómo se resuelve el value help de aeropuertos.
 
@@ -108,3 +125,6 @@ Pendientes para la Etapa 4: decidir medidas y totales (p. ej. `SUM` de `SeatsOcc
 | D19 | La regla 17 (rutas relativas) tiene un test automático (`test/regla17-rutas.test.ts`) que recorre los `app/*/webapp/manifest.json` y falla si algún `dataSources.*.uri` empieza con `/` o con un esquema (`http:`, `https:`). No es una R de esta especificación, pero se prueba igual. Decisión propia, aprobada por el usuario. | Regla técnica 17, regla técnica 13 | Si se vuelve a correr el generador de Fiori, la ruta absoluta vuelve sin que nadie lo note y la app desplegada da 404 detrás del app router. |
 | D20 | La regla 17 aplica a la **app desplegable** (`webapp/manifest.json`), **no** a los tests OPA generados (`webapp/test/integration/*.js`): `FirstJourney.js` conserva `ServiceUri: "/odata/v4/reporte/"`, porque una ruta relativa ahí se resolvería contra la página de test. `.appGenInfo.json` (registro del generador, no lo usa la app) tampoco se toca. Decisión del usuario. | Regla técnica 17 | Con la ruta relativa en el test OPA, `iResetMockData` llamaría a `.../webapp/test/integration/odata/v4/reporte/` y el test fallaría (no comprobado: los OPA no corren en `npm test`, D12); además, el test de D19 tendría que excluir explícitamente los tests OPA. |
 | D21 | En local, la ruta relativa de la app (D19) resuelve a `/conexiones/odata/v4/reporte/` (404). Se resuelve con un `backend` en el `fiori-tools-proxy` de `app/conexiones/ui5.yaml` (`path: /odata` → `http://localhost:4004`). Es configuración solo de desarrollo: la sección `server` de `ui5.yaml` no viaja en el build. Decisión del usuario (opción 1 de 3). | Regla técnica 17, D19 | Con la ruta absoluta (opción 3) se incumple la regla 17 y la app desplegada da 404 detrás del app router; con un middleware en `srv/server.ts` (opción 2) habría código propio que mantener fuera de producción. Cada app nueva necesita este mismo `backend` en su `ui5.yaml`. |
+| D22 | Las anotaciones `@UI` con registros tipados (`LineItem`, `Identification`, `Facets`, `HeaderFacets`, `HeaderInfo.Title`/`Description`) se **redefinen en `app/conexiones/annotations.cds`** con tipos `UI.*`, a partir de la tabla **Semántica del reporte** (D8). Causa: el RAP usa el alias `SAP__UI`, CAP publica el vocabulario como `UI` y Fiori descarta los registros `SAP__UI.*` (la tabla sale sin columnas y el detalle vacío). `srv/external` no se toca. El test R11 (adelantado de la Etapa 4) compara las anotaciones efectivas con la tabla y exige que no quede ningún `SAP__UI.` en el `$metadata` de `ReporteService`. Decisión del usuario (opción A de 3). | D8, R9, R11, regla técnica 12 | Dejando las del RAP, la tabla sigue sin columnas. Con un hook que reescriba `SAP__UI.` → `UI.` al cargar el modelo (opción B), el RAP seguiría como origen, pero con código propio que modifica el modelo (contra la regla 12 y D8). Normalizando el `.edmx` antes de `cds import` (opción C), en la práctica se edita la entrada de `srv/external` y hay que repetirlo en cada reimportación. Costo de D22: si cambian las anotaciones del RAP, CAP no lo refleja hasta actualizar la tabla y `annotations.cds`. |
+| D23 | La unidad de `Distance` se declara en CAP: `@Measures.Unit: DistanceUnit` en `app/conexiones/annotations.cds` (el RAP no la trae, aunque la tabla la tenía como `RAP`). Decisión del usuario (opción a). | R11, D8 | Sin la anotación, Fiori muestra la distancia sin unidad y la unidad solo en la columna "Medida"; quitando la unidad de la tabla, R11 quedaría verde pero el reporte perdería la relación distancia–unidad. Pendiente de la Etapa 4: decidir si se quita la columna 8 "Medida". |
+| D24 | La columna **Etiqueta** de la tabla de semántica aplica también a `@Common.Label` del campo, no solo a la etiqueta de la columna. Las etiquetas de `Vuelos`, que el RAP trae en inglés (`Airline ID`, `Flight Number`, …), se redefinen en español en `annotations.cds` (D11). R11 lo verifica. Decisión del usuario (opción a). | R11, D8, D11, regla 16 | Si "Etiqueta" fuera solo la de la columna, la tabla se vería en español, pero el selector de columnas, los filtros y los value helps de `Vuelos` mostrarían inglés. |
