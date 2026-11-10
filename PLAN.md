@@ -196,6 +196,7 @@ Salida: el reporte se ve y navega como dice la tabla de semántica, con datos mo
 - D42 — Value help: importar `/dmo/i_airport_stdvh`. Decisión del usuario (opción a).
 - D43 — Totales: reenviar al RAP las lecturas con `$apply` (no pasan por la delegación CQN), con test que vigila `@restrict` por filas. Decisión del usuario (opción a).
 - D44 — Textos en español de Encabezado y Ayuda (y etiquetas nuevas) propuestos por Claude, en la tabla de semántica para revisión. Propuesta propia.
+- D45 — Cambio en el RAP: `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (semántica analítica del backend, excepción razonada a D8). Transportar antes de desplegar (Etapa 5). Decisión del usuario.
 
 ## Etapa 5 — Despliegue a Cloud Foundry
 Rama: `etapa-5-despliegue`
@@ -208,6 +209,7 @@ Rama: `etapa-5-despliegue`
 - [ ] Verificar que `cds build --production` compila el TypeScript correctamente sin `tsx` (`gen/srv` con `service.js`, imports `#cds-models` resueltos, sin `.ts` en el runtime) — D13. **Hallazgo 2026-11-09 (Etapa 2):** con `cds build -o <dir>` el build copia `srv/service.ts` sin compilar y no incluye `@cds-models`. Con el destino normal (`gen/`, o `CDS_BUILD_TARGET` **relativo**) sí compila el TS, pero como `tsconfig.json` no tiene `include`, compila **todo** el proyecto: los tests (`test/*.test.js`) terminan en `gen/srv/test/` y viajarían a producción. Con un `CDS_BUILD_TARGET` absoluto, `tsc` escribe dentro del proyecto (`./tmp/...`). ~~Revisar `include` / un `tsconfig` de build.~~ Resuelto en la Etapa 3 (D30). También genera artefactos HANA (`src/gen`, `cds.outbox.Messages`) aunque el reporte no tiene base de datos propia: revisar si hacen falta
 - [ ] Verificar con XSUAA que el 401 sale por la clave i18n traducida ("No autenticado")
 - [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global
+- [ ] **(D45)** Transportar al sistema destino el cambio del RAP `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (CDS de vuelos) antes de desplegar; verificar en el `$metadata` desplegado que `aggregate(SeatsOccupied)` funciona
 - [ ] `mbt build` y **pedir aprobación** antes de `cf deploy`
 - [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
 - [ ] R7 desplegado: `Conexiones(...)/_Flight`, `$expand=_Flight` y la sección "Detalles de vuelos" contra el RAP real (la condición ya está confirmada en ADT; aquí se verifica que el RAP la aplique). D26 no cubre el join del RAP
@@ -289,3 +291,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-10 — R8 ejecutado por el usuario (1–5 ✔, F4 sin respuesta como se esperaba); paso 7 eliminado (D37). **Etapa 3 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 97/97, mutaciones R2/R3 2/2. Decisiones D19–D37. Etapa activa: 4.
 - 2026-11-10 — Etapa 3 mergeada a `main` (`21470e6`); rama `etapa-4-presentacion`. Decisiones de semántica del usuario D38–D42. Hallazgo: CAP no delega `$apply` al remoto (descarta `aggregate`, 500 con `groupby`); en el mock se pierden los alias de agregado. Prototipos de totales: (a) reenviar `$apply` al RAP, (b) calcular en el handler.
 - 2026-11-10 — D43 implementado: reenvío de `$apply` al RAP (1 petición / 57 bytes con 50.000 filas, frente a 51 peticiones / 11,7 MB calculando en el handler). Hallazgo: en `$batch`, `req.http.req` es el sobre → se usa `req.req.url`. Pendiente: resultados de `/IWFND/GW_CLIENT` para las anotaciones de totales.
+- 2026-11-10 — Pruebas del usuario en el RAP real: alias igual al campo → error; `concat` → no implementado; `aggregate(Campo)` OK tras agregar `@Aggregation.default: #SUM` en el RAP (D45, transportar en Etapa 5). Pendiente: re-importar el `$metadata` nuevo y decidir cómo mostrar los totales sin `concat`.
