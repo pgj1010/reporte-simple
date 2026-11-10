@@ -35,21 +35,16 @@ const esTotal = (c: Columna): c is { ref: [Total] } =>
   typeof c === 'object' && c.ref?.length === 1 && c.ref[0] in TOTALES;
 
 /**
- * Quita los totales de la consulta (el RAP no los conoce) y devuelve cuáles se pidieron.
- * Sin `$select` (`columns` vacío o con `*`) se devuelven todos los campos, también los totales.
+ * Qué totales pidió la lectura. Sin `$select` (`columns` vacío o con `*`) se devuelven todos los campos,
+ * también los totales. No hace falta quitarlos de la consulta ni agregar las claves: al delegar, CAP ya
+ * descarta los elementos `virtual` y pide siempre `CarrierId` y `ConnectionId` (comprobado con mutaciones
+ * en la Etapa 4; lo vigila r14-totales-produccion: "al RAP nunca se le piden los campos virtual").
  */
-function quitarTotales(select: { columns?: Columna[] }): Total[] {
-  const columnas = select.columns;
-  if (!columnas?.length) return Object.keys(TOTALES) as Total[];
-  const pedidos = columnas.filter(esTotal).map(c => c.ref[0]);
-  const conAsterisco = columnas.includes('*') || columnas.some(c => typeof c === 'object' && c.ref?.[0] === '*');
-  if (!pedidos.length) return conAsterisco ? (Object.keys(TOTALES) as Total[]) : [];
-  select.columns = columnas.filter(c => !esTotal(c));
-  // Las claves hacen falta para asignar los totales a cada conexión.
-  for (const clave of CLAVES)
-    if (!conAsterisco && !select.columns.some(c => typeof c === 'object' && c.ref?.[0] === clave))
-      select.columns.push({ ref: [clave] });
-  return pedidos;
+function totalesPedidos(columnas: Columna[] | undefined): Total[] {
+  const todos = Object.keys(TOTALES) as Total[];
+  if (!columnas?.length) return todos;
+  if (columnas.some(c => c === '*' || (typeof c === 'object' && c.ref?.[0] === '*'))) return todos;
+  return columnas.filter(esTotal).map(c => c.ref[0]);
 }
 
 const literal = (v: unknown) => `'${String(v).replace(/'/g, "''")}'`;
@@ -99,10 +94,10 @@ export default class ReporteService extends cds.ApplicationService {
       const url = urlConApply(req);
       if (url) return remote.send({ method: 'GET', path: url });
 
-      // R14 / D47: los totales de la cabecera no existen en el RAP: se quitan antes de delegar y se
-      // calculan después con una petición groupby/aggregate (el Gateway no soporta la tabla analítica).
+      // R14 / D47: los totales de la cabecera no existen en el RAP (CAP no se los pide, son `virtual`):
+      // se calculan después con una petición groupby/aggregate (el Gateway no soporta la tabla analítica).
       const select = (req.query as { SELECT?: { columns?: Columna[] } }).SELECT;
-      const pedidos = req.target?.name === Conexiones.name && select ? quitarTotales(select) : [];
+      const pedidos = req.target?.name === Conexiones.name && select ? totalesPedidos(select.columns) : [];
 
       // Todas las demás lecturas se delegan al servicio RAP (R4): CAP no guarda copia de los datos.
       const resultado = await remote.run(req.query);

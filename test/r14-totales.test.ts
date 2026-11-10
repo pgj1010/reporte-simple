@@ -55,6 +55,11 @@ describe('R14 — totales en la cabecera del detalle (mock)', () => {
         totales(c.CarrierId, c.ConnectionId), `${c.CarrierId} ${c.ConnectionId}`);
   });
 
+  it('$select con solo un total (sin las claves): CAP pide las claves al remoto y el total se asigna bien (D48)', async () => {
+    const { data } = await GET(`${URL}Conexiones(CarrierId='AA',ConnectionId='0017')?$select=TotalCapacidad`, alice);
+    assert.equal(data.TotalCapacidad, totales('AA', '0017').TotalCapacidad);
+  });
+
   it('la lista sin los totales en $select no los trae (como pide el List Report)', async () => {
     const { data } = await GET(`${URL}Conexiones?$select=CarrierId,ConnectionId`, alice);
     for (const c of data.value) assert.deepEqual(Object.keys(c).sort(), ['CarrierId', 'ConnectionId']);
