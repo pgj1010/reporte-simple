@@ -36,8 +36,22 @@ const condicionPara = (conexion: Fila) =>
 const yTambien = (...partes: (unknown[] | undefined)[]) =>
   partes.filter(p => p?.length).flatMap((p, i) => (i ? ['and', { xpr: p }] : [{ xpr: p }]));
 
+/** D43: ejecuta en el mock una lectura recibida como URL OData (incluye `$apply`; `concat` = varias consultas). */
+async function leerUrl(rap: cds.Service, path: string) {
+  const parseado = (cds as any).odata.parse('/' + path.replace(/^\//, ''));
+  // Sin prefijar las entidades: el servicio simulado resuelve `Vuelos` / `Conexiones` por su cuenta.
+  const consultas = Array.isArray(parseado) ? parseado : [parseado];
+  const resultados = [];
+  for (const q of consultas) resultados.push(...([] as unknown[]).concat(await rap.run(q) ?? []));
+  return resultados;
+}
+
 export function registrar(rap: cds.Service) {
   rap.prepend(() => rap.on('READ', async (req, next) => {
+    // 0) D43: lectura reenviada como URL (`remote.send({ method: 'GET', path })`, p. ej. con `$apply`).
+    //    Un RAP real recibe la URL; aquí se convierte a CQN con el parser OData de CAP y se ejecuta.
+    if (!(req.query as { SELECT?: unknown } | undefined)?.SELECT) return leerUrl(rap, (req as unknown as { path: string }).path);
+
     const select = (req.query as { SELECT: any }).SELECT;
     const ref: unknown[] = select.from?.ref ?? [];
 

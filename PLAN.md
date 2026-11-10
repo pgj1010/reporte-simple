@@ -175,7 +175,7 @@ Decisiones del usuario en esta etapa: D20, D21, D22, D23, D24, D25, D26, D27, D3
 Rama: `etapa-4-presentacion`
 - [ ] Revisar con el usuario la tabla **Semántica del reporte** de `SPEC.md` y cerrar los "por definir" (medidas / totales, orden de columnas)
 - [ ] Generar o ajustar `app/conexiones/annotations.cds` a partir de la tabla (D8). **Adelantado en la Etapa 3 (D22–D24):** ya existe; aquí solo se ajusta si cambia la tabla
-- [ ] Si hay totales: confirmar `$apply` en mock y probar la tabla con sumatorias
+- [ ] Si hay totales: confirmar `$apply` en mock y probar la tabla con sumatorias. **Hecho la parte de servicio (2026-11-10, D43):** CAP no delega `$apply` → las lecturas con `$apply` se reenvían tal cual al RAP; mock con `cds.odata.parse`; guarda de `@restrict` por filas; RAP simulado compartido en `test/rap-simulado.ts`. Tests `d43-totales` y `d43-totales-produccion` (directo, `$batch`, `_Flight`, `filter`, `groupby`, 50.000 filas: 1 petición / 57 bytes). Mutaciones detectadas (3). **Falta:** anotaciones de Fiori para mostrar los totales (tipo de tabla, `@Aggregation`), que dependen de qué `$apply` acepta el RAP real (pruebas en `/IWFND/GW_CLIENT` pendientes del usuario)
 - [ ] Resolver el value help de aeropuertos (importar el servicio `/dmo/i_airport_stdvh` o `@Common.ValueList` propio)
 - [x] Test R11: anotaciones efectivas = tabla de semántica. **Hecho en la Etapa 3** (adelantado, D22); se actualiza si cambia la tabla
 - [ ] Decidir drilldown (sí/no, hasta qué nivel) en `manifest.json`
@@ -288,3 +288,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-10 — D35: TS 7 rompía el lint de Fiori tools (se caía, no solo avisaba) → `typescript: "~6.0"`; lint dentro de `npm test` (2,6 s). `npm test` 97/97.
 - 2026-11-10 — R8 ejecutado por el usuario (1–5 ✔, F4 sin respuesta como se esperaba); paso 7 eliminado (D37). **Etapa 3 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 97/97, mutaciones R2/R3 2/2. Decisiones D19–D37. Etapa activa: 4.
 - 2026-11-10 — Etapa 3 mergeada a `main` (`21470e6`); rama `etapa-4-presentacion`. Decisiones de semántica del usuario D38–D42. Hallazgo: CAP no delega `$apply` al remoto (descarta `aggregate`, 500 con `groupby`); en el mock se pierden los alias de agregado. Prototipos de totales: (a) reenviar `$apply` al RAP, (b) calcular en el handler.
+- 2026-11-10 — D43 implementado: reenvío de `$apply` al RAP (1 petición / 57 bytes con 50.000 filas, frente a 51 peticiones / 11,7 MB calculando en el handler). Hallazgo: en `$batch`, `req.http.req` es el sobre → se usa `req.req.url`. Pendiente: resultados de `/IWFND/GW_CLIENT` para las anotaciones de totales.
