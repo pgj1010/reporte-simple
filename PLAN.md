@@ -41,7 +41,7 @@ Rama: `etapa-2-alineacion`
 - [x] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan (4 conexiones, 5 vuelos: `init from test/data/...`)
 - [x] Verificar que `cds build --production` **no** incluye `test/data` (sin CSV ni carpetas `test/`/`data/`; perfil `production` → destination `S4_BACKEND`, desarrollo → mock)
 - [x] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3) — sin usuario 401, con `alice` 200 (test + `npm run watch`)
-- [x] Mensajes en español por defecto (R10, D11, D15): `srv/server.ts` + `_i18n/messages_es.properties`. Los textos fijos del parser OData de CAP quedan fuera de R10 (D17)
+- [x] Mensajes siempre en español (R10, D11, D15): `srv/server.ts` + `_i18n/messages_es.properties`. Los textos fijos del parser OData de CAP quedan fuera de R10 (D17)
 - [x] Tests para R1, R2, R3, R4, R5, R6, R10 — `test/r<N>-*.test.ts` (uno por regla) + `test/helpers.ts`. R5 incluye el build (D14); R4 según D16
 - [x] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar): manual en el árbol real + `npm run test:mutacion` (D10 ampliada). R2 requirió D18
 - [x] Crear `test/PRUEBAS_MANUALES.md` (R8, R9): pasos y resultados esperados definidos; se ejecutan en las Etapas 3 (R8) y 4 (R9)
@@ -60,7 +60,7 @@ Tomadas durante la etapa (en el orden en que se tomaron):
 - D9 — `npm test` se configura en el paso 2 (antes de la migración a TS) para cumplir la regla 4 desde el inicio. Propuesta propia, aprobada.
 - D10 — Mutación en script aparte (`npm run test:mutacion`) sobre una copia temporal del proyecto; nunca modifica los archivos reales. Propuesta propia, aprobada.
   - **Ampliada (decisión del usuario, opción B):** la primera vez, además, mutación **manual** en el árbol real (editar → `npm test` en rojo → `git checkout` → `npm test` en verde → `git diff` vacío), una mutación a la vez. El script hace un control sin mutar, comprueba que la mutación cambió el archivo, corre solo los tests de la regla y verifica por hash que el archivo real no cambió.
-- D11 — R10: idioma por defecto **español**; los mensajes salen en español aunque el navegador pida otro idioma. Decisión del usuario.
+- D11 — R10: mensajes **siempre en español, sin importar el idioma del navegador**. Decisión del usuario. Si fuera al revés: un navegador en inglés vería los errores en inglés; para reportes de clientes con otros idiomas habría que revisar D11 y D15 juntas.
 - D12 — `npm test` corre con `CDS_PLUGIN_UI5_ACTIVE=false`: con el plugin UI5 el proceso de test no termina (y con `tsx` se caía por memoria); los tests cubren el servicio OData, no la app. Propia.
 - D13 — TypeScript nativo de Node 24, sin `tsx` (reemplaza a D6). `tsx` + `cds-plugin-ui5` agota la memoria en `cds watch` y en tests. `npm run watch` = `CDS_TYPESCRIPT=false cds watch` (no se puede fijar por `.env` ni `package.json`). `tsconfig`: `erasableSyntaxOnly`, `verbatimModuleSyntax`, `rewriteRelativeImportExtensions`. Propuesta propia, aprobada por el usuario con esos ajustes.
 - D14 — El test de R5 corre `cds build --production` **dentro de `npm test`** (~2 s), sin script aparte. Si llegara a pasar de ~15 s, se separaría en `npm run test:build`. Propia.
