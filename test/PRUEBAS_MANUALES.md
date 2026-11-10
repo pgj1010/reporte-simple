@@ -5,6 +5,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 > **Estado (cierre de la Etapa 2, 2026-11-09):** pasos definidos, **todavía no ejecutados**.
 > - R8 se ejecutó al cerrar la **Etapa 3** (2026-11-10, ver registro). **Se repite en la Etapa 4** (value help de aeropuertos, D50: pasos 6–6d).
 > - R9 y R14 se ejecutan al cerrar la **Etapa 4** (pasos actualizados el 2026-11-10). El drilldown a Vuelos ya funciona con el mock (R7, D25); desplegado se verifica en la Etapa 5.
+> - **Cierre de la Etapa 4 (2026-11-10):** R8 (pasos 6, 6c, 6d), R9 (pasos 1, 3, 8, 10b) y R14 (pasos 1, 4, 5) ejecutados por el usuario, todos ✔; R13 paso 5 verificado por Claude en la configuración servida. Los pasos que el usuario no reportó quedan marcados como **no reportados** en cada registro.
 > - Si cambia la tabla de semántica en `SPEC.md`, actualizar aquí los resultados esperados.
 
 ## Preparación (común)
@@ -42,6 +43,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
 | 2026-11-10 | 3 | Usuario | ✔ pasos 1–5 · paso 6 según lo esperado | 5 conexiones; filtros visibles; `FRA` y `JFK` devuelven LH 0400 y LH 0402; FRA→SFO vacía sin error. Paso 6: al pulsar el F4 de Aeropuerto salida no pasa nada (esperado: value help de `/dmo/i_airport_stdvh` no importado, se resuelve en la Etapa 4). |
+| 2026-11-10 | 4 | Usuario | ✔ pasos 1, 6, 6c, 6d | Lista con 5 conexiones. F4 de Aeropuerto salida abre la lista; elegir `FRA` da LH 0400 y LH 0402. F4 de Aeropuerto destino con `JFK` da LH 0400 y LH 0402. **No reportados:** 6b (búsqueda `Frankfurt`, `$search`, D51) y el detalle del paso 6 (columnas del diálogo, 5 aeropuertos con `MIA`); 2–5 ya ✔ en la Etapa 3. |
 
 ---
 
@@ -62,6 +64,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
 | 2026-11-10 | 3 | Usuario | ✔ pasos 1–3 | Chrome en inglés, ventana normal con recarga forzada (incógnito pierde la sesión de BAS). Botones de Fiori en español; AA 0017: "Precio vuelo" 422,94 USD y fecha en español. Paso 4 (aviso en la consola): ✔ **verificado por Claude** (2026-11-10): `npm run watch` en otro puerto, manifiesto servido con `fallbackLocale: ""`, 0 apariciones de `do not contain default fallback locale 'en'` (con la configuración anterior salían 3, D33). Paso 5 (Red, petición i18n): **no verificado**, el usuario no lo revisó. |
+| 2026-11-10 | 4 | Claude | ✔ paso 5 **por configuración** | A pedido del usuario. No se pudo capturar la pestaña Red: el Dev Space no tiene navegador y Chromium headless no arranca (faltan librerías del sistema, sin `sudo`). Verificado en el `manifest.json` **servido** por `npm run watch`: `sap.app.i18n`, `models.i18n` y `models.@i18n` con `supportedLocales: [""]` y `fallbackLocale: ""` (UI5 solo carga el archivo sin sufijo); `data-sap-ui-language="es"` en `index.html`; `i18n/i18n.properties` → 200, `i18n_en.properties` y `i18n_es.properties` → 404 (no existen). Para la captura de red, repetir en el navegador (Etapa 5, con R13 desplegado). |
 
 ---
 
@@ -103,7 +106,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
-| | | | | |
+| 2026-11-10 | 4 | Usuario | ✔ pasos 1, 3, 8, 10b | 5 conexiones, sin columna "Medida" (D39); drilldown al detalle del vuelo (D41); exportación a Excel con las columnas en español. Textos de encabezados y ayudas (D44) y de los totales (D47): "se ven bien en la app" (revisión del usuario). **No reportados:** 2, 4, 4b, 5, 6, 6b, 7, 7b, 9, 11 (7b ya ✔ en la Etapa 3: 422,94 USD; 6/6b cubiertos por R7 en el navegador en la Etapa 3); en 10b no se indicó si se exportaron las dos tablas o solo una. |
 
 ---
 
@@ -124,4 +127,4 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
-| | | | | |
+| 2026-11-10 | 4 | Usuario | ✔ pasos 1, 4, 5 | AA 0017 = 573 / 770, LH 0400 = 314 / 330, LH 0402 = 0 / 0. **No reportados:** 2, 3, 6 (textos de los totales revisados por el usuario: "se ven bien en la app"). |
