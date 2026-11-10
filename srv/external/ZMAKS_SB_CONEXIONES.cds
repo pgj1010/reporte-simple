@@ -1,4 +1,4 @@
-/* checksum : 84eb64413cdee3c7c08442d6093b61b0 */
+/* checksum : 71f9192924d4064076f19d8fe538bef1 */
 @cds.external : true
 @CodeList.UnitsOfMeasure.Url : '../../../../default/iwbep/common/0001/$metadata'
 @CodeList.UnitsOfMeasure.CollectionPath : 'UnitsOfMeasure'
@@ -301,10 +301,12 @@ service ZMAKS_SB_CONEXIONES {
     @Common.Heading : 'Plane'
     @Common.QuickInfo : 'Flight Reference Scenario: Plane Type ID'
     PlaneTypeId : String(10) not null;
+    @Aggregation.CustomAggregate#SeatsMax : 'Edm.Int32'
     @Common.Label : 'Maximum Capacity'
     @Common.Heading : 'Capacity'
     @Common.QuickInfo : 'Flight Reference Scenario: Plane Seats Max'
     SeatsMax : Integer not null;
+    @Aggregation.CustomAggregate#SeatsOccupied : 'Edm.Int32'
     @Common.Label : 'Occupied Seats'
     @Common.Heading : 'Occupied'
     @Common.QuickInfo : 'Flight Reference Scenario: Plane Seats Occupied'
