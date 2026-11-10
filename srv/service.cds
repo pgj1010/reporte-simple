@@ -1,4 +1,5 @@
 using { ZMAKS_SB_CONEXIONES as external } from './external/ZMAKS_SB_CONEXIONES';
+using { I_AIRPORT_STDVH as f4 } from './external/I_AIRPORT_STDVH';
 
 @requires: 'authenticated-user' // R3
 service ReporteService {
@@ -14,6 +15,13 @@ service ReporteService {
 
   @readonly
   entity Vuelos     as projection on external.Vuelos;
+
+  // D50: value help de aeropuertos (AirportFromId / AirportToId), el mismo F4 que usa el RAP
+  // (/dmo/i_airport_stdvh). Sin I_CountryVH: el diálogo de aeropuertos no necesita su propio F4 de país.
+  @readonly
+  entity Aeropuertos as projection on f4.xDMOxI_Airport_StdVH {
+    AirportID, Name, City, CountryCode, CountryCodeText
+  };
 }
 
 // R12 / D31: el RAP publica Price con Scale="variable" (los decimales dependen de la moneda), pero

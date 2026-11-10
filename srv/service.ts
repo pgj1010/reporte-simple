@@ -1,5 +1,5 @@
 import cds from '@sap/cds';
-import { Conexiones, Vuelos } from '#cds-models/ReporteService';
+import { Conexiones, Vuelos, Aeropuertos } from '#cds-models/ReporteService';
 
 /**
  * D43 — URL relativa al servicio si la lectura trae `$apply` (totales, agregaciones), o undefined.
@@ -106,6 +106,16 @@ export default class ReporteService extends cds.ApplicationService {
         if (filas.length) await calcularTotales(filas, pedidos);
       }
       return resultado;
+    });
+
+    // D50: el value help de aeropuertos vive en otro servicio del RAP (F4 `/dmo/i_airport_stdvh`), con su
+    // propia ruta (D51). Mismo patrón: se delega, y una lectura con `$apply` se reenvía tal cual (D43).
+    // `$search` (la búsqueda del diálogo F4) llega al RAP como `$search`: el F4 la declara (D51).
+    const f4 = await cds.connect.to('I_AIRPORT_STDVH');
+    this.on('READ', Aeropuertos, req => {
+      const url = urlConApply(req);
+      if (url) return f4.send({ method: 'GET', path: url.replace(/^Aeropuertos/, 'xDMOxI_Airport_StdVH') });
+      return f4.run(req.query);
     });
 
     return super.init();

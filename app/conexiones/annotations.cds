@@ -182,3 +182,67 @@ annotate service.Vuelos with @(
   SeatsOccupied @Aggregation.default: #SUM;
   SeatsMax      @Aggregation.default: #SUM;
 };
+
+// ---------------------------------------------------------------------------
+// D50: value help de aeropuertos. El RAP los declara con @Common.ValueListReferences, que apuntan a
+// otro servicio ($metadata del F4) que la app no puede leer a través de CAP: se anulan y se define un
+// @Common.ValueList propio sobre la entidad Aeropuertos de ReporteService (columna "Value help" de la
+// tabla de semántica). R11 lo verifica.
+// ---------------------------------------------------------------------------
+annotate service.Conexiones with {
+  AirportFromId @Common.ValueListReferences: null
+                @Common.ValueList: {
+                  Label         : 'Aeropuertos',
+                  CollectionPath: 'Aeropuertos',
+                  Parameters    : [
+                    { $Type: 'Common.ValueListParameterInOut',       LocalDataProperty: AirportFromId, ValueListProperty: 'AirportID' },
+                    { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'Name'        },
+                    { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'City'        },
+                    { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'CountryCode' }
+                  ]
+                };
+  AirportToId   @Common.ValueListReferences: null
+                @Common.ValueList: {
+                  Label         : 'Aeropuertos',
+                  CollectionPath: 'Aeropuertos',
+                  Parameters    : [
+                    { $Type: 'Common.ValueListParameterInOut',       LocalDataProperty: AirportToId, ValueListProperty: 'AirportID' },
+                    { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'Name'        },
+                    { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'City'        },
+                    { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'CountryCode' }
+                  ]
+                };
+};
+
+// ---------------------------------------------------------------------------
+// Aeropuertos — columnas del diálogo del value help y textos en español (D40, D50). El F4 del RAP trae
+// el LineItem con el alias SAP__UI (D22) y los textos en inglés.
+// ---------------------------------------------------------------------------
+annotate service.Aeropuertos with @(
+  UI.LineItem : [
+    { $Type: 'UI.DataField', Label: 'Aeropuerto',  Value: AirportID   },
+    { $Type: 'UI.DataField', Label: 'Nombre',      Value: Name        },
+    { $Type: 'UI.DataField', Label: 'Ciudad',      Value: City        },
+    { $Type: 'UI.DataField', Label: 'País/región', Value: CountryCode }
+  ]
+) {
+  AirportID       @Common.Label: 'Aeropuerto'
+                  @Common.Heading: 'Aeropuerto'
+                  @Common.QuickInfo: 'Código del aeropuerto';
+  Name            @Common.Label: 'Nombre'
+                  @Common.Heading: 'Nombre'
+                  @Common.QuickInfo: 'Nombre del aeropuerto';
+  City            @Common.Label: 'Ciudad'
+                  @Common.Heading: 'Ciudad'
+                  @Common.QuickInfo: 'Ciudad del aeropuerto';
+  // D51: sin el F4 de país (I_CountryVH no se expone): se anula el ValueListMapping del RAP.
+  CountryCode     @Common.Label: 'País/región'
+                  @Common.Heading: 'País/región'
+                  @Common.QuickInfo: 'Clave del país o región del aeropuerto'
+                  @Common.ValueListMapping.Label: null
+                  @Common.ValueListMapping.CollectionPath: null
+                  @Common.ValueListMapping.Parameters: null;
+  CountryCodeText @Common.Label: 'Nombre país/región'
+                  @Common.Heading: 'País/región'
+                  @Common.QuickInfo: 'Nombre del país o región';
+};

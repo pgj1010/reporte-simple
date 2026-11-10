@@ -5,11 +5,16 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { readFileSync } from 'node:fs';
 import { raiz } from './helpers.ts';
 
 const RUTA_RAP = '/rap';
+/** F4 de aeropuertos (D50): mismo servidor, con la ruta de producción tal cual (D51, `;ps=…;va=…`). */
+const RUTA_F4 = '/f4' + JSON.parse(readFileSync(`${raiz}/package.json`, 'utf8'))
+  .cds.requires.I_AIRPORT_STDVH['[production]'].credentials.path;
 
-/** Respuesta del RAP simulado para una URL (relativa a la raíz del servicio, ya decodificada).
+/** Respuesta del RAP simulado para una URL (relativa a la raíz del servicio, ya decodificada; las del F4
+ *  de aeropuertos empiezan con `/f4/sap/opu/odata4/...`, la ruta completa).
  *  Si el objeto trae `__status`, se responde con ese código HTTP (p. ej. 501 como el Gateway). */
 export type Responder = (url: string) => unknown;
 
@@ -35,7 +40,8 @@ export async function iniciar(responder: Responder = respuestaVacia): Promise<En
   const recibidas: string[] = [];
   let bytes = 0;
   const rap = http.createServer((req, res) => {
-    const url = decodeURIComponent(req.url!.slice(RUTA_RAP.length));
+    const cruda = decodeURIComponent(req.url!);
+    const url = cruda.startsWith(RUTA_RAP + '/') ? cruda.slice(RUTA_RAP.length) : cruda;
     recibidas.push(url);
     const { __status, ...respuesta } = responder(url) as { __status?: number };
     const cuerpo = JSON.stringify(respuesta);
@@ -52,6 +58,9 @@ export async function iniciar(responder: Responder = respuestaVacia): Promise<En
       db: { kind: 'sqlite', credentials: { url: ':memory:' } },
       ZMAKS_SB_CONEXIONES: {                                 // en lugar de la destination S4_BACKEND
         credentials: { url: `http://localhost:${puerto}${RUTA_RAP}`, destination: null, path: null },
+      },
+      I_AIRPORT_STDVH: {
+        credentials: { url: `http://localhost:${puerto}${RUTA_F4}`, destination: null, path: null },
       },
     },
   };

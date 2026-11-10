@@ -22,6 +22,10 @@ describe('R6 — claves de las entidades', () => {
     assert.deepEqual(claves('Vuelos'), ['CarrierId', 'ConnectionId', 'FlightDate']);
   });
 
+  it('Aeropuertos: AirportID (D50)', () => {
+    assert.deepEqual(claves('Aeropuertos'), ['AirportID']);
+  });
+
   it('lectura de una Conexión por su clave completa', async () => {
     const { data } = await GET("/odata/v4/reporte/Conexiones(CarrierId='LH',ConnectionId='0400')", alice);
     assert.equal(data.CarrierId, 'LH');

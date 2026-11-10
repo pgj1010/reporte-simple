@@ -3,7 +3,7 @@
 Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos mock (`test/data/`) y se registra el resultado al final de cada prueba.
 
 > **Estado (cierre de la Etapa 2, 2026-11-09):** pasos definidos, **todavía no ejecutados**.
-> - R8 se ejecutó al cerrar la **Etapa 3** (2026-11-10, ver registro). Se repite en la **Etapa 4** si cambian los filtros o el value help de aeropuertos.
+> - R8 se ejecutó al cerrar la **Etapa 3** (2026-11-10, ver registro). **Se repite en la Etapa 4** (value help de aeropuertos, D50: pasos 6–6d).
 > - R9 y R14 se ejecutan al cerrar la **Etapa 4** (pasos actualizados el 2026-11-10). El drilldown a Vuelos ya funciona con el mock (R7, D25); desplegado se verifica en la Etapa 5.
 > - Si cambia la tabla de semántica en `SPEC.md`, actualizar aquí los resultados esperados.
 
@@ -15,7 +15,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 4. Abrir `Ctrl+Shift+P` → *Ports: Preview* → 4004 → `/conexiones/webapp/index.html`.
 5. Iniciar sesión con el usuario `alice`, sin contraseña.
 5b. Usar una **ventana normal** del navegador y **recarga forzada** (`Ctrl+Shift+R`) para no ver una versión en caché ni una variante guardada. **No usar incógnito:** con BAS se pierde la sesión del Dev Space.
-6. Datos mock esperados: **5 conexiones** y **5 vuelos** (`test/data/ZMAKS_SB_CONEXIONES-*.csv`). La conexión `LH 0402` no tiene vuelos (D28).
+6. Datos mock esperados: **5 conexiones**, **5 vuelos** y **5 aeropuertos** (`test/data/ZMAKS_SB_CONEXIONES-*.csv`). La conexión `LH 0402` no tiene vuelos (D28).
 
 ---
 
@@ -30,7 +30,10 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | 3 | Escribir en **Aeropuerto salida** un código que exista en `test/data/ZMAKS_SB_CONEXIONES-Conexiones.csv` (p. ej. `FRA`) y pulsar **Ir**. | Solo aparecen las conexiones con ese aeropuerto de salida (para `FRA`: `LH 0400` y `LH 0402`). |
 | 4 | Borrar el filtro anterior, escribir en **Aeropuerto destino** un código del CSV (p. ej. `JFK`) y pulsar **Ir**. | Solo aparecen las conexiones con ese destino (para `JFK`: `LH 0400` y `LH 0402`). |
 | 5 | Combinar salida y destino con valores que **no** coincidan en ninguna fila (p. ej. salida `FRA`, destino `SFO`). | La tabla queda vacía, con el mensaje de "sin datos" de Fiori, **sin error**. |
-| 6 | Pulsar el F4 (ayuda de valores) de **Aeropuerto salida**. | Hoy se espera que **no funcione**: el value help del RAP apunta a `/dmo/i_airport_stdvh`, que no se importó (ver SPEC, "Análisis del servicio origen"). Anotar el comportamiento observado. Se resuelve en la Etapa 4. |
+| 6 | Pulsar el F4 (ayuda de valores) de **Aeropuerto salida**. | Se abre el diálogo **Aeropuertos** con las columnas Aeropuerto · Nombre · Ciudad · País/región, en español, y los **5 aeropuertos** de `test/data` (también `MIA`, que no tiene conexiones: el F4 lista todos los aeropuertos, D50, D51). |
+| 6b | En el diálogo, escribir `Frankfurt` en el campo de búsqueda. | Queda solo `FRA` (búsqueda `$search`, D51). |
+| 6c | Seleccionar `FRA`, pulsar **Aceptar** e **Ir**. | El filtro Aeropuerto salida queda en `FRA` y la tabla muestra `LH 0400` y `LH 0402` (como el paso 3). |
+| 6d | Repetir 6 y 6c con **Aeropuerto destino** eligiendo `JFK`. | Mismo diálogo; la tabla muestra `LH 0400` y `LH 0402`. |
 
 > El antiguo paso 7 (revisar en DevTools que la URL sea relativa y que el `$filter` use `AirportFromId` / `AirportToId`) se quitó (D37): lo cubren el test de la regla 17 (D19), la verificación del proxy con curl (D21) y los pasos 3–4.
 

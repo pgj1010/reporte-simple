@@ -64,9 +64,10 @@ Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etap
 reporte-simple/
 ├── app/<reporte>/               # apps Fiori Elements (una por reporte)
 ├── srv/
-│   ├── external/<SERVICIO>.cds  # GENERADO por cds import — NO EDITAR
+│   ├── external/<SERVICIO>.cds  # GENERADO por cds import — NO EDITAR (también el F4 de aeropuertos, D49)
 │   ├── service.cds              # proyecciones expuestas + @requires/@restrict
 │   └── service.ts               # delegación de lecturas al servicio remoto
+├── scripts/limpiar-edmx-f4.ts   # copia de un .edmx F4 de RAP sin SAP__ParentService, para cds import (D49)
 ├── test/
 │   ├── data/*.csv               # datos mock: <SERVICIO>-<Entidad>.csv (solo dev/test)
 │   ├── *.test.ts                # tests automáticos (uno o más por regla de SPEC.md)
@@ -123,4 +124,5 @@ reporte-simple/
 - `cds.test` necesita `@cap-js/cds-test` y, para simular el servicio remoto, los argumentos `--with-mocks --in-memory`.
 - TypeScript 6+ ya no carga `@types/*` automáticamente: `tsconfig.json` declara `"types": ["node", "@cap-js/cds-types"]`. No mapear `@sap/cds` en `paths`: el runtime lo resolvería al `.d.ts`.
 - Los value helps del RAP (`@Common.ValueListReferences`) apuntan a **otros servicios** (p. ej. `/dmo/i_airport_stdvh`) que `cds import` no trae: el F4 no funciona en CAP hasta importar ese servicio o definir un `@Common.ValueList` propio.
+- **Importar un servicio F4 de RAP** (`/srvd_f4/...`): su `$metadata` referencia al servicio padre con el alias `SAP__ParentService` y `cds import` falla ("Could not resolve the schema SAP__ParentService…"). No editar el `.edmx` a mano: `node scripts/limpiar-edmx-f4.ts <original>.edmx <copia>.edmx` y `cds import <copia>.edmx --as cds --force` (D49). La ruta del F4 **necesita los parámetros de matriz** `;ps='srvd-<sd>-0001';va='<…campo>'` (sin ellos el Gateway responde error, D51). En CAP se expone como entidad `@readonly` del servicio y se anotan los campos con `@Common.ValueList` propio, anulando los `@Common.ValueListReferences` del RAP (D50).
 - Los servicios **RAP V4** importados traen el vocabulario UI con el alias **`SAP__UI`** (`$Type: 'SAP__UI.DataField'`, `'SAP__UI.ReferenceFacet'`) y CAP no lo reconoce: avisos `SAP__UI.* is not a known vocabulary type`, tabla del List Report **sin columnas** y Object Page vacía (solo funcionan `SelectionFields` y los `DataPoint`). Por eso las anotaciones `@UI` **siempre** se definen en `app/<reporte>/annotations.cds`, con tipos `UI.*`, a partir de la tabla de semántica (D22). No editar `srv/external`.

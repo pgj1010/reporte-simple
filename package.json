@@ -48,6 +48,22 @@
             "path": "/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd/sap/zmaks_sd_conexiones/0001"
           }
         }
+      },
+      "I_AIRPORT_STDVH": {
+        "kind": "odata",
+        "model": "srv/external/I_AIRPORT_STDVH",
+        "[production]": {
+          "credentials": {
+            "destination": "S4_BACKEND",
+            "path": "/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd_f4/dmo/i_airport_stdvh/0001;ps='srvd-zmaks_sd_conexiones-0001';va='com.sap.gateway.srvd.zmaks_sd_conexiones.v0001.et-zmaks_i_conexiones.airportfromid'"
+          }
+        },
+        "[hybrid]": {
+          "credentials": {
+            "destination": "S4_BACKEND",
+            "path": "/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd_f4/dmo/i_airport_stdvh/0001;ps='srvd-zmaks_sd_conexiones-0001';va='com.sap.gateway.srvd.zmaks_sd_conexiones.v0001.et-zmaks_i_conexiones.airportfromid'"
+          }
+        }
       }
     }
   },

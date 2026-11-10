@@ -21,8 +21,14 @@ describe('R5 — origen de los datos', () => {
       assert.equal(data['@odata.count'], 5);
     });
 
+    it('Aeropuertos devuelve las 5 filas del CSV (D50)', async () => {
+      const { data } = await GET('/odata/v4/reporte/Aeropuertos?$count=true&$top=0', alice);
+      assert.equal(data['@odata.count'], 5);
+    });
+
     it('el servicio remoto no tiene credenciales (usa el mock)', () => {
       assert.equal(cds.env.requires.ZMAKS_SB_CONEXIONES.credentials, undefined);
+      assert.equal(cds.env.requires.I_AIRPORT_STDVH.credentials, undefined);
     });
   });
 
@@ -33,6 +39,15 @@ describe('R5 — origen de los datos', () => {
       assert.deepEqual(JSON.parse(stdout), {
         destination: 'S4_BACKEND',
         path: '/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd/sap/zmaks_sd_conexiones/0001',
+      });
+    });
+
+    it('el F4 de aeropuertos usa la misma destination y la ruta con ;ps=…;va=… (D51, probada en GW_CLIENT)', async () => {
+      const { stdout } = await cdsCli(
+        ['env', 'get', 'requires.I_AIRPORT_STDVH.credentials', '--profile', 'production', '--json']);
+      assert.deepEqual(JSON.parse(stdout), {
+        destination: 'S4_BACKEND',
+        path: "/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd_f4/dmo/i_airport_stdvh/0001;ps='srvd-zmaks_sd_conexiones-0001';va='com.sap.gateway.srvd.zmaks_sd_conexiones.v0001.et-zmaks_i_conexiones.airportfromid'",
       });
     });
   });

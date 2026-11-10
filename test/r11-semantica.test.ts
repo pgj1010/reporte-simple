@@ -30,7 +30,7 @@ function tabla(encabezado: string): Record<string, string>[] {
 const sinComillas = (s: string) => s.replace(/`/g, '');
 const ruta = (v: unknown) => (v && typeof v === 'object' && '=' in v ? (v as { '=': string })['='] : v);
 
-interface Campo { campo: string; etiqueta: string; encabezado: string; ayuda: string; suma: boolean; filtro: boolean; obligatorio: boolean; orden?: number; texto?: string; moneda?: string; unidad?: string }
+interface Campo { campo: string; etiqueta: string; encabezado: string; ayuda: string; suma: boolean; filtro: boolean; obligatorio: boolean; orden?: number; texto?: string; moneda?: string; unidad?: string; valueHelp?: string }
 
 function semantica(encabezado: string): Campo[] {
   return tabla(encabezado).map((f) => {
@@ -43,6 +43,7 @@ function semantica(encabezado: string): Campo[] {
       filtro: f['Filtro'].includes('✅'), obligatorio: f['Obligatorio'].includes('✅'),
       orden: Number.isInteger(orden) ? orden : undefined,
       texto: de('texto'), moneda: de('moneda'), unidad: de('unidad'),
+      valueHelp: f['Value help'].match(/^`(\w+)`/)?.[1],
     };
   });
 }
@@ -50,6 +51,7 @@ function semantica(encabezado: string): Campo[] {
 const listas = {
   Conexiones: semantica('### Conexiones (List Report)'),
   Vuelos: semantica('### Vuelos (sección del detalle)'),
+  Aeropuertos: semantica('### Aeropuertos (value help'),
 };
 const detalle = tabla('### Página de detalle');
 const paginas = { Conexiones: 'Conexión', Vuelos: 'Vuelo' } as const;
@@ -144,9 +146,27 @@ for (const [nombre, campos] of Object.entries(listas)) {
       const def = entidad(nombre);
       for (const c of campos) assert.equal(def.elements[c.campo]['@Analytics.Measure'], undefined, `${c.campo}: @Analytics.Measure`);
       assert.equal(anotacion(def, '@Aggregation.ApplySupported'), undefined, 'ApplySupported activaría la analítica de Fiori');
+      if (!(nombre in tablas)) return; // Aeropuertos: solo se usa en el diálogo del value help, sin tabla en el manifest
       const tabla = tablaEnManifest(nombre as keyof typeof tablas);
       assert.equal(tabla?.type, 'ResponsiveTable', 'el Gateway no soporta concat/top/$count que pide la AnalyticalTable (D47)');
       assert.equal(tabla?.enableExport, true, 'exportar a Excel');
+    });
+
+    it('value help (columna Value help, D50): @Common.ValueList propio, sin ValueListReferences del RAP', () => {
+      const els = entidad(nombre).elements;
+      for (const c of campos) {
+        const vl = anotacion(els[c.campo], '@Common.ValueList');
+        assert.equal(els[c.campo]['@Common.ValueListReferences'] ?? undefined, undefined, `${c.campo}: ValueListReferences del RAP`);
+        assert.equal(anotacion(els[c.campo], '@Common.ValueListMapping')?.CollectionPath ?? undefined, undefined, `${c.campo}: ValueListMapping`);
+        if (!c.valueHelp) { assert.equal(vl, undefined, `${c.campo}: no lleva value help`); continue; }
+        const columnas = listas[c.valueHelp as keyof typeof listas]
+          .filter((v) => v.orden !== undefined).sort((a, b) => a.orden! - b.orden!).map((v) => v.campo);
+        assert.equal(vl?.CollectionPath, c.valueHelp, `${c.campo}: CollectionPath`);
+        assert.deepEqual(vl.Parameters.map((p: any) => ({ $Type: p.$Type, Local: ruta(p.LocalDataProperty), Prop: p.ValueListProperty })), [
+          { $Type: 'Common.ValueListParameterInOut', Local: c.campo, Prop: columnas[0] },
+          ...columnas.slice(1).map((v) => ({ $Type: 'Common.ValueListParameterDisplayOnly', Local: undefined, Prop: v })),
+        ], `${c.campo}: parámetros del value help`);
+      }
     });
 
     it('la tabla incluye todos los campos de la entidad (ningún texto del RAP sin traducir, D40)', () => {
@@ -157,7 +177,7 @@ for (const [nombre, campos] of Object.entries(listas)) {
     });
   });
 
-  describe(`R11 — ${nombre}: página de detalle = tabla de semántica`, () => {
+  if (nombre in paginas) describe(`R11 — ${nombre}: página de detalle = tabla de semántica`, () => {
     const filas = detalle.filter((f) => f['Página'] === paginas[nombre as keyof typeof paginas]);
     const fila = (elemento: string) => filas.find((f) => f['Elemento'].startsWith(elemento));
 
@@ -211,5 +231,7 @@ describe('R11 — $metadata publicado (D22)', () => {
     assert.ok(!xml.includes('SAP__UI'), 'el $metadata contiene tipos SAP__UI.* que Fiori no reconoce');
     assert.ok(!/Property="Target" Path=/.test(xml), 'hay facets con Target como Path en vez de AnnotationPath');
     assert.match(xml, /Property="Target" AnnotationPath="_Flight\/@UI.LineItem"/);
+    assert.ok(!xml.includes('ValueListReferences'), 'quedan ValueListReferences del RAP (apuntan a un $metadata que CAP no publica, D50)');
+    assert.ok(!xml.includes('ValueListMapping'), 'queda el ValueListMapping de país del F4 (I_CountryVH no se expone, D51)');
   });
 });
