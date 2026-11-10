@@ -15,7 +15,7 @@ describe('R4 — delegación al servicio remoto', () => {
     lecturasRemotas = [];
     if (espiaRegistrado) return;
     const remoto = await cds.connect.to('ZMAKS_SB_CONEXIONES');
-    remoto.prepend(() => remoto.before('READ', '*', req => { lecturasRemotas.push(req.target.name); }));
+    remoto.prepend(() => remoto.before('READ', '*', req => { lecturasRemotas.push(req.target?.name ?? `URL ${(req as unknown as { path: string }).path}`); }));
     espiaRegistrado = true;
   });
 
@@ -24,7 +24,13 @@ describe('R4 — delegación al servicio remoto', () => {
       const { status, data } = await GET(`/odata/v4/reporte/${entidad}`, alice);
       assert.equal(status, 200);
       assert.ok(data.value.length > 0);
-      assert.deepEqual(lecturasRemotas, [`ZMAKS_SB_CONEXIONES.${entidad}`]);
+      // Conexiones sin $select trae también los totales de la cabecera (R14): una lectura más al
+      // remoto, por URL ($apply sobre Vuelos). Tampoco se guarda copia: es otra lectura delegada.
+      // En el mock, esa URL se ejecuta como una lectura más de Vuelos (test/mock/rap.ts, leerUrl).
+      const totales = entidad === 'Conexiones'
+        ? [lecturasRemotas.find(l => l.startsWith('URL ')), 'ZMAKS_SB_CONEXIONES.Vuelos'] : [];
+      assert.deepEqual(lecturasRemotas, [`ZMAKS_SB_CONEXIONES.${entidad}`, ...totales]);
+      if (totales.length) assert.match(totales[0]!, /Vuelos\?\$apply=/);
     });
   }
 
