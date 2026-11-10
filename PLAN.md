@@ -189,6 +189,11 @@ Salida: el reporte se ve y navega como dice la tabla de semántica, con datos mo
 
 ### Decisiones de la etapa
 - D8 — Tabla "Semántica del reporte" como fuente de verdad de las anotaciones (decisión del usuario, tomada antes de iniciar la etapa).
+- D38 — Totales: `SUM` de `SeatsOccupied` y `SeatsMax` en Vuelos; `Price` y `Distance` sin total. Laboratorio del patrón de totales. Decisión del usuario.
+- D39 — Se quita la columna 8 "Medida". Decisión del usuario.
+- D40 — Traducir todas las etiquetas en inglés del RAP (alcance por confirmar). Decisión del usuario.
+- D41 — Exportar a Excel; tipo de tabla según los totales; drilldown y orden se mantienen. Decisión del usuario.
+- D42 — Value help: importar `/dmo/i_airport_stdvh`. Decisión del usuario (opción a).
 
 ## Etapa 5 — Despliegue a Cloud Foundry
 Rama: `etapa-5-despliegue`
@@ -280,3 +285,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-10 — R13: idioma de UI5 fijo en español (D34). D33: se compararon `[""]` sin sufijo y `i18n_es.properties` + `["es"]`; se eligió `[""]` (el tooling ya lo generaba, Fiori tools escribe en `i18n.properties`). El aviso de locales desapareció.
 - 2026-11-10 — D35: TS 7 rompía el lint de Fiori tools (se caía, no solo avisaba) → `typescript: "~6.0"`; lint dentro de `npm test` (2,6 s). `npm test` 97/97.
 - 2026-11-10 — R8 ejecutado por el usuario (1–5 ✔, F4 sin respuesta como se esperaba); paso 7 eliminado (D37). **Etapa 3 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 97/97, mutaciones R2/R3 2/2. Decisiones D19–D37. Etapa activa: 4.
+- 2026-11-10 — Etapa 3 mergeada a `main` (`21470e6`); rama `etapa-4-presentacion`. Decisiones de semántica del usuario D38–D42. Hallazgo: CAP no delega `$apply` al remoto (descarta `aggregate`, 500 con `groupby`); en el mock se pierden los alias de agregado. Prototipos de totales: (a) reenviar `$apply` al RAP, (b) calcular en el handler.
