@@ -1,7 +1,7 @@
 // R10 — Los mensajes de error visibles al usuario están en español.
 // D11: siempre en español, aunque el navegador pida otro idioma.
 import cds from '@sap/cds';
-import { describe, it } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 
 const raiz = import.meta.dirname + '/..';
@@ -44,6 +44,45 @@ describe('R10 — mensajes de error en español', () => {
       });
     });
   }
+
+  describe('D27 — errores 5xx: en producción, sin detalles técnicos y en español', () => {
+    // Un fallo inesperado del servicio remoto (en el mock) provoca un 500. CAP decide sanitizar
+    // al responder (NODE_ENV=production), así que basta con fijarlo solo durante la petición.
+    const FALLO = 'fallo técnico simulado (no debe llegar al usuario)';
+    let fallar = false;
+    before(async () => {
+      const rap = await cds.connect.to('ZMAKS_SB_CONEXIONES');
+      rap.prepend(() => rap.before('READ', () => { if (fallar) throw new Error(FALLO); }));
+    });
+    const conFallo = async (produccion: boolean) => {
+      const previo = process.env.NODE_ENV;
+      fallar = true;
+      if (produccion) process.env.NODE_ENV = 'production';
+      try {
+        return await error(test.GET('/odata/v4/reporte/Conexiones', { auth, headers: { 'Accept-Language': 'en' } }));
+      } finally {
+        fallar = false;
+        if (previo === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previo;
+      }
+    };
+
+    it('NODE_ENV=production → 500 "Error interno del servidor", sin el detalle técnico', async () => {
+      const { status, message } = await conFallo(true);
+      assert.equal(status, 500);
+      assert.equal(message, 'Error interno del servidor');
+    });
+
+    it('en desarrollo el 500 muestra el detalle técnico de CAP (ayuda para depurar)', async () => {
+      const { status, message } = await conFallo(false);
+      assert.equal(status, 500);
+      assert.equal(message, FALLO);
+    });
+
+    it('después del fallo simulado, el servicio responde normal', async () => {
+      const { status } = await test.GET('/odata/v4/reporte/Conexiones', { auth });
+      assert.equal(status, 200);
+    });
+  });
 
   it('todas las claves de mensajes de CAP tienen texto propio en _i18n/messages_es.properties', async () => {
     const { readFileSync } = await import('node:fs');
