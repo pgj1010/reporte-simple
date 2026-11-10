@@ -46,7 +46,7 @@ describe('R2 — solo lectura', () => {
 
       it('después de los intentos, los datos siguen iguales', async () => {
         const { data } = await GET(`${coleccion}?$count=true&$top=0`, alice);
-        assert.equal(data['@odata.count'], entidad === 'Conexiones' ? 4 : 5);
+        assert.equal(data['@odata.count'], 5); // filas de test/data (Conexiones incluye LH 0402, sin vuelos)
         const { data: fila } = await GET(registro, alice);
         assert.notEqual(fila.CarrierName, 'cambiado');
       });

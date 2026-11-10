@@ -10,6 +10,11 @@ server:
       afterMiddleware: compression
       configuration:
         ignoreCertErrors: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
+        # D21: solo desarrollo. La app usa la ruta relativa "odata/v4/reporte/" (regla 17), que en local
+        # resuelve a /conexiones/odata/...; este backend la reenvía al servicio CAP en /odata/...
+        backend:
+          - path: /odata
+            url: http://localhost:4004
         ui5:
           path:
             - /resources

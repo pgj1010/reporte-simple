@@ -15,12 +15,13 @@
     "@cap-js/sqlite": "^3",
     "@types/node": "^24.0.0",
     "cds-plugin-ui5": "^0.17.0",
-    "typescript": "^7.0.0"
+    "typescript": "~6.0"
   },
   "scripts": {
     "start": "cds-serve",
     "watch-conexiones": "CDS_TYPESCRIPT=false cds watch --open conexiones/index.html?sap-ui-xx-viewCache=false --livereload false",
     "test": "CDS_PLUGIN_UI5_ACTIVE=false node --test 'test/**/*.test.ts'",
+    "lint": "npm run lint --workspaces --if-present",
     "pretest": "cds-typer '*' --outputDirectory @cds-models",
     "watch": "CDS_TYPESCRIPT=false cds watch",
     "pretest:mutacion": "cds-typer '*' --outputDirectory @cds-models",

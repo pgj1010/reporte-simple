@@ -21,5 +21,9 @@
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "rewriteRelativeImportExtensions": true
-  }
+  },
+  "include": [
+    "srv",
+    "@cds-models"
+  ]
 }

@@ -11,9 +11,9 @@ const { GET } = iniciar();
 
 describe('R5 — origen de los datos', () => {
   describe('desarrollo / test: datos mock de test/data/', () => {
-    it('Conexiones devuelve las 4 filas del CSV', async () => {
+    it('Conexiones devuelve las 5 filas del CSV', async () => {
       const { data } = await GET('/odata/v4/reporte/Conexiones?$count=true&$top=0', alice);
-      assert.equal(data['@odata.count'], 4);
+      assert.equal(data['@odata.count'], 5);
     });
 
     it('Vuelos devuelve las 5 filas del CSV', async () => {
@@ -67,6 +67,10 @@ describe('R5 — origen de los datos', () => {
 
     it('no contiene test/data', () => {
       assert.deepEqual(archivos.filter(f => /(^|\/)test\/data(\/|$)/.test(f)), []);
+    });
+
+    it('no contiene el mock del RAP (test/mocked.js ni test/mock/, D25)', () => {
+      assert.deepEqual(archivos.filter(f => /(^|\/)test\/(mocked\.js$|mock(\/|$))/.test(f)), []);
     });
   });
 });
