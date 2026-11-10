@@ -8,3 +8,11 @@ service ReporteService {
   @readonly
   entity Vuelos     as projection on external.Vuelos;
 }
+
+// R12 / D31: el RAP publica Price con Scale="variable" (los decimales dependen de la moneda), pero
+// `cds import` lo deja como Decimal(precision: 16), es decir escala 0, y Fiori mostraría 423 USD en vez
+// de 422.94 USD. Se corrige solo el $metadata publicado (no cambia lo que se pide al RAP) y sin editar
+// srv/external. @odata.Scale solo tiene efecto junto con @odata.Type.
+annotate ReporteService.Vuelos with {
+  Price @odata.Type: 'Edm.Decimal' @odata.Precision: 16 @odata.Scale: 'variable';
+}
