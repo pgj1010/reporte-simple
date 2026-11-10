@@ -15,6 +15,7 @@ Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etap
 2. Si una regla admite dos interpretaciones que producen datos distintos, **pregunta**.
 3. Cada etapa se trabaja en **su propia rama** (`etapa-N-<nombre>`); el merge a `main` se hace después de la revisión del usuario.
 4. Al terminar cada paso: corre `npm test`, muestra el resultado y actualiza `PLAN.md`.
+4b. Con `npm test` en verde, haz **un commit por paso** en la rama de la etapa (mensaje: `etapa N: <qué se hizo> (<decisiones>)`). Nunca merge a `main` sin la revisión del usuario al cierre de la etapa.
 5. **Nunca ejecutes `cf deploy` sin aprobación explícita.**
 
 ### Decisiones
@@ -42,6 +43,7 @@ Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etap
 - **Proyecto:** `/home/user/projects/reporte-simple` (abrir esta carpeta como raíz del workspace).
 - **CAP:** `@sap/cds` 10.x, `@sap/cds-dk` 10.x global, Node 24.
 - **Módulos:** `"type": "module"` → ESM (`import` / `export default`). Nunca `require` ni `module.exports`.
+- **TypeScript nativo de Node 24 (D13):** sin `tsx` ni `ts-node`. Solo sintaxis borrable (`erasableSyntaxOnly`: nada de `enum`, `namespace` ni parameter properties); `import type` para tipos (`verbatimModuleSyntax`); imports relativos con extensión `.ts`. Revisar tipos con `npx tsc --noEmit`.
 - **Cloud Foundry:** API `<CF_API>`, org `<CF_ORG>`, space `dev`. Login con `cf login --sso`.
 
 ## Sistema origen (RAP)
@@ -92,14 +94,15 @@ reporte-simple/
 
 | Modo | Comando | Datos |
 |---|---|---|
-| Local (default) | `cds watch` | CSV en `test/data/` |
+| Local (default) | `npm run watch` (= `CDS_TYPESCRIPT=false cds watch`) | CSV en `test/data/` |
 | Tests | `npm test` | CSV en `test/data/` |
 | Desplegado | `mbt build && cf deploy mta_archives/*.mtar` (**solo con aprobación**) | RAP real vía destination + connectivity |
 
 - Si el puerto 4004 está ocupado: `pkill -f "cds"` y volver a arrancar. Solo un `cds watch` a la vez.
 - Abrir: `Ctrl+Shift+P` → *Ports: Preview* → 4004. Usuario mock: `alice` sin contraseña.
 - Servicio: `/odata/v4/reporte/<Entidad>`. App: `/<reporte>/webapp/index.html`.
-- Logs de llamadas remotas: `DEBUG=remote cds watch`.
+- Logs de llamadas remotas: `DEBUG=remote npm run watch`.
+- ⚠️ Un `cds watch` a secas también funciona, pero imprime `Error: detected tsconfig.json, but could not run with 'tsx'`. Es inofensivo: **no** instalar `tsx` como sugiere el mensaje (ver Lecciones aprendidas).
 
 ## Lecciones aprendidas (no repetir)
 
@@ -110,4 +113,8 @@ reporte-simple/
 - El 404 en `/odata/v4/zmaks-sb-conexiones/...` es normal fuera de modo mock; usar siempre `/odata/v4/reporte/...`.
 - La asociación `_Flight` se importó sin condición `on` (`{ }`); revisar antes de depender del `$expand` en la página de detalle.
 - El generador de Fiori suele crear rutas absolutas (`/odata/v4/...`) → corregir a relativas (regla 17).
+- **`tsx` + `cds-plugin-ui5` agota la memoria** (~2 GB en ~12 s) tanto en `cds watch` como en `node:test`. Por eso el proyecto usa TypeScript nativo de Node 24 (D13) y no tiene `tsx`. `CDS_TYPESCRIPT=false` no se puede fijar con `.env` ni en `package.json` (cds-dk lo lee de `process.env` antes de cargar la configuración): va en los scripts `npm run watch` / `watch-conexiones` y en `.vscode/`.
+- Con el plugin UI5 activo, `node --test` no termina (el livereload deja el proceso abierto): `npm test` corre con `CDS_PLUGIN_UI5_ACTIVE=false` (D12).
+- `cds.test` necesita `@cap-js/cds-test` y, para simular el servicio remoto, los argumentos `--with-mocks --in-memory`.
+- TypeScript 6+ ya no carga `@types/*` automáticamente: `tsconfig.json` declara `"types": ["node", "@cap-js/cds-types"]`. No mapear `@sap/cds` en `paths`: el runtime lo resolvería al `.d.ts`.
 - Los value helps del RAP (`@Common.ValueListReferences`) apuntan a **otros servicios** (p. ej. `/dmo/i_airport_stdvh`) que `cds import` no trae: el F4 no funciona en CAP hasta importar ese servicio o definir un `@Common.ValueList` propio.

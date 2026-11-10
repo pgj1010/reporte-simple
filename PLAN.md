@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 2
+**Etapa activa:** 3
 
 ---
 
@@ -33,34 +33,80 @@ Salida: `/odata/v4/reporte/Conexiones` y `/Vuelos` devuelven los datos de los CS
 - D4 — No usar `hybrid` desde BAS para datos reales.
 - D5 — `native_fetch: false`.
 
-## Etapa 2 — Alineación con reglas del equipo
+## Etapa 2 — Alineación con reglas del equipo ✅
 Rama: `etapa-2-alineacion`
-- [ ] Inicializar Git, primer commit en `main` con lo actual; crear rama de la etapa
-- [ ] Migrar a TypeScript: `cds add typescript`, `service.js` → `service.ts`, tipos con cds-typer
-- [ ] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan
-- [ ] Verificar que `cds build --production` **no** incluye `test/data`
-- [ ] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3)
-- [ ] Configurar `npm test` (`cds.test` + `node:test` + `tsx`, D6)
-- [ ] Tests para R1, R2, R3, R4, R5, R6, R10
-- [ ] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar)
-- [ ] Crear `test/PRUEBAS_MANUALES.md` (R8, R9)
+- [x] Inicializar Git, primer commit en `main` con lo actual (incluye `app/conexiones` ya generada); crear rama de la etapa
+- [x] Configurar `npm test` (`cds.test` + `node:test`; `tsx` descartado por D13) — adelantado (D9). Requiere `@cap-js/cds-test`; arranque con `--with-mocks --in-memory`; plugin UI5 desactivado en tests (D12)
+- [x] Migrar a TypeScript: `cds add typescript`, `service.js` → `service.ts`, tipos con cds-typer (`pretest` los genera). TypeScript nativo de Node 24, sin `tsx` (D13)
+- [x] Mover CSV de `srv/external/data/` a `test/data/` y verificar que `cds watch` y los tests los cargan (4 conexiones, 5 vuelos: `init from test/data/...`)
+- [x] Verificar que `cds build --production` **no** incluye `test/data` (sin CSV ni carpetas `test/`/`data/`; perfil `production` → destination `S4_BACKEND`, desarrollo → mock)
+- [x] Agregar `@requires: 'authenticated-user'` a `ReporteService` (R3) — sin usuario 401, con `alice` 200 (test + `npm run watch`)
+- [x] Mensajes siempre en español (R10, D11, D15): `srv/server.ts` + `_i18n/messages_es.properties`. Los textos fijos del parser OData de CAP quedan fuera de R10 (D17)
+- [x] Tests para R1, R2, R3, R4, R5, R6, R10 — `test/r<N>-*.test.ts` (uno por regla) + `test/helpers.ts`. R5 incluye el build (D14); R4 según D16
+- [x] Pruebas de mutación de R2 y R3 (quitar `@readonly` / `@requires` → el test debe fallar): manual en el árbol real + `npm run test:mutacion` (D10 ampliada). R2 requirió D18
+- [x] Crear `test/PRUEBAS_MANUALES.md` (R8, R9): pasos y resultados esperados definidos; se ejecutan en las Etapas 3 (R8) y 4 (R9)
 
 Salida: `npm test` en verde; mutaciones detectadas; `cds watch` sigue mostrando los datos mock.
 
 ### Decisiones de la etapa
-- D7 — Cada reporte es un proyecto CAP independiente (decisión del usuario).
+Heredadas (tomadas antes de iniciar la etapa):
 - D1 — Clean core flexible (aprobado por el usuario).
 - D2 — Migrar a TypeScript ahora (aprobado por el usuario).
 - D3 — Mutación solo para R2 y R3 (aprobado por el usuario).
-- D6 — `node:test` + `tsx` para los tests.
+- D6 — ~~`node:test` + `tsx` para los tests.~~ **Reemplazada por D13.**
+- D7 — Cada reporte es un proyecto CAP independiente (decisión del usuario).
+
+Tomadas durante la etapa (en el orden en que se tomaron):
+- D9 — `npm test` se configura en el paso 2 (antes de la migración a TS) para cumplir la regla 4 desde el inicio. Propuesta propia, aprobada.
+- D10 — Mutación en script aparte (`npm run test:mutacion`) sobre una copia temporal del proyecto; nunca modifica los archivos reales. Propuesta propia, aprobada.
+  - **Ampliada (decisión del usuario, opción B):** la primera vez, además, mutación **manual** en el árbol real (editar → `npm test` en rojo → `git checkout` → `npm test` en verde → `git diff` vacío), una mutación a la vez. El script hace un control sin mutar, comprueba que la mutación cambió el archivo, corre solo los tests de la regla y verifica por hash que el archivo real no cambió.
+- D11 — R10: mensajes **siempre en español, sin importar el idioma del navegador**. Decisión del usuario. Si fuera al revés: un navegador en inglés vería los errores en inglés; para reportes de clientes con otros idiomas habría que revisar D11 y D15 juntas.
+- D12 — `npm test` corre con `CDS_PLUGIN_UI5_ACTIVE=false`: con el plugin UI5 el proceso de test no termina (y con `tsx` se caía por memoria); los tests cubren el servicio OData, no la app. Propia.
+- D13 — TypeScript nativo de Node 24, sin `tsx` (reemplaza a D6). `tsx` + `cds-plugin-ui5` agota la memoria en `cds watch` y en tests. `npm run watch` = `CDS_TYPESCRIPT=false cds watch` (no se puede fijar por `.env` ni `package.json`). `tsconfig`: `erasableSyntaxOnly`, `verbatimModuleSyntax`, `rewriteRelativeImportExtensions`. Propuesta propia, aprobada por el usuario con esos ajustes.
+- D14 — El test de R5 corre `cds build --production` **dentro de `npm test`** (~2 s), sin script aparte. Si llegara a pasar de ~15 s, se separaría en `npm run test:build`. Propia.
+- D15 — R10 se implementa con (1) un middleware en `srv/server.ts` que fija `req.locale = 'es'` en toda petición y (2) `_i18n/messages_es.properties` con **todas** las claves de `@sap/cds/_i18n/messages.properties` traducidas (un test vigila que no falte ninguna). Propia.
+- D16 — R4 "CAP no guarda copia" se prueba así: (a) cada GET llega al servicio remoto; (b) el DDL del perfil `production` no crea tablas ni vistas para `ReporteService` ni `ZMAKS_SB_CONEXIONES`; (c) en desarrollo `ReporteService_*` son **vistas** sobre el mock del remoto. Propia, aprobada por el usuario.
+- D17 — R10 excluye los textos fijos del parser OData de CAP (solo aparecen con URLs manuales, no desde la app Fiori). Decisión del usuario.
+- D18 — El test de R2 exige además el código `ENTITY_IS_READ_ONLY` (no solo el 405): el RAP ya trae `Insertable/Updatable/Deletable: false` y sin `@readonly` CAP rechaza igual con `ENTITY_IS_NOT_CRUD`, así que el 405 solo no detectaba la mutación. Decisión del usuario (opción A).
+- Criterio de proceso (usuario): un commit por paso con `npm test` en verde → regla de proceso 4b de `CLAUDE.md`.
+
+### Informe de cierre — Etapa 2 (2026-11-09)
+
+**Resultado:** `npm test` **43/43** en verde (R1, R2, R3, R4, R5, R6, R10 + arranque); `npm run test:mutacion` **2/2** mutaciones detectadas (R2, R3); `npm run watch` sirve los datos mock (4 conexiones, 5 vuelos) y la app (`/conexiones/index.html` → 200) sin errores de memoria. Rama `etapa-2-alineacion` con un commit por paso; **sin merge a `main`** (pendiente de revisión del usuario).
+
+**Decisiones tomadas por mi cuenta** (propuestas por Claude; se indica si el usuario las aprobó después):
+
+| ID | Decisión | Regla que afecta | Qué pasaría si fuera al revés |
+|---|---|---|---|
+| D9 | Configurar `npm test` antes de migrar a TS (aprobada) | Proceso 4 | Los pasos 3 a 7 se habrían cerrado sin `npm test`, incumpliendo la regla 4. |
+| D10 | Mutación en script sobre copia temporal (aprobada; ampliada por el usuario) | Técnicas 13 y 14, D3 | Mutando los archivos reales dentro de `npm test`, una ejecución cortada podría dejar `service.cds` sin `@readonly`/`@requires`; además `npm test` sería más lento. |
+| D12 | `npm test` con el plugin UI5 desactivado | Técnica 13 | Con el plugin, `node --test` no termina (livereload abierto); la app se valida con las pruebas manuales R8/R9. |
+| D13 | TypeScript nativo de Node 24, sin `tsx` (aprobada con ajustes) | Técnicas 9 y 13, D6 | Con `tsx`, `cds watch` y `npm test` se caen por memoria al cargar `cds-plugin-ui5`: habría que elegir entre app Fiori o TypeScript en local. El costo de D13: no se puede usar sintaxis TS no borrable (`enum`, `namespace`), lo que `tsc` detecta. |
+| D14 | Build de producción dentro de `npm test` | R5, técnica 13 | En un script aparte, un CSV colado en el build pasaría `npm test` sin ser detectado si nadie corre el otro script. |
+| D15 | `srv/server.ts` fija `req.locale = 'es'` + todas las claves de CAP traducidas | R10, regla 16, técnica 12 | Con solo `default_language: es`, un navegador en inglés recibiría los errores en inglés; traduciendo solo algunas claves, un error no previsto saldría en inglés. Efecto colateral aceptado: las etiquetas de `$metadata` también quedan en español. |
+| D16 | R4 se prueba con el DDL de producción + vistas en desarrollo (aprobada) | R4 | Exigir "ninguna tabla" también en desarrollo haría R4 incompatible con el mock de R5 (CAP simula el remoto con tablas SQLite). |
+
+Decisiones del usuario en esta etapa: D11, D17, D18, la ampliación de D10 y el criterio de commit por paso (regla 4b). Detalle completo en `SPEC.md` → Decisiones.
+
+**Correcciones durante la etapa** (no son decisiones, pero cambiaron lo hecho):
+- El test de R5 fallaba de forma intermitente con `cds build -o` (dos tareas escribiendo el mismo `package.json`); ahora usa `CDS_BUILD_TARGET` relativo (`_out/`), que es el mismo camino que el despliegue.
+- El test de R2 solo con 405 no detectaba la mutación de `@readonly` → D18.
+
+**Pendientes para próximas etapas** (también anotados en cada etapa):
+- **Etapa 3:** la app `app/conexiones` ya existe (generada antes de la etapa): revisarla en vez de regenerarla · `manifest.json` con ruta absoluta `/odata/v4/reporte/` (regla 17) · asociación `_Flight` sin condición `on` (R7) · TypeScript 7 vs `typescript-eslint` de la app (`<6.1`) · ejecutar R8 de `test/PRUEBAS_MANUALES.md` · arrancar siempre con `npm run watch` (D13).
+- **Etapa 4:** avisos del build `SAP__UI.* is not a known vocabulary type` (vienen de `srv/external`, generado) · value help de aeropuertos · ejecutar R9 de `test/PRUEBAS_MANUALES.md` · decidir medidas/totales y drilldown.
+- **Etapa 5:** el build compila **todo** el TS (falta `include` en `tsconfig.json`): los tests compilados terminan en `gen/srv/test/` y viajarían a producción · confirmar que `srv/service.ts`, `srv/server.ts` y `@cds-models` quedan compilados en `gen/srv` · no usar `cds build -o` (otra estructura, sin compilar TS) ni `CDS_BUILD_TARGET` absoluto (`tsc` escribe dentro del proyecto) · artefactos HANA (`cds.outbox.Messages`) sin base de datos propia · verificar con XSUAA que el 401 sale por la clave traducida ("No autenticado") · los tests de R4/R5 usan el `cds` de cds-dk **global**: tenerlo en cuenta si se agrega CI.
 
 ## Etapa 3 — App Fiori Elements (List Report + Object Page)
 Rama: `etapa-3-fiori`
-- [ ] Generar app con *Fiori: Open Application Generator* → List Report, CAP local, entidad `Conexiones` → `app/conexiones`
+- [ ] ~~Generar app~~ La app `app/conexiones` ya fue generada (2026-11-09, antes de la Etapa 2; List Report V4, `Conexiones` + `_Flight`): **revisarla** en lugar de regenerarla
 - [ ] Corregir rutas del `manifest.json` a **relativas** (`odata/v4/reporte/`)
 - [ ] Verificar tabla, filtros (R8) y textos heredados del RAP
 - [ ] Resolver la asociación `_Flight` (condición `CarrierId` + `ConnectionId`) para que el detalle muestre vuelos (R7)
 - [ ] Probar drilldown a la página de detalle
+- [ ] Ejecutar R8 de `test/PRUEBAS_MANUALES.md` y registrar el resultado
+- [ ] Arrancar siempre con `npm run watch` (D13); no instalar `tsx`
+- [ ] **Pendiente (de Etapa 2):** `cds add typescript` instaló TypeScript 7 y `@sap-ux/eslint-plugin-fiori-tools` (vía `typescript-eslint`) pide `typescript <6.1`. Afecta solo al lint de la app; decidir cómo resolverlo
 
 Salida: la app abre, lista las conexiones mock y navega al detalle con sus vuelos; `npm test` en verde.
 
@@ -76,7 +122,8 @@ Rama: `etapa-4-presentacion`
 - [ ] Test R11: anotaciones efectivas = tabla de semántica
 - [ ] Decidir drilldown (sí/no, hasta qué nivel) en `manifest.json`
 - [ ] Opcional: exportar a Excel, variantes, tabla responsive vs grid
-- [ ] Actualizar `test/PRUEBAS_MANUALES.md` (R8, R9)
+- [ ] Actualizar y ejecutar `test/PRUEBAS_MANUALES.md` (R8, R9), registrando el resultado
+- [ ] **Pendiente (de Etapa 2):** avisos del build `SAP__UI.* is not a known vocabulary type` (vienen de `srv/external`, generado — no editar): evaluar si afectan las anotaciones efectivas
 
 Salida: el reporte se ve y navega como dice la tabla de semántica, con datos mock; R11 en verde.
 
@@ -89,6 +136,10 @@ Rama: `etapa-5-despliegue`
 - [ ] Roles en `xs-security.json` coherentes con `@requires` / `@restrict`
 - [ ] Reutilizar o crear instancias `destination` / `connectivity` (lite)
 - [ ] Configuración de despliegue de la app Fiori (HTML5 repo)
+- [ ] Verificar que `cds build --production` compila el TypeScript correctamente sin `tsx` (`gen/srv` con `service.js`, imports `#cds-models` resueltos, sin `.ts` en el runtime) — D13. **Hallazgo 2026-11-09 (Etapa 2):** con `cds build -o <dir>` el build copia `srv/service.ts` sin compilar y no incluye `@cds-models`. Con el destino normal (`gen/`, o `CDS_BUILD_TARGET` **relativo**) sí compila el TS, pero como `tsconfig.json` no tiene `include`, compila **todo** el proyecto: los tests (`test/*.test.js`) terminan en `gen/srv/test/` y viajarían a producción. Con un `CDS_BUILD_TARGET` absoluto, `tsc` escribe dentro del proyecto (`./tmp/...`). Revisar `include` / un `tsconfig` de build. También genera artefactos HANA (`src/gen`, `cds.outbox.Messages`) aunque el reporte no tiene base de datos propia: revisar si hacen falta
+- [ ] Agregar `include` a `tsconfig.json` (o un tsconfig de build) para que los tests no viajen a producción (`gen/srv/test/`)
+- [ ] Verificar con XSUAA que el 401 sale por la clave i18n traducida ("No autenticado")
+- [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global
 - [ ] `mbt build` y **pedir aprobación** antes de `cf deploy`
 - [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
 - [ ] Confirmar en Cloud Connector → Monitor que llegan las peticiones
@@ -148,4 +199,11 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-09 — Etapas 0 y 1 completas. `hybrid` desde BAS no llega al on‑premise (ni con túnel SSH); plan B: mock local + pruebas reales desplegando.
 - 2026-11-09 — Se adoptan las reglas del equipo. Aprobados: TypeScript (D2), mutación solo en R2/R3 (D3), clean core flexible (D1). Nueva Etapa 2 de alineación; la app Fiori pasa a Etapa 3.
 - 2026-11-09 — D7: cada reporte será un proyecto CAP independiente con su propio proyecto en Claude. La Etapa 7 pasa a ser "plantilla" en vez de "segundo reporte dentro de este proyecto".
+- 2026-11-09 — Etapa 2 iniciada: Git inicializado (commit `dfdccd6` en `main`), rama `etapa-2-alineacion`. CAP no traduce `ENTITY_IS_READ_ONLY` al español → textos propios (D11).
+- 2026-11-09 — Etapa 2, paso 3: `tsx` + `cds-plugin-ui5` agota la memoria → TypeScript nativo de Node 24 (D13, reemplaza a D6).
+- 2026-11-09 — Criterio del usuario: un commit por paso con `npm test` en verde (regla de proceso 4b de CLAUDE.md).
+- 2026-11-09 — Etapa 2, pasos 4 y 5: CSV en `test/data/`; el build de producción no los incluye. El build deja `service.ts` sin compilar (pendiente de Etapa 5). Avisos `SAP__UI.* is not a known vocabulary type` en el build, provenientes de `srv/external` (generado, no se edita): revisar en Etapa 4.
+- 2026-11-09 — Etapa 2: tests R1, R2, R4, R6 (43/43). Hallazgo: `cds build` ejecuta `tsc` y falla ante errores de tipos (bueno para la Etapa 5).
+- 2026-11-09 — Etapa 2: el test de R5 fallaba de forma intermitente con `cds build -o` (dos tareas escriben el mismo `package.json`). Ahora usa `CDS_BUILD_TARGET=_out/r5-build-<pid>`, el mismo camino que el despliegue.
+- 2026-11-09 — **Etapa 2 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 43/43, mutaciones R2/R3 detectadas (manual y `npm run test:mutacion`). Decisiones D9–D18; D6 reemplazada por D13. Etapa activa: 3.
 - 2026-11-09 — D8: tabla "Semántica del reporte" como fuente de verdad de anotaciones (filtros, obligatorios, columnas, medidas, textos, value helps), para servicios que no vienen enriquecidos. Nueva regla R11 y sección "Análisis del servicio origen". Se detecta que el value help de aeropuertos no funciona en CAP (apunta a otro servicio). Etapa 7 se amplía a "generalización" por pedido del usuario.
