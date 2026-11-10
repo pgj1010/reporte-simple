@@ -187,13 +187,15 @@ annotate service.Vuelos with @(
 // D50: value help de aeropuertos. El RAP los declara con @Common.ValueListReferences, que apuntan a
 // otro servicio ($metadata del F4) que la app no puede leer a través de CAP: se anulan y se define un
 // @Common.ValueList propio sobre la entidad Aeropuertos de ReporteService (columna "Value help" de la
-// tabla de semántica). R11 lo verifica.
+// tabla de semántica). R11 lo verifica. D52: con SearchSupported, Fiori manda la búsqueda del diálogo como
+// $search (sin él, escribir en la búsqueda no filtraba, R8 6b).
 // ---------------------------------------------------------------------------
 annotate service.Conexiones with {
   AirportFromId @Common.ValueListReferences: null
                 @Common.ValueList: {
                   Label         : 'Aeropuertos',
                   CollectionPath: 'Aeropuertos',
+                  SearchSupported: true, // D52: la búsqueda del diálogo se envía como $search
                   Parameters    : [
                     { $Type: 'Common.ValueListParameterInOut',       LocalDataProperty: AirportFromId, ValueListProperty: 'AirportID' },
                     { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'Name'        },
@@ -205,6 +207,7 @@ annotate service.Conexiones with {
                 @Common.ValueList: {
                   Label         : 'Aeropuertos',
                   CollectionPath: 'Aeropuertos',
+                  SearchSupported: true, // D52: la búsqueda del diálogo se envía como $search
                   Parameters    : [
                     { $Type: 'Common.ValueListParameterInOut',       LocalDataProperty: AirportToId, ValueListProperty: 'AirportID' },
                     { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'Name'        },

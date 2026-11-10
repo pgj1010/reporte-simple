@@ -43,7 +43,8 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
 | 2026-11-10 | 3 | Usuario | ✔ pasos 1–5 · paso 6 según lo esperado | 5 conexiones; filtros visibles; `FRA` y `JFK` devuelven LH 0400 y LH 0402; FRA→SFO vacía sin error. Paso 6: al pulsar el F4 de Aeropuerto salida no pasa nada (esperado: value help de `/dmo/i_airport_stdvh` no importado, se resuelve en la Etapa 4). |
-| 2026-11-10 | 4 | Usuario | ✔ pasos 1, 6, 6c, 6d | Lista con 5 conexiones. F4 de Aeropuerto salida abre la lista; elegir `FRA` da LH 0400 y LH 0402. F4 de Aeropuerto destino con `JFK` da LH 0400 y LH 0402. **No reportados:** 6b (búsqueda `Frankfurt`, `$search`, D51) y el detalle del paso 6 (columnas del diálogo, 5 aeropuertos con `MIA`); 2–5 ya ✔ en la Etapa 3. |
+| 2026-11-10 | 4 | Usuario | ✔ pasos 1, 6, 6c, 6d | Lista con 5 conexiones. F4 de Aeropuerto salida abre la lista; elegir `FRA` da LH 0400 y LH 0402. F4 de Aeropuerto destino con `JFK` da LH 0400 y LH 0402. **No reportados:** el detalle del paso 6 (columnas del diálogo, 5 aeropuertos con `MIA`); 2–5 ya ✔ en la Etapa 3. |
+| 2026-11-10 | 4 | Usuario | ✖ paso 6b | En el diálogo del F4, escribir `Frankfurt` o `FRA` no encuentra FRA: quedan todos los valores. Directo en el campo del filtro da error por tener 3 caracteres (esperado). Elegir a mano funciona. **Causa (Claude):** faltaba `SearchSupported: true` en el `@Common.ValueList` (el servicio sí resuelve `$search`) → **corregido (D52)**, R11 lo vigila. **Pendiente: repetir 6b** en el navegador; contra el RAP real, en la Etapa 5. |
 
 ---
 

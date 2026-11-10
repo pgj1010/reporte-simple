@@ -162,6 +162,10 @@ for (const [nombre, campos] of Object.entries(listas)) {
         const columnas = listas[c.valueHelp as keyof typeof listas]
           .filter((v) => v.orden !== undefined).sort((a, b) => a.orden! - b.orden!).map((v) => v.campo);
         assert.equal(vl?.CollectionPath, c.valueHelp, `${c.campo}: CollectionPath`);
+        // D52: sin SearchSupported, Fiori no manda la búsqueda del diálogo como $search (R8 6b ✖)
+        assert.equal(vl.SearchSupported, true, `${c.campo}: SearchSupported`);
+        assert.equal(anotacion(entidad(c.valueHelp), '@Capabilities.SearchRestrictions')?.Searchable, true,
+          `${c.valueHelp}: la entidad del value help debe ser buscable`);
         assert.deepEqual(vl.Parameters.map((p: any) => ({ $Type: p.$Type, Local: ruta(p.LocalDataProperty), Prop: p.ValueListProperty })), [
           { $Type: 'Common.ValueListParameterInOut', Local: c.campo, Prop: columnas[0] },
           ...columnas.slice(1).map((v) => ({ $Type: 'Common.ValueListParameterDisplayOnly', Local: undefined, Prop: v })),
