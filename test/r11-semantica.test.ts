@@ -30,7 +30,7 @@ function tabla(encabezado: string): Record<string, string>[] {
 const sinComillas = (s: string) => s.replace(/`/g, '');
 const ruta = (v: unknown) => (v && typeof v === 'object' && '=' in v ? (v as { '=': string })['='] : v);
 
-interface Campo { campo: string; etiqueta: string; filtro: boolean; obligatorio: boolean; orden?: number; texto?: string; moneda?: string; unidad?: string }
+interface Campo { campo: string; etiqueta: string; encabezado: string; ayuda: string; suma: boolean; filtro: boolean; obligatorio: boolean; orden?: number; texto?: string; moneda?: string; unidad?: string; valueHelp?: string }
 
 function semantica(encabezado: string): Campo[] {
   return tabla(encabezado).map((f) => {
@@ -38,10 +38,12 @@ function semantica(encabezado: string): Campo[] {
     const de = (tipo: string) => extra.match(new RegExp(`${tipo}: \`(\\w+)\``))?.[1];
     const orden = Number(f['Columna (orden)']);
     return {
-      campo: f['Campo'], etiqueta: f['Etiqueta'],
+      campo: f['Campo'], etiqueta: f['Etiqueta'], encabezado: f['Encabezado'], ayuda: f['Ayuda'],
+      suma: f['Medida'].includes('_SUM_'),
       filtro: f['Filtro'].includes('✅'), obligatorio: f['Obligatorio'].includes('✅'),
       orden: Number.isInteger(orden) ? orden : undefined,
       texto: de('texto'), moneda: de('moneda'), unidad: de('unidad'),
+      valueHelp: f['Value help'].match(/^`(\w+)`/)?.[1],
     };
   });
 }
@@ -49,6 +51,7 @@ function semantica(encabezado: string): Campo[] {
 const listas = {
   Conexiones: semantica('### Conexiones (List Report)'),
   Vuelos: semantica('### Vuelos (sección del detalle)'),
+  Aeropuertos: semantica('### Aeropuertos (value help'),
 };
 const detalle = tabla('### Página de detalle');
 const paginas = { Conexiones: 'Conexión', Vuelos: 'Vuelo' } as const;
@@ -67,6 +70,17 @@ function anotacion(def: Record<string, any>, termino: string): any {
   if (!partes.length) return undefined;
   return Object.fromEntries(partes.map((k) => [k.slice(prefijo.length), def[k]]));
 }
+
+// Tabla de cada entidad en el manifest (D41): [página, clave de controlConfiguration].
+const manifest = JSON.parse(readFileSync(join(raiz, 'app/conexiones/webapp/manifest.json'), 'utf8'));
+const tablas = {
+  Conexiones: ['ConexionesList', '@com.sap.vocabularies.UI.v1.LineItem'],
+  Vuelos: ['ConexionesObjectPage', '_Flight/@com.sap.vocabularies.UI.v1.LineItem'],
+} as const;
+const tablaEnManifest = (nombre: keyof typeof tablas) => {
+  const [pagina, clave] = tablas[nombre];
+  return manifest['sap.ui5'].routing.targets[pagina].options.settings.controlConfiguration?.[clave]?.tableSettings;
+};
 
 const comoTarget = (t: string) => (t.startsWith('@') || t.startsWith('_') ? t : '@' + t);
 
@@ -110,9 +124,64 @@ for (const [nombre, campos] of Object.entries(listas)) {
       const els = entidad(nombre).elements;
       for (const c of campos) assert.equal(els[c.campo]['@Common.Label'], c.etiqueta, `${c.campo}: @Common.Label`);
     });
+
+    it('encabezado (@Common.Heading) y ayuda (@Common.QuickInfo) = columnas Encabezado y Ayuda (D40)', () => {
+      const els = entidad(nombre).elements;
+      for (const c of campos) {
+        assert.equal(els[c.campo]['@Common.Heading'], c.encabezado, `${c.campo}: @Common.Heading`);
+        assert.equal(els[c.campo]['@Common.QuickInfo'], c.ayuda, `${c.campo}: @Common.QuickInfo`);
+      }
+    });
+
+    it('agregados predefinidos (columna Medida = _SUM_, D38, D45): @Aggregation.default #SUM y CustomAggregate', () => {
+      const def = entidad(nombre);
+      for (const c of campos) {
+        const e = def.elements[c.campo];
+        assert.equal(e['@Aggregation.default']?.['#'], c.suma ? 'SUM' : undefined, `${c.campo}: @Aggregation.default`);
+        assert.equal(def[`@Aggregation.CustomAggregate#${c.campo}`] !== undefined, c.suma, `${c.campo}: @Aggregation.CustomAggregate`);
+      }
+    });
+
+    it('sin tabla analítica (D47): ni @Analytics.Measure ni ApplySupported; ResponsiveTable con exportación (D41)', () => {
+      const def = entidad(nombre);
+      for (const c of campos) assert.equal(def.elements[c.campo]['@Analytics.Measure'], undefined, `${c.campo}: @Analytics.Measure`);
+      assert.equal(anotacion(def, '@Aggregation.ApplySupported'), undefined, 'ApplySupported activaría la analítica de Fiori');
+      if (!(nombre in tablas)) return; // Aeropuertos: solo se usa en el diálogo del value help, sin tabla en el manifest
+      const tabla = tablaEnManifest(nombre as keyof typeof tablas);
+      assert.equal(tabla?.type, 'ResponsiveTable', 'el Gateway no soporta concat/top/$count que pide la AnalyticalTable (D47)');
+      assert.equal(tabla?.enableExport, true, 'exportar a Excel');
+    });
+
+    it('value help (columna Value help, D50): @Common.ValueList propio, sin ValueListReferences del RAP', () => {
+      const els = entidad(nombre).elements;
+      for (const c of campos) {
+        const vl = anotacion(els[c.campo], '@Common.ValueList');
+        assert.equal(els[c.campo]['@Common.ValueListReferences'] ?? undefined, undefined, `${c.campo}: ValueListReferences del RAP`);
+        assert.equal(anotacion(els[c.campo], '@Common.ValueListMapping')?.CollectionPath ?? undefined, undefined, `${c.campo}: ValueListMapping`);
+        if (!c.valueHelp) { assert.equal(vl, undefined, `${c.campo}: no lleva value help`); continue; }
+        const columnas = listas[c.valueHelp as keyof typeof listas]
+          .filter((v) => v.orden !== undefined).sort((a, b) => a.orden! - b.orden!).map((v) => v.campo);
+        assert.equal(vl?.CollectionPath, c.valueHelp, `${c.campo}: CollectionPath`);
+        // D52: sin SearchSupported, Fiori no manda la búsqueda del diálogo como $search (R8 6b ✖)
+        assert.equal(vl.SearchSupported, true, `${c.campo}: SearchSupported`);
+        assert.equal(anotacion(entidad(c.valueHelp), '@Capabilities.SearchRestrictions')?.Searchable, true,
+          `${c.valueHelp}: la entidad del value help debe ser buscable`);
+        assert.deepEqual(vl.Parameters.map((p: any) => ({ $Type: p.$Type, Local: ruta(p.LocalDataProperty), Prop: p.ValueListProperty })), [
+          { $Type: 'Common.ValueListParameterInOut', Local: c.campo, Prop: columnas[0] },
+          ...columnas.slice(1).map((v) => ({ $Type: 'Common.ValueListParameterDisplayOnly', Local: undefined, Prop: v })),
+        ], `${c.campo}: parámetros del value help`);
+      }
+    });
+
+    it('la tabla incluye todos los campos de la entidad (ningún texto del RAP sin traducir, D40)', () => {
+      const delModelo = Object.entries(entidad(nombre).elements)
+        .filter(([, e]) => !e.isAssociation && e.type !== 'cds.Association' && e.type !== 'cds.Composition')
+        .map(([n]) => n).sort();
+      assert.deepEqual(campos.map((c) => c.campo).sort(), delModelo);
+    });
   });
 
-  describe(`R11 — ${nombre}: página de detalle = tabla de semántica`, () => {
+  if (nombre in paginas) describe(`R11 — ${nombre}: página de detalle = tabla de semántica`, () => {
     const filas = detalle.filter((f) => f['Página'] === paginas[nombre as keyof typeof paginas]);
     const fila = (elemento: string) => filas.find((f) => f['Elemento'].startsWith(elemento));
 
@@ -166,5 +235,7 @@ describe('R11 — $metadata publicado (D22)', () => {
     assert.ok(!xml.includes('SAP__UI'), 'el $metadata contiene tipos SAP__UI.* que Fiori no reconoce');
     assert.ok(!/Property="Target" Path=/.test(xml), 'hay facets con Target como Path en vez de AnnotationPath');
     assert.match(xml, /Property="Target" AnnotationPath="_Flight\/@UI.LineItem"/);
+    assert.ok(!xml.includes('ValueListReferences'), 'quedan ValueListReferences del RAP (apuntan a un $metadata que CAP no publica, D50)');
+    assert.ok(!xml.includes('ValueListMapping'), 'queda el ValueListMapping de país del F4 (I_CountryVH no se expone, D51)');
   });
 });

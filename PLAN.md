@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 4
+**Etapa activa:** 5 (al aprobarse la revisión y el merge a `main` de la Etapa 4)
 
 ---
 
@@ -171,24 +171,80 @@ Decisiones del usuario en esta etapa: D20, D21, D22, D23, D24, D25, D26, D27, D3
 - **Etapa 5:** R7 desplegado contra el RAP real (D26 no cubre el join del RAP) · R13 en Work Zone / Launchpad (D34) · versión y origen de UI5 (hoy CDN 1.154.0 en `index.html`) · `archeType` si el launchpad lo usa (D36) · verificar con XSUAA el 401 traducido · artefactos HANA (`cds.outbox.Messages`) sin base de datos propia · los tests de R4/R5 usan el `cds` de cds-dk global (tenerlo en cuenta en CI).
 - **Etapa 7 (plantilla):** cada app nueva necesita el `backend` del proxy en `ui5.yaml` (D21), `annotations.cds` desde la tabla de semántica (D22), `fallbackLocale` / `data-sap-ui-language` (D33, D34), `typescript ~6.0` (D35) y, si el servicio tiene asociaciones, el mock de su condición (D25).
 
-## Etapa 4 — Presentación del reporte
+## Etapa 4 — Presentación del reporte ✅
 Rama: `etapa-4-presentacion`
-- [ ] Revisar con el usuario la tabla **Semántica del reporte** de `SPEC.md` y cerrar los "por definir" (medidas / totales, orden de columnas)
-- [ ] Generar o ajustar `app/conexiones/annotations.cds` a partir de la tabla (D8). **Adelantado en la Etapa 3 (D22–D24):** ya existe; aquí solo se ajusta si cambia la tabla
-- [ ] Si hay totales: confirmar `$apply` en mock y probar la tabla con sumatorias
-- [ ] Resolver el value help de aeropuertos (importar el servicio `/dmo/i_airport_stdvh` o `@Common.ValueList` propio)
+- [x] Revisar con el usuario la tabla **Semántica del reporte** de `SPEC.md` y cerrar los "por definir" (medidas / totales, orden de columnas) → sin "por definir" (D38–D41, D47). Textos propuestos por Claude (D44 y los de los totales, D47) **revisados y aprobados por el usuario en la app (2026-11-10)**
+- [x] Generar o ajustar `app/conexiones/annotations.cds` a partir de la tabla (D8). **Adelantado en la Etapa 3 (D22–D24):** ya existe; ajustado en esta etapa con cada cambio de la tabla (D39, D40, D44, D47, D50), verificado por R11
+- [x] Si hay totales: confirmar `$apply` en mock y probar la tabla con sumatorias. **Hecho la parte de servicio (2026-11-10, D43):** CAP no delega `$apply` → las lecturas con `$apply` se reenvían tal cual al RAP; mock con `cds.odata.parse`; guarda de `@restrict` por filas; RAP simulado compartido en `test/rap-simulado.ts`. Tests `d43-totales` y `d43-totales-produccion` (directo, `$batch`, `_Flight`, `filter`, `groupby`, 50.000 filas: 1 petición / 57 bytes). Mutaciones detectadas (3). Anotaciones de Fiori hechas (D46 paso 1: `ApplySupported`, `CustomAggregate`, `Measure`, `AnalyticalTable`). Mock y RAP simulado alineados con el Gateway real (rechazan `concat` y alias igual al campo; el mock simula los agregados predefinidos de D45). ~~Falta: paso 2 (capturar en DevTools las peticiones de Fiori) → división de `concat` (D46)~~ **Paso 2 hecho por el usuario en el RAP real (2026-11-10):** el Gateway rechaza `$count` en `$apply` y `top` → **D47: totales en la cabecera del detalle** (R14); D46 queda como alternativa documentada
+  - [x] Paso 1 — Registro: resultados en "Análisis del servicio origen", R14, D47, D46 como alternativa, lección en `CLAUDE.md`; `cds import --force` de `ZMAKS_SB_CONEXIONES` (trae `CustomAggregate` de D45). Los `.edmx` de aeropuertos no se importan tal cual (`SAP__ParentService`): pasan al ítem del value help
+  - [x] Paso 2 — Semántica (filas `TotalAsientosOcupados`/`TotalCapacidad`, cabecera 3 y 4), `virtual` en `srv/service.cds`, `DataPoint` + `HeaderFacets` en `annotations.cds`, `ResponsiveTable` en vuelos, R11 (sin `@Analytics.Measure` ni `ApplySupported`). Se mantienen `CustomAggregate` + `@Aggregation.default` en Vuelos: sin ellos CAP no entiende `aggregate(SeatsOccupied)` y fallan los 11 tests de D43. Mutaciones de R11 detectadas: `AnalyticalTable` y `ApplySupported`
+  - [x] Paso 3 — Elementos `virtual` + cálculo en el handler (una petición `filter/groupby/aggregate`; listas largas repartidas, D48) + tests R14 (`r14-totales`, 8 con mock; `r14-totales-produccion`, 6 con RAP simulado) y mutaciones manuales: detectadas 3 (sin vuelos → `null`, una petición por conexión, `SeatsMax` ↔ `SeatsOccupied`); 2 no detectadas revelaron código muerto (quitar `virtual`, agregar claves) → eliminado (D48)
+  - [x] Paso 4 — `PRUEBAS_MANUALES.md`: pasos de R14 (AA 0017 = 573 / 770, LH 0400 = 314 / 330, LH 0402 = 0 / 0); R9 paso 8 (drilldown al vuelo, D41), paso 10 → R14 y 10b exportación (D41). **Ejecución: pendiente del usuario**
+- [x] Resolver el value help de aeropuertos → **hecho (2026-11-10, D49–D51):** copia limpia del `.edmx` con `scripts/limpiar-edmx-f4.ts` + `cds import`; entidad `Aeropuertos` (`@readonly`, R1 = tres entidades); `@Common.ValueList` propio en `AirportFromId`/`AirportToId`, sin los `ValueListReferences` del RAP; ruta del F4 con `;ps=…;va=…` (prueba b del usuario en `GW_CLIENT`); `$search` delegado (no probado en el RAP: paso manual R8 6b). Tests: R1–R6 y R11 ampliados, `d50-aeropuertos-produccion` (ruta, `$search`, `$batch`). Mutación R2/R3 2/2 (R2 cubre Aeropuertos); mutaciones manuales del value help 4/4 detectadas (sin anular `ValueListReferences`, `CollectionPath` equivocado, `Aeropuertos` sin delegar al F4, ruta sin `;ps=…;va=…`)
 - [x] Test R11: anotaciones efectivas = tabla de semántica. **Hecho en la Etapa 3** (adelantado, D22); se actualiza si cambia la tabla
-- [ ] Decidir drilldown (sí/no, hasta qué nivel) en `manifest.json`
-- [ ] Opcional: exportar a Excel, variantes, tabla responsive vs grid
-- [ ] Actualizar y ejecutar `test/PRUEBAS_MANUALES.md` (R8, R9), registrando el resultado
-- [ ] **Pendiente (de Etapa 3, D23):** decidir si se quita la columna 8 "Medida" (`DistanceUnit`), ya que la unidad se ve junto a la distancia
-- [ ] **Pendiente (de Etapa 3, D24):** campos fuera de la tabla de semántica con etiqueta en inglés desde el RAP (`CarrierId_Text` "Airline Name", `CurrencyCode` "Currency Code", …): decidir si se agregan a la tabla para traducirlos (D11)
+- [x] Decidir drilldown (sí/no, hasta qué nivel) en `manifest.json` → **se mantiene** Conexión → detalle → Vuelo (D41); sin cambios en `manifest.json`. Verificación: R9 pasos 5–9
+- [x] Opcional: exportar a Excel, variantes, tabla responsive vs grid. **D41:** exportación explícita en las dos tablas; tabla de vuelos `ResponsiveTable` (D47, ya no `AnalyticalTable`). Verificado por el usuario en el navegador (R9 paso 10b ✔, columnas en español). Variantes: sin cambios (`variantManagement: "Page"` del generador)
+- [x] Actualizar y ejecutar `test/PRUEBAS_MANUALES.md` (R8, R9, R14), registrando el resultado → **ejecutado (2026-11-10):** R8 ✔ (1, 6, 6c, 6d), R9 ✔ (1, 3, 8, 10b), R14 ✔ (1, 4, 5) por el usuario; R13 paso 5 ✔ por configuración (Claude). R8 6b ✖ → corregido con D52, pendiente repetir. Pasos no reportados de R9 y R14, marcados en cada registro
+- [x] **Pendiente (de Etapa 3, D23):** decidir si se quita la columna 8 "Medida" (`DistanceUnit`), ya que la unidad se ve junto a la distancia → **quitada de la lista y del detalle (D39)**
+- [x] **Pendiente (de Etapa 3, D24):** campos fuera de la tabla de semántica con etiqueta en inglés desde el RAP (`CarrierId_Text` "Airline Name", `CurrencyCode` "Currency Code", …): decidir si se agregan a la tabla para traducirlos (D11) → **traducidos todos: etiquetas, `Heading` y `QuickInfo`; tabla completa verificada por R11 (D40, D44)**
 - [x] **Pendiente (de Etapa 2):** avisos del build `SAP__UI.* is not a known vocabulary type` (vienen de `srv/external`, generado — no editar): evaluar si afectan las anotaciones efectivas. **Evaluado en la Etapa 3 (D22):** `cds compile` del servicio da 0 avisos y R11 exige que el `$metadata` de `ReporteService` no tenga ningún `SAP__UI.`; `cds build --production` sigue mostrando los 34 avisos porque compila también `srv/external`. No afectan; se aceptan
 
 Salida: el reporte se ve y navega como dice la tabla de semántica, con datos mock; R11 en verde.
 
 ### Decisiones de la etapa
 - D8 — Tabla "Semántica del reporte" como fuente de verdad de las anotaciones (decisión del usuario, tomada antes de iniciar la etapa).
+- D38 — Totales: `SUM` de `SeatsOccupied` y `SeatsMax` en Vuelos; `Price` y `Distance` sin total. Laboratorio del patrón de totales. Decisión del usuario.
+- D39 — Se quita "Medida" de la lista y del detalle. Decisión del usuario.
+- D40 — Traducir todo (etiquetas, `Heading`, `QuickInfo`) con columnas "Encabezado" y "Ayuda" en la tabla de semántica y la tabla completa; R11 lo verifica. Decisión del usuario.
+- D41 — Exportar a Excel; tipo de tabla según los totales; drilldown y orden se mantienen. Decisión del usuario.
+- D42 — Value help: importar `/dmo/i_airport_stdvh`. Decisión del usuario (opción a).
+- D43 — Totales: reenviar al RAP las lecturas con `$apply` (no pasan por la delegación CQN), con test que vigila `@restrict` por filas. Decisión del usuario (opción a).
+- D44 — Textos en español de Encabezado y Ayuda (y etiquetas nuevas) propuestos por Claude, en la tabla de semántica para revisión. Propuesta propia.
+- D45 — Cambio en el RAP: `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (semántica analítica del backend, excepción razonada a D8). Transportar antes de desplegar (Etapa 5). Decisión del usuario.
+- D46 — Totales en Fiori: `AnalyticalTable` + dividir `concat` en el handler (desactivable por `cds.env`), decidido con las peticiones reales de Fiori; si son complejas, volver a la opción de totales en la cabecera. Paso 1 hecho (anotaciones, `manifest`, R11). Decisión del usuario (opción 1, con condiciones). **Reemplazada por D47** (alternativa documentada para Gateways con `concat`/`top`/`$count`).
+- D47 — Totales en la cabecera del detalle (opción 2): `virtual` en `Conexiones` + una petición `groupby/aggregate` desde el handler; sin vuelos → 0; tabla de vuelos responsive. Decisión del usuario (2026-11-10), tras las pruebas A/B/C en el RAP real. Detalle propio (paso 2): en Vuelos se quitan solo `ApplySupported` y `@Analytics.Measure`; se mantienen los agregados predefinidos que necesita el reenvío D43. Textos de los campos nuevos (Encabezado/Ayuda) propuestos por Claude.
+- D48 — R14: listas largas con totales repartidas en varias peticiones GET de hasta `max_get_url_length` (el detalle sigue con una); totales también sin `$select`; no se quitan los `virtual` ni se agregan claves (CAP ya lo hace). Propuesta propia (aprobación general de la Etapa 4).
+- D49 — F4 de aeropuertos importado desde una copia del `.edmx` sin `SAP__ParentService` (`scripts/limpiar-edmx-f4.ts`); el `.cds` generado no se edita. Decisión del usuario.
+- D50 — Tercera entidad `Aeropuertos` (`@readonly`, R3) + `@Common.ValueList` propio en `AirportFromId`/`AirportToId`; se anulan los `ValueListReferences` del RAP; R1 = tres entidades. Decisión del usuario (R1); anotaciones propias.
+- D51 — Ruta del F4 con `;ps=…;va=…airportfromid` también para destino; `$search` delegado sin probar en el RAP (paso manual); sin `I_CountryVH`; `MIA` en `test/data`. Propuesta propia (aprobación general de la Etapa 4).
+- D52 — `SearchSupported: true` en el `@Common.ValueList` de los dos aeropuertos (R8 6b ✖: la búsqueda del diálogo no filtraba; el servicio sí resolvía `$search`). R11 lo exige; mutación detectada. Sin verificar aún en el navegador. Propuesta propia, autorizada por el usuario.
+
+### Informe de cierre — Etapa 4 (2026-11-10)
+
+**Resultado:** `npm test` **164/164** en verde (incluye lint, R1–R14, regla 17, D43, D50); `npm run test:mutacion` **2/2** mutaciones detectadas (R2, R3; R2 cubre también `Aeropuertos`); `npx tsc --noEmit -p tsconfig.test.json` sin errores. Pruebas manuales, ejecutadas por el usuario con datos mock: R8 ✔ (pasos 1, 6, 6c, 6d: F4 de salida y destino) y **✖ 6b** (la búsqueda del diálogo no filtraba → corregido con D52, pendiente repetir 6b), R9 ✔ (1, 3, 8, 10b: sin "Medida", drilldown al vuelo, Excel en español), R14 ✔ (1, 4, 5: 573 / 770, 314 / 330, 0 / 0). R13 paso 5 ✔ **por configuración**, verificado por Claude en el `manifest.json` servido (sin captura de la pestaña Red: el Dev Space no puede ejecutar Chromium). Textos de D44 y D47 revisados y aprobados por el usuario en la app. **Pasos no reportados** (en cada registro de `PRUEBAS_MANUALES.md`): R9 2, 4, 4b, 5–7b, 9, 11 y R14 2, 3, 6. Salida de la etapa cumplida: el reporte se ve y navega como dice la tabla de semántica, con datos mock; R11 en verde. Rama `etapa-4-presentacion` con un commit por paso; **sin merge a `main`** (pendiente de revisión del usuario).
+
+**Decisiones tomadas por mi cuenta** (propuestas por Claude, con la aprobación general del usuario para la Etapa 4):
+
+| ID | Decisión | Regla que afecta | Qué pasaría si fuera al revés |
+|---|---|---|---|
+| D44 | Textos en español de Encabezado y Ayuda (y etiquetas nuevas, p. ej. "Aerolínea", "Moneda") propuestos por Claude, en la tabla de semántica para revisión. **Aprobados por el usuario en la app.** | D40, R11, regla 16 | Copiando la etiqueta como encabezado y ayuda, los tooltips no agregarían información; traduciendo literalmente el inglés del RAP, saldría un texto técnico del modelo de demo ("Flight Reference Scenario: …"). |
+| D47 (detalle) | Al pasar a totales en la cabecera, en `Vuelos` se quitan solo `ApplySupported` y `@Analytics.Measure`; se **mantienen** `CustomAggregate` + `@Aggregation.default: #SUM`. Textos de los dos totales propuestos por Claude (aprobados por el usuario). | R14, R11, D43 | Quitando también los agregados predefinidos, CAP no entendería `aggregate(SeatsOccupied)` en el reenvío de D43 (fallan 11 tests); dejando `ApplySupported`/`Measure`, Fiori activaría la analítica que el Gateway no soporta. |
+| D48 | Listas largas con totales repartidas en varias GET de hasta `max_get_url_length` (el detalle sigue con una); totales también sin `$select`; no se quitan los `virtual` ni se agregan claves (CAP ya lo hace: era código muerto). | R14, D47, D43 | Con una sola petición siempre, una URL > 1028 caracteres iría en `$batch` (no probado contra este Gateway) o sería rechazada; sin totales sin `$select`, `GET Conexiones(...)` daría `null`; manteniendo el código muerto, las mutaciones no lo vigilarían. |
+| D50 (detalle) | Anotaciones del F4: `@Common.ValueList` propio en `AirportFromId`/`AirportToId` sobre `Aeropuertos` y anulación de los `ValueListReferences` del RAP (la tercera entidad la decidió el usuario). | R8, R11, D22 | Dejando los `ValueListReferences`, Fiori intentaría leer un `$metadata` que CAP no publica y el F4 no respondería (como en la Etapa 3). |
+| D51 | Ruta del F4 con `;ps=…;va=…airportfromid` también para destino; `$search` delegado al RAP sin probarlo allí; sin `I_CountryVH`; `MIA` (sin conexiones) en `test/data`. | R8, R4, D50 | Con `va=…airporttoid` habría dos servicios remotos iguales; si el RAP no acepta `$search`, la búsqueda del diálogo daría error (traducir a `$filter` en el handler); exponiendo `I_CountryVH`, una cuarta entidad que nadie pidió. |
+| D52 | `SearchSupported: true` en el `@Common.ValueList` de `AirportFromId`/`AirportToId` (hallazgo del usuario, R8 6b ✖); R11 lo exige. Autorizada por el usuario. | R8, R11, D50 | Sin él, la búsqueda del diálogo no filtra (con todos los aeropuertos del RAP real, el F4 sería casi inusable); si el RAP no aceptara `$search`, con él la búsqueda daría error (traducir a `$filter`, Etapa 5). |
+
+Decisiones del usuario en esta etapa: D8 (antes de iniciarla), D38, D39, D40, D41, D42, D43, D45, D46 (reemplazada por D47), D47, D49, D50 (R1 a tres entidades). Detalle completo, con "si fuera al revés", en `SPEC.md` → Decisiones.
+
+**Reglas nuevas o cambiadas en esta etapa:** R14 (totales en la cabecera del detalle, una petición al RAP); R1 pasa a tres entidades (`Aeropuertos`, D50); R11 se amplía a la tabla completa de cada entidad (D40) y a los totales.
+
+**Mutaciones adicionales** (manuales, en copia temporal o restauradas; D3 limita la obligatoria a R2/R3):
+- D43: sin reenvío de `$apply` (5 fallan), `req.http.req` en vez de `req.req.url` (falla `$batch`), `@restrict` con `where` (falla la guarda).
+- R11: `AnalyticalTable` y `ApplySupported` de vuelta en Vuelos, detectadas.
+- R14: 3 detectadas (sin vuelos → `null`, una petición por conexión, `SeatsMax` ↔ `SeatsOccupied`); 2 no detectadas revelaron código muerto, eliminado (D48).
+- Value help: 4/4 detectadas (sin anular `ValueListReferences`, `CollectionPath` equivocado, `Aeropuertos` sin delegar al F4, ruta sin `;ps=…;va=…`). D52: sin `SearchSupported` → falla R11 (39/40).
+
+**Hallazgos y correcciones durante la etapa** (no son decisiones, pero cambiaron lo hecho):
+- CAP no delega `$apply` al remoto (descarta `aggregate`, 500 con `groupby`) y en el mock pierde los alias de agregado → D43 (lección en `CLAUDE.md`).
+- Dentro de `$batch`, `req.http.req` es el sobre: se usa `req.req.url`.
+- El adaptador OData de CAP ya separa `concat` en una lectura por rama, pero con la URL completa.
+- El Gateway real rechaza `concat`, `top`, `$count` en `$apply` y el alias igual al campo → la `AnalyticalTable` no es viable (D46 → D47); mock y RAP simulado alineados con el Gateway.
+- El `.edmx` del F4 no se importa tal cual (`SAP__ParentService`) → D49; la ruta del F4 necesita `;ps=…;va=…` (prueba del usuario en `GW_CLIENT`, D51).
+- R8 6b ✖ (usuario): un `@Common.ValueList` propio necesita `SearchSupported: true` para que Fiori mande la búsqueda del diálogo como `$search` → D52.
+
+**Pendientes para próximas etapas** (también anotados en cada etapa):
+- **Etapa 5:** transportar el cambio del RAP `@Aggregation.default: #SUM` (D45) **antes** de desplegar · probar contra el RAP real: R14 (totales), el reenvío de `$apply` (D43), el F4 de aeropuertos con su ruta `;ps=…;va=…` y el `$search` del diálogo (R8 6b: repetir primero con mock tras D52; en el RAP, probar `$search` en `/IWFND/GW_CLIENT`, D51), R7 · R13 en Work Zone / Launchpad y captura de red del paso 5 · los demás pendientes ya listados en la Etapa 5.
+- **Etapa 7 (plantilla):** patrón de totales (D43 reenvío + D47 cabecera; D46 como alternativa para Gateways con `concat`/`top`/`$count`), pregunta inicial sobre `$apply` en el Gateway, `scripts/limpiar-edmx-f4.ts` y el procedimiento de F4 (D49–D51), tabla de semántica completa con Encabezado y Ayuda (D40).
 
 ## Etapa 5 — Despliegue a Cloud Foundry
 Rama: `etapa-5-despliegue`
@@ -201,6 +257,7 @@ Rama: `etapa-5-despliegue`
 - [ ] Verificar que `cds build --production` compila el TypeScript correctamente sin `tsx` (`gen/srv` con `service.js`, imports `#cds-models` resueltos, sin `.ts` en el runtime) — D13. **Hallazgo 2026-11-09 (Etapa 2):** con `cds build -o <dir>` el build copia `srv/service.ts` sin compilar y no incluye `@cds-models`. Con el destino normal (`gen/`, o `CDS_BUILD_TARGET` **relativo**) sí compila el TS, pero como `tsconfig.json` no tiene `include`, compila **todo** el proyecto: los tests (`test/*.test.js`) terminan en `gen/srv/test/` y viajarían a producción. Con un `CDS_BUILD_TARGET` absoluto, `tsc` escribe dentro del proyecto (`./tmp/...`). ~~Revisar `include` / un `tsconfig` de build.~~ Resuelto en la Etapa 3 (D30). También genera artefactos HANA (`src/gen`, `cds.outbox.Messages`) aunque el reporte no tiene base de datos propia: revisar si hacen falta
 - [ ] Verificar con XSUAA que el 401 sale por la clave i18n traducida ("No autenticado")
 - [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global
+- [ ] **(D45)** Transportar al sistema destino el cambio del RAP `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (CDS de vuelos) antes de desplegar; verificar en el `$metadata` desplegado que `aggregate(SeatsOccupied)` funciona
 - [ ] `mbt build` y **pedir aprobación** antes de `cf deploy`
 - [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
 - [ ] R7 desplegado: `Conexiones(...)/_Flight`, `$expand=_Flight` y la sección "Detalles de vuelos" contra el RAP real (la condición ya está confirmada en ADT; aquí se verifica que el RAP la aplique). D26 no cubre el join del RAP
@@ -280,3 +337,10 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-10 — R13: idioma de UI5 fijo en español (D34). D33: se compararon `[""]` sin sufijo y `i18n_es.properties` + `["es"]`; se eligió `[""]` (el tooling ya lo generaba, Fiori tools escribe en `i18n.properties`). El aviso de locales desapareció.
 - 2026-11-10 — D35: TS 7 rompía el lint de Fiori tools (se caía, no solo avisaba) → `typescript: "~6.0"`; lint dentro de `npm test` (2,6 s). `npm test` 97/97.
 - 2026-11-10 — R8 ejecutado por el usuario (1–5 ✔, F4 sin respuesta como se esperaba); paso 7 eliminado (D37). **Etapa 3 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 97/97, mutaciones R2/R3 2/2. Decisiones D19–D37. Etapa activa: 4.
+- 2026-11-10 — Etapa 3 mergeada a `main` (`21470e6`); rama `etapa-4-presentacion`. Decisiones de semántica del usuario D38–D42. Hallazgo: CAP no delega `$apply` al remoto (descarta `aggregate`, 500 con `groupby`); en el mock se pierden los alias de agregado. Prototipos de totales: (a) reenviar `$apply` al RAP, (b) calcular en el handler.
+- 2026-11-10 — D43 implementado: reenvío de `$apply` al RAP (1 petición / 57 bytes con 50.000 filas, frente a 51 peticiones / 11,7 MB calculando en el handler). Hallazgo: en `$batch`, `req.http.req` es el sobre → se usa `req.req.url`. Pendiente: resultados de `/IWFND/GW_CLIENT` para las anotaciones de totales.
+- 2026-11-10 — Pruebas del usuario en el RAP real: alias igual al campo → error; `concat` → no implementado; `aggregate(Campo)` OK tras agregar `@Aggregation.default: #SUM` en el RAP (D45, transportar en Etapa 5). Pendiente: re-importar el `$metadata` nuevo y decidir cómo mostrar los totales sin `concat`.
+- 2026-11-10 — D46 paso 1: anotaciones de agregación y `AnalyticalTable`; R11 verifica medidas y tipo de tabla. Mock/RAP simulado como el Gateway (sin `concat`, sin alias igual al campo). Hallazgo: el adaptador OData de CAP ya separa el `concat` en una lectura por rama. `npm test` 121/121.
+- 2026-11-10 — Etapa 4: totales en la cabecera del detalle (R14, D47, D48) con mutaciones; pasos manuales de R9/R14; value help de aeropuertos con el F4 del RAP (D49–D51, R1 = tres entidades; prueba b del usuario en `GW_CLIENT`). `npm test` 164/164, mutación R2/R3 2/2. **Etapa 4 lista para revisión** (pendiente: pruebas manuales R8, R9, R13 paso 5, R14 y revisión de textos D44/D47; merge a `main` tras la revisión del usuario).
+- 2026-11-10 — Pruebas manuales de la Etapa 4 ejecutadas por el usuario: R8 ✔ (F4 de salida y destino), R9 ✔ (sin "Medida", drilldown al vuelo, Excel en español), R14 ✔ (573 / 770, 314 / 330, 0 / 0); textos D44/D47 aprobados. R13 paso 5 ✔ por configuración (Claude; sin navegador en el Dev Space). Pasos no reportados anotados en `PRUEBAS_MANUALES.md` (entre ellos R8 6b, `$search`). **Etapa 4 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 164/164, mutaciones R2/R3 2/2. Etapa activa: 5 tras el merge.
+- 2026-11-10 — R8 6b ✖ (usuario): la búsqueda del diálogo del F4 no filtraba. El servicio sí resolvía `$search`; faltaba `SearchSupported: true` en el `@Common.ValueList` → D52 con R11 y mutación. Pendiente repetir 6b. Pasos no reportados de R9 y R14 quedan así (usuario). **Etapa 4 aprobada por el usuario.**

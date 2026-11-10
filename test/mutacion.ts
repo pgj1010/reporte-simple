@@ -32,7 +32,7 @@ const mutaciones: Mutacion[] = [
   },
   {
     regla: 'R2',
-    descripcion: 'quitar @readonly de Conexiones y Vuelos',
+    descripcion: 'quitar @readonly de Conexiones, Vuelos y Aeropuertos',
     archivo: 'srv/service.cds',
     quitar: /^\s*@readonly\s*\n/gm,
     tests: ['test/r2-solo-lectura.test.ts'],

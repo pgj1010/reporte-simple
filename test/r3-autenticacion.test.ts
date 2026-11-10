@@ -22,6 +22,7 @@ async function estado(url: string, config?: object): Promise<number> {
 const rutas = [
   '/odata/v4/reporte/Conexiones',
   '/odata/v4/reporte/Vuelos',
+  '/odata/v4/reporte/Aeropuertos',
   '/odata/v4/reporte/$metadata',
 ];
 

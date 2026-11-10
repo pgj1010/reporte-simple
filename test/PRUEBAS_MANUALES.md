@@ -3,8 +3,9 @@
 Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos mock (`test/data/`) y se registra el resultado al final de cada prueba.
 
 > **Estado (cierre de la Etapa 2, 2026-11-09):** pasos definidos, **todavía no ejecutados**.
-> - R8 se ejecutó al cerrar la **Etapa 3** (2026-11-10, ver registro). Se repite en la **Etapa 4** si cambian los filtros o el value help de aeropuertos.
-> - R9 se ejecuta al cerrar la **Etapa 4**, cuando la tabla **Semántica del reporte** esté cerrada. El drilldown a Vuelos ya funciona con el mock (R7, D25); desplegado se verifica en la Etapa 5.
+> - R8 se ejecutó al cerrar la **Etapa 3** (2026-11-10, ver registro). **Se repite en la Etapa 4** (value help de aeropuertos, D50: pasos 6–6d).
+> - R9 y R14 se ejecutan al cerrar la **Etapa 4** (pasos actualizados el 2026-11-10). El drilldown a Vuelos ya funciona con el mock (R7, D25); desplegado se verifica en la Etapa 5.
+> - **Cierre de la Etapa 4 (2026-11-10):** R8 (pasos 6, 6c, 6d), R9 (pasos 1, 3, 8, 10b) y R14 (pasos 1, 4, 5) ejecutados por el usuario, todos ✔; R13 paso 5 verificado por Claude en la configuración servida. Los pasos que el usuario no reportó quedan marcados como **no reportados** en cada registro.
 > - Si cambia la tabla de semántica en `SPEC.md`, actualizar aquí los resultados esperados.
 
 ## Preparación (común)
@@ -15,7 +16,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 4. Abrir `Ctrl+Shift+P` → *Ports: Preview* → 4004 → `/conexiones/webapp/index.html`.
 5. Iniciar sesión con el usuario `alice`, sin contraseña.
 5b. Usar una **ventana normal** del navegador y **recarga forzada** (`Ctrl+Shift+R`) para no ver una versión en caché ni una variante guardada. **No usar incógnito:** con BAS se pierde la sesión del Dev Space.
-6. Datos mock esperados: **5 conexiones** y **5 vuelos** (`test/data/ZMAKS_SB_CONEXIONES-*.csv`). La conexión `LH 0402` no tiene vuelos (D28).
+6. Datos mock esperados: **5 conexiones**, **5 vuelos** y **5 aeropuertos** (`test/data/ZMAKS_SB_CONEXIONES-*.csv`). La conexión `LH 0402` no tiene vuelos (D28).
 
 ---
 
@@ -30,7 +31,10 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | 3 | Escribir en **Aeropuerto salida** un código que exista en `test/data/ZMAKS_SB_CONEXIONES-Conexiones.csv` (p. ej. `FRA`) y pulsar **Ir**. | Solo aparecen las conexiones con ese aeropuerto de salida (para `FRA`: `LH 0400` y `LH 0402`). |
 | 4 | Borrar el filtro anterior, escribir en **Aeropuerto destino** un código del CSV (p. ej. `JFK`) y pulsar **Ir**. | Solo aparecen las conexiones con ese destino (para `JFK`: `LH 0400` y `LH 0402`). |
 | 5 | Combinar salida y destino con valores que **no** coincidan en ninguna fila (p. ej. salida `FRA`, destino `SFO`). | La tabla queda vacía, con el mensaje de "sin datos" de Fiori, **sin error**. |
-| 6 | Pulsar el F4 (ayuda de valores) de **Aeropuerto salida**. | Hoy se espera que **no funcione**: el value help del RAP apunta a `/dmo/i_airport_stdvh`, que no se importó (ver SPEC, "Análisis del servicio origen"). Anotar el comportamiento observado. Se resuelve en la Etapa 4. |
+| 6 | Pulsar el F4 (ayuda de valores) de **Aeropuerto salida**. | Se abre el diálogo **Aeropuertos** con las columnas Aeropuerto · Nombre · Ciudad · País/región, en español, y los **5 aeropuertos** de `test/data` (también `MIA`, que no tiene conexiones: el F4 lista todos los aeropuertos, D50, D51). |
+| 6b | En el diálogo, escribir `Frankfurt` en el campo de búsqueda. | Queda solo `FRA` (búsqueda `$search`, D51). |
+| 6c | Seleccionar `FRA`, pulsar **Aceptar** e **Ir**. | El filtro Aeropuerto salida queda en `FRA` y la tabla muestra `LH 0400` y `LH 0402` (como el paso 3). |
+| 6d | Repetir 6 y 6c con **Aeropuerto destino** eligiendo `JFK`. | Mismo diálogo; la tabla muestra `LH 0400` y `LH 0402`. |
 
 > El antiguo paso 7 (revisar en DevTools que la URL sea relativa y que el `$filter` use `AirportFromId` / `AirportToId`) se quitó (D37): lo cubren el test de la regla 17 (D19), la verificación del proxy con curl (D21) y los pasos 3–4.
 
@@ -39,6 +43,8 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
 | 2026-11-10 | 3 | Usuario | ✔ pasos 1–5 · paso 6 según lo esperado | 5 conexiones; filtros visibles; `FRA` y `JFK` devuelven LH 0400 y LH 0402; FRA→SFO vacía sin error. Paso 6: al pulsar el F4 de Aeropuerto salida no pasa nada (esperado: value help de `/dmo/i_airport_stdvh` no importado, se resuelve en la Etapa 4). |
+| 2026-11-10 | 4 | Usuario | ✔ pasos 1, 6, 6c, 6d | Lista con 5 conexiones. F4 de Aeropuerto salida abre la lista; elegir `FRA` da LH 0400 y LH 0402. F4 de Aeropuerto destino con `JFK` da LH 0400 y LH 0402. **No reportados:** el detalle del paso 6 (columnas del diálogo, 5 aeropuertos con `MIA`); 2–5 ya ✔ en la Etapa 3. |
+| 2026-11-10 | 4 | Usuario | ✖ paso 6b | En el diálogo del F4, escribir `Frankfurt` o `FRA` no encuentra FRA: quedan todos los valores. Directo en el campo del filtro da error por tener 3 caracteres (esperado). Elegir a mano funciona. **Causa (Claude):** faltaba `SearchSupported: true` en el `@Common.ValueList` (el servicio sí resuelve `$search`) → **corregido (D52)**, R11 lo vigila. **Pendiente: repetir 6b** en el navegador; contra el RAP real, en la Etapa 5. |
 
 ---
 
@@ -59,6 +65,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
 | 2026-11-10 | 3 | Usuario | ✔ pasos 1–3 | Chrome en inglés, ventana normal con recarga forzada (incógnito pierde la sesión de BAS). Botones de Fiori en español; AA 0017: "Precio vuelo" 422,94 USD y fecha en español. Paso 4 (aviso en la consola): ✔ **verificado por Claude** (2026-11-10): `npm run watch` en otro puerto, manifiesto servido con `fallbackLocale: ""`, 0 apariciones de `do not contain default fallback locale 'en'` (con la configuración anterior salían 3, D33). Paso 5 (Red, petición i18n): **no verificado**, el usuario no lo revisó. |
+| 2026-11-10 | 4 | Claude | ✔ paso 5 **por configuración** | A pedido del usuario. No se pudo capturar la pestaña Red: el Dev Space no tiene navegador y Chromium headless no arranca (faltan librerías del sistema, sin `sudo`). Verificado en el `manifest.json` **servido** por `npm run watch`: `sap.app.i18n`, `models.i18n` y `models.@i18n` con `supportedLocales: [""]` y `fallbackLocale: ""` (UI5 solo carga el archivo sin sufijo); `data-sap-ui-language="es"` en `index.html`; `i18n/i18n.properties` → 200, `i18n_en.properties` y `i18n_es.properties` → 404 (no existen). Para la captura de red, repetir en el navegador (Etapa 5, con R13 desplegado). |
 
 ---
 
@@ -70,10 +77,11 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 
 | # | Paso | Resultado esperado |
 |---|---|---|
-| 1 | Abrir la app y pulsar **Ir**. | La tabla muestra estas columnas **en este orden**: 1 Id aerolínea · 2 Número vuelo · 3 Aeropuerto salida · 4 Aeropuerto destino · 5 Hora salida · 6 Hora llegada · 7 Distancia · 8 Medida. |
+| 1 | Abrir la app y pulsar **Ir**. | La tabla muestra estas columnas **en este orden**: 1 Id aerolínea · 2 Número vuelo · 3 Aeropuerto salida · 4 Aeropuerto destino · 5 Hora salida · 6 Hora llegada · 7 Distancia. **Sin** columna "Medida" (D39). |
 | 2 | Revisar la columna **Id aerolínea**. | Muestra el código con su texto (`CarrierId_Text`, p. ej. "American Airlines"), según `@Common.Text` / `@UI.TextArrangement`. |
-| 3 | Revisar la columna **Distancia**. | Muestra la unidad de `DistanceUnit` (p. ej. `MI`, `KM`). |
+| 3 | Revisar la columna **Distancia** y la sección "Detalles de conexión" del detalle. | La distancia muestra su unidad junto al número (p. ej. `2572 MI`, `6162 KM`); no hay campo "Medida" aparte, ni en la lista ni en el detalle (D39). |
 | 4 | Comparar cada etiqueta de columna con la columna "Etiqueta" de la tabla de semántica. | Coinciden todas, en español. |
+| 4b | Abrir **Ajustes de tabla** (selector de columnas) y pasar el ratón por algunos campos y filtros. | Los nombres (p. ej. "Aerolínea", "Moneda") y los tooltips (p. ej. "Cantidad de asientos ocupados") están en español; no aparece "Airline Name", "Currency Code" ni "Flight Reference Scenario: …" (D40). |
 
 ### B. Drilldown: Conexión → detalle → Vuelos
 
@@ -84,9 +92,10 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | 6b | Volver a la lista y abrir la conexión `LH 0402`. | La sección de Vuelos queda **vacía**, con el mensaje de "sin datos" de Fiori y **sin error** (conexión sin vuelos, D28). |
 | 7 | Revisar las columnas de la tabla de Vuelos. | En este orden: 1 Id aerolínea · 2 Número vuelo · 3 Fecha vuelo · 4 Precio vuelo · 5 Tipo vuelo · 6 Capacidad máxima · 7 Ocupación asientos · 8 Nombre aerolínea. **Precio vuelo** muestra la moneda (`CurrencyCode`, p. ej. USD). |
 | 7b | Revisar **Precio vuelo** de los vuelos de `AA 0017` (R12). | Se muestra como **"422,94 USD"**: decimales completos y coma decimal (D11). UI5 está fijado en español (R13, D34), así que se ve igual con el navegador en inglés. Si sale "423 USD", R12 falla. |
-| 8 | Hacer clic en un vuelo. | Según la decisión de drilldown de la Etapa 4: se abre el detalle del vuelo, o no hay navegación. Anotar cuál se acordó. |
+| 8 | Hacer clic en un vuelo. | Se abre el **detalle del vuelo** (drilldown al vuelo se mantiene, D41): título **Nombre aerolínea**, cabecera Número vuelo y Fecha vuelo, sección "Detalle vuelo" con Precio vuelo, Tipo vuelo, Capacidad máxima y Ocupación asientos. |
 | 9 | Volver atrás con el botón del navegador o el de Fiori. | Se regresa al detalle de la conexión y luego a la lista, conservando los filtros. |
-| 10 | Si en la Etapa 4 se definen medidas o totales (hoy "_por definir_"): revisar la tabla. | Los totales coinciden con la suma de las filas mostradas. Agregar aquí los pasos concretos. |
+| 10 | Totales de la conexión. | Se prueban en **R14** (cabecera del detalle, D47). La tabla de vuelos es responsive y **no** tiene totales al pie. |
+| 10b | En la lista de conexiones y en la tabla de vuelos del detalle, buscar el botón **Exportar a hoja de cálculo** y usarlo (D41). | Se descarga un `.xlsx` con las filas y columnas visibles, con las etiquetas en español. |
 
 ### C. Solo lectura en la interfaz (complemento visual de R2)
 
@@ -98,4 +107,25 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
-| | | | | |
+| 2026-11-10 | 4 | Usuario | ✔ pasos 1, 3, 8, 10b | 5 conexiones, sin columna "Medida" (D39); drilldown al detalle del vuelo (D41); exportación a Excel con las columnas en español. Textos de encabezados y ayudas (D44) y de los totales (D47): "se ven bien en la app" (revisión del usuario). **No reportados:** 2, 4, 4b, 5, 6, 6b, 7, 7b, 9, 11 (7b ya ✔ en la Etapa 3: 422,94 USD; 6/6b cubiertos por R7 en el navegador en la Etapa 3); en 10b no se indicó si se exportaron las dos tablas o solo una. |
+
+---
+
+## R14 — Totales en la cabecera del detalle de una conexión
+
+**Regla:** el detalle de una conexión muestra en la cabecera **Asientos ocupados** (suma de `SeatsOccupied` de sus vuelos) y **Capacidad** (suma de `SeatsMax`). Sin vuelos → 0 y 0. La tabla "Detalles de vuelos" es responsive, sin totales al pie (D47). Lo automático (valores, una petición al RAP, `$batch`) lo cubren `test/r14-totales*.test.ts`; aquí se verifica lo que se ve.
+
+| # | Paso | Resultado esperado |
+|---|---|---|
+| 1 | Abrir la app (Preparación), pulsar **Ir** y abrir `AA 0017`. | En la cabecera, junto a Aeropuerto salida y Aeropuerto destino: **Asientos ocupados 573** y **Capacidad 770** (372 + 201 y 385 + 385, `test/data`). |
+| 2 | Comparar con la tabla "Detalles de vuelos" del mismo detalle. | 2 vuelos; la suma de **Ocupación asientos** (372 + 201) y de **Capacidad máxima** (385 + 385) coincide con la cabecera. |
+| 3 | Revisar la tabla "Detalles de vuelos". | Tabla **responsive** (filas tipo lista, sin barra de desplazamiento horizontal tipo grilla), **sin** fila de totales al pie y sin aviso de error. |
+| 4 | Volver y abrir `LH 0400`. | **Asientos ocupados 314**, **Capacidad 330** (un vuelo). |
+| 5 | Volver y abrir `LH 0402` (sin vuelos). | **Asientos ocupados 0** y **Capacidad 0**, sin error; la tabla de vuelos vacía (R7). |
+| 6 | Pasar el ratón por las etiquetas de los totales (o revisar el selector de campos). | Etiquetas en español "Asientos ocupados" y "Capacidad" (D40). |
+
+**Registro de ejecución**
+
+| Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
+|---|---|---|---|---|
+| 2026-11-10 | 4 | Usuario | ✔ pasos 1, 4, 5 | AA 0017 = 573 / 770, LH 0400 = 314 / 330, LH 0402 = 0 / 0. **No reportados:** 2, 3, 6 (textos de los totales revisados por el usuario: "se ven bien en la app"). |

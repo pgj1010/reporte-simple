@@ -128,7 +128,8 @@
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
-                    "type": "ResponsiveTable"
+                    "type": "ResponsiveTable",
+                    "enableExport": true
                   }
                 }
               }
@@ -147,6 +148,14 @@
                 "_Flight": {
                   "detail": {
                     "route": "VuelosObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "_Flight/@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "ResponsiveTable",
+                    "enableExport": true
                   }
                 }
               }
