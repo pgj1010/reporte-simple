@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 3
+**Etapa activa:** 4
 
 ---
 
@@ -97,7 +97,7 @@ Decisiones del usuario en esta etapa: D11, D17, D18, la ampliación de D10 y el 
 - **Etapa 4:** avisos del build `SAP__UI.* is not a known vocabulary type` (vienen de `srv/external`, generado) · value help de aeropuertos · ejecutar R9 de `test/PRUEBAS_MANUALES.md` · decidir medidas/totales y drilldown.
 - **Etapa 5:** el build compila **todo** el TS (falta `include` en `tsconfig.json`): los tests compilados terminan en `gen/srv/test/` y viajarían a producción · confirmar que `srv/service.ts`, `srv/server.ts` y `@cds-models` quedan compilados en `gen/srv` · no usar `cds build -o` (otra estructura, sin compilar TS) ni `CDS_BUILD_TARGET` absoluto (`tsc` escribe dentro del proyecto) · artefactos HANA (`cds.outbox.Messages`) sin base de datos propia · verificar con XSUAA que el 401 sale por la clave traducida ("No autenticado") · los tests de R4/R5 usan el `cds` de cds-dk **global**: tenerlo en cuenta si se agrega CI.
 
-## Etapa 3 — App Fiori Elements (List Report + Object Page)
+## Etapa 3 — App Fiori Elements (List Report + Object Page) ✅
 Rama: `etapa-3-fiori`
 - [x] ~~Generar app~~ La app `app/conexiones` ya fue generada (2026-11-09, antes de la Etapa 2; List Report V4, `Conexiones` + `_Flight`): **revisarla** en lugar de regenerarla. Revisada el 2026-11-10; hallazgos en los pendientes de abajo
 - [x] Corregir rutas del `manifest.json` a **relativas** (`odata/v4/reporte/`). Test automático de la regla 17 (D19, mutación manual detectada con `/` y `http://`); los tests OPA quedan fuera (D20); proxy local en `ui5.yaml` (D21). Verificado con curl (4 conexiones con `alice`, 401 sin usuario, sin bucle de proxy) y en el navegador por el usuario: los datos llegan por `/conexiones/odata/v4/reporte/` y aparecen los filtros de aeropuerto de salida y de destino
@@ -107,7 +107,7 @@ Rama: `etapa-3-fiori`
 - [x] Resolver la asociación `_Flight` (condición `CarrierId` + `ConnectionId`) para que el detalle muestre vuelos (R7). **Hecho (2026-11-10):** mock en `test/mock/rap.ts`, cargado por `test/mocked.js` (D25, D29), con la condición confirmada en ADT; `srv/` sin cambios. Tests `r7-navegacion` (mock, incluye conexión sin vuelos `LH 0402`, D28) y `r7-produccion` (proceso aparte con `NODE_ENV=production`: `_Flight` llega al RAP tal cual y el mock no se activa, D26). R10 cubre los 500 (D27). Mutaciones manuales detectadas: mock desactivado (7/8 fallan), condición sin `ConnectionId` (4/8), `_FlightCAP as _Flight` en `srv/` (3/3 de delegación). El build de producción incluía `test/` compilado (también el mock): `include` en `tsconfig.json` + `tsconfig.test.json` (D30, adelantado de la Etapa 5); `npm test` 82/82. Verificado por el usuario en el navegador (2026-11-10): AA 0017 muestra exactamente sus 2 vuelos (1 y 15 dic 2026), todo en español. LH 0402: "Detalles de vuelos" vacía con "Todavía no hay entradas", sin error (confirmado por el usuario). Hallazgo: "Precio vuelo" muestra 423 USD en vez de 422.94 → R12
 - [x] R12 — importes con decimales completos (hallazgo del usuario: 423 USD en vez de 422.94). Anotación `@odata.Type`/`Precision`/`Scale: 'variable'` de `Price` en `srv/service.cds` (D31, D32); test `r12-importes` (todos los `Edm.Decimal` del RAP; mutación sin la anotación detectada, 2/4 fallan); paso 7b de R9 en `PRUEBAS_MANUALES.md` ("422,94 USD"). Verificado por el usuario en el navegador (2026-11-10): AA 0017 muestra los decimales correctos (ya no 423)
 - [x] Probar drilldown a la página de detalle. Verificado por el usuario: AA 0017 (2 vuelos) y LH 0402 (vacía, sin error)
-- [ ] Ejecutar R8 de `test/PRUEBAS_MANUALES.md` y registrar el resultado
+- [x] Ejecutar R8 de `test/PRUEBAS_MANUALES.md` y registrar el resultado. **Hecho (2026-11-10):** pasos 1–5 ✔; paso 6 (F4) sin respuesta, como se esperaba (Etapa 4); paso 7 eliminado (D37)
 - [x] Arrancar siempre con `npm run watch` (D13); no instalar `tsx`. Es un recordatorio permanente, ya está en `CLAUDE.md`
 - [x] ~~**Pendiente (revisión de la app):** `webapp/index.html` tiene `lang="en"` → `lang="es"` (D11). Relacionado: el UI5 tooling avisa `Generated supported locales ('') for bundle 'i18n/i18n.properties' do not contain default fallback locale 'en'` (falta `supportedLocales` / `fallbackLocale` en `manifest.json`, o `i18n_es.properties`)~~ **Hecho (2026-11-10):** R13 — `lang="es"` y `data-sap-ui-language="es"` en `index.html`; `supportedLocales: [""]` + `fallbackLocale: ""` en los 3 bundles de `manifest.json`, manteniendo `i18n.properties` (D33, D34). El aviso de locales desapareció del manifiesto servido. Test `r13-idioma-app` (mutaciones detectadas: `lang="en"`, sin `fallbackLocale`, `i18n_en.properties`). Prueba manual R13 hecha por el usuario (Chrome en inglés, ventana normal con recarga forzada): pasos 1–3 ✔
 - [x] **Pendiente (revisión de la app), resuelto o movido (2026-11-10):** `annotations.cds` vacío → ya no aplica, se llenó con D22 · UI5 1.154.0 desde el CDN en `index.html` → **movido a la Etapa 5** (`index.html` solo se usa en local / app router, D34) · `sap.fiori.archeType: transactional` en una app de solo lectura → se deja (D36) · `.appGenInfo.json` con `http://localhost:4004/...` → no se toca (D20)
@@ -135,20 +135,55 @@ Salida: la app abre, lista las conexiones mock y navega al detalle con sus vuelo
 - D34 — R13 como regla aparte de R10; idioma de UI5 fijo en `index.html`. Límite: en Work Zone / Launchpad manda el idioma del launchpad (verificar en Etapa 5). Decisión del usuario.
 - D35 — `typescript: "~6.0"` (TS 7 rompe `typescript-eslint`) y `npm run lint` dentro de `npm test` (~3 s). Decisión del usuario (opción a).
 - D36 — `sap.fiori.archeType: "transactional"` se deja en `manifest.json` aunque la app sea de solo lectura. Propuesta propia, aprobada por el usuario.
+- D37 — Se quita el paso 7 de R8 (DevTools: URL relativa y campos del `$filter`): lo cubren D19, D21 y los pasos 3–4. Propuesta del usuario.
+
+### Informe de cierre — Etapa 3 (2026-11-10)
+
+**Resultado:** `npm test` **97/97** en verde (R1–R7, R10–R13, regla 17, D35 lint + arranque); `npm run test:mutacion` **2/2** mutaciones detectadas (R2, R3); `npx tsc --noEmit -p tsconfig.test.json` y `npm run lint` sin errores; `cds build --production` sin `test/`, sin CSV y sin el mock. Pruebas manuales: R8 ✔ (pasos 1–5; paso 6 F4 sin respuesta, esperado), R13 ✔ (pasos 1–3; paso 4 no informado, paso 5 no verificado). Verificado por el usuario en el navegador: 8 columnas, detalle, AA 0017 con 2 vuelos y 422,94 USD, LH 0402 vacía sin error, interfaz en español con el navegador en inglés. Salida de la etapa cumplida: la app abre, lista las conexiones mock y navega al detalle con sus vuelos. Rama `etapa-3-fiori` con un commit por paso; **sin merge a `main`** (pendiente de revisión del usuario).
+
+**Decisiones tomadas por mi cuenta** (propuestas por Claude; todas aprobadas después por el usuario):
+
+| ID | Decisión | Regla que afecta | Qué pasaría si fuera al revés |
+|---|---|---|---|
+| D19 | Test automático de la regla 17: ningún `dataSources.*.uri` de `app/*/webapp/manifest.json` empieza con `/` ni con `http` | Técnica 17, técnica 13 | Sin el test, el generador de Fiori podría volver a dejar una ruta absoluta sin aviso, y la app desplegada daría 404 detrás del app router. |
+| D28 | Conexión `LH 0402` sin vuelos en `test/data` (cambian los conteos de R2, R5 y R8) | R7, R2, R5, R8 | Probando con una conexión inexistente se obtendría un 404, no la tabla vacía; sin el caso, un mock que fallara con conexiones sin vuelos (posible en el RAP real aunque declare `[1..*]`) pasaría inadvertido. |
+| D29 | El mock se carga con el gancho nativo `test/mocked.js` (CAP lo desactiva con `NODE_ENV=production`), no con `cds.requires.[development]` | D25, R5, técnicas 9 y 18 | Con `cds.requires.[development]` habría que repetir la configuración en `[test]`, y el mock dependería de que nadie copie esa entrada a otro perfil. |
+| D33 | App de un solo idioma: `supportedLocales: [""]` + `fallbackLocale: ""` con `i18n.properties` sin sufijo (elegida tras comparar con `i18n_es.properties` + `["es"]`, a pedido del usuario) | R13, D11, regla 16 | Con `["es"]`, Fiori tools seguiría escribiendo textos nuevos en `i18n.properties`, que UI5 ya no cargaría: claves sin traducir sin aviso. Si la app necesitara varios idiomas, D33 se invierte. |
+| D36 | `sap.fiori.archeType: "transactional"` se deja aunque la app sea de solo lectura | R2, R9 | Cambiándolo a `analytical` no cambia nada en pantalla y la app quedaría distinta de lo que generan las herramientas; se revisa si un launchpad filtrara por este valor (Etapa 5). |
+
+Decisiones del usuario en esta etapa: D20, D21, D22, D23, D24, D25, D26, D27, D30, D31, D32, D34, D35, D37, y el cambio de plan que adelantó a esta etapa las anotaciones y R11. Detalle completo, con "si fuera al revés", en `SPEC.md` → Decisiones.
+
+**Reglas nuevas en esta etapa:** R12 (importes con sus decimales completos, hallazgo del usuario: 423 USD en vez de 422.94) y R13 (la app siempre en español).
+
+**Mutaciones adicionales** (manuales, en copia temporal o restauradas; D3 limita la mutación obligatoria a R2/R3):
+- R7: mock desactivado (7/8 fallan), condición sin `ConnectionId` (4/8), `_FlightCAP as _Flight` en `srv/` (3/3 tests de delegación de D26), D26 con `NODE_ENV=development` (falla "el mock no se activa").
+- R11: mutación rápida detectada. R12: sin la anotación de `Price` (2/4 fallan). R13: `lang="en"`, sin `fallbackLocale`, `i18n_en.properties` agregado (las tres detectadas). D35: un error de lint a propósito hace fallar `npm test`.
+
+**Correcciones durante la etapa** (no son decisiones, pero cambiaron lo hecho):
+- El mock perdía `$count` en la navegación: `SELECT.count` no es enumerable y `Object.assign` no lo copiaba.
+- El mock no se activaba en los tests porque el test lo importaba antes de que CAP levantara el servicio (caché de ESM): la activación pasó a una función explícita que llama `test/mocked.js`.
+- La aserción de D26 sobre `$expand=_Flight` también aceptaba `_FlightCAP`: se ajustó la expresión.
+- La aserción nueva de R5 "el build no contiene el mock" detectó que `test/` viajaba compilado al build → D30, adelantado de la Etapa 5.
+- El lint de la app no solo avisaba por TypeScript 7: se caía → D35.
+
+**Pendientes para próximas etapas** (también anotados en cada etapa):
+- **Etapa 4:** revisar la tabla de semántica y cerrar los "por definir" (medidas / totales, orden) · value help de aeropuertos (el F4 no responde, R8 paso 6) · ¿quitar la columna 8 "Medida"? (D23) · campos con etiqueta en inglés desde el RAP (D24) · decidir drilldown hasta Vuelos · ejecutar R9 (incluye 7b, 422,94 USD).
+- **Etapa 5:** R7 desplegado contra el RAP real (D26 no cubre el join del RAP) · R13 en Work Zone / Launchpad (D34) · versión y origen de UI5 (hoy CDN 1.154.0 en `index.html`) · `archeType` si el launchpad lo usa (D36) · verificar con XSUAA el 401 traducido · artefactos HANA (`cds.outbox.Messages`) sin base de datos propia · los tests de R4/R5 usan el `cds` de cds-dk global (tenerlo en cuenta en CI).
+- **Etapa 7 (plantilla):** cada app nueva necesita el `backend` del proxy en `ui5.yaml` (D21), `annotations.cds` desde la tabla de semántica (D22), `fallbackLocale` / `data-sap-ui-language` (D33, D34), `typescript ~6.0` (D35) y, si el servicio tiene asociaciones, el mock de su condición (D25).
 
 ## Etapa 4 — Presentación del reporte
 Rama: `etapa-4-presentacion`
 - [ ] Revisar con el usuario la tabla **Semántica del reporte** de `SPEC.md` y cerrar los "por definir" (medidas / totales, orden de columnas)
-- [ ] Generar o ajustar `app/conexiones/annotations.cds` a partir de la tabla (D8)
+- [ ] Generar o ajustar `app/conexiones/annotations.cds` a partir de la tabla (D8). **Adelantado en la Etapa 3 (D22–D24):** ya existe; aquí solo se ajusta si cambia la tabla
 - [ ] Si hay totales: confirmar `$apply` en mock y probar la tabla con sumatorias
 - [ ] Resolver el value help de aeropuertos (importar el servicio `/dmo/i_airport_stdvh` o `@Common.ValueList` propio)
-- [ ] Test R11: anotaciones efectivas = tabla de semántica
+- [x] Test R11: anotaciones efectivas = tabla de semántica. **Hecho en la Etapa 3** (adelantado, D22); se actualiza si cambia la tabla
 - [ ] Decidir drilldown (sí/no, hasta qué nivel) en `manifest.json`
 - [ ] Opcional: exportar a Excel, variantes, tabla responsive vs grid
 - [ ] Actualizar y ejecutar `test/PRUEBAS_MANUALES.md` (R8, R9), registrando el resultado
 - [ ] **Pendiente (de Etapa 3, D23):** decidir si se quita la columna 8 "Medida" (`DistanceUnit`), ya que la unidad se ve junto a la distancia
 - [ ] **Pendiente (de Etapa 3, D24):** campos fuera de la tabla de semántica con etiqueta en inglés desde el RAP (`CarrierId_Text` "Airline Name", `CurrencyCode` "Currency Code", …): decidir si se agregan a la tabla para traducirlos (D11)
-- [ ] **Pendiente (de Etapa 2):** avisos del build `SAP__UI.* is not a known vocabulary type` (vienen de `srv/external`, generado — no editar): evaluar si afectan las anotaciones efectivas
+- [x] **Pendiente (de Etapa 2):** avisos del build `SAP__UI.* is not a known vocabulary type` (vienen de `srv/external`, generado — no editar): evaluar si afectan las anotaciones efectivas. **Evaluado en la Etapa 3 (D22):** `cds compile` del servicio da 0 avisos y R11 exige que el `$metadata` de `ReporteService` no tenga ningún `SAP__UI.`; `cds build --production` sigue mostrando los 34 avisos porque compila también `srv/external`. No afectan; se aceptan
 
 Salida: el reporte se ve y navega como dice la tabla de semántica, con datos mock; R11 en verde.
 
@@ -244,3 +279,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-10 — Verificación del usuario en el navegador: R7 completo (LH 0402 vacía con "Todavía no hay entradas", sin error) y R12 (AA 0017 con decimales). Próximo paso aprobado: idioma de UI5 fijo en español (R13, D33, D34).
 - 2026-11-10 — R13: idioma de UI5 fijo en español (D34). D33: se compararon `[""]` sin sufijo y `i18n_es.properties` + `["es"]`; se eligió `[""]` (el tooling ya lo generaba, Fiori tools escribe en `i18n.properties`). El aviso de locales desapareció.
 - 2026-11-10 — D35: TS 7 rompía el lint de Fiori tools (se caía, no solo avisaba) → `typescript: "~6.0"`; lint dentro de `npm test` (2,6 s). `npm test` 97/97.
+- 2026-11-10 — R8 ejecutado por el usuario (1–5 ✔, F4 sin respuesta como se esperaba); paso 7 eliminado (D37). **Etapa 3 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 97/97, mutaciones R2/R3 2/2. Decisiones D19–D37. Etapa activa: 4.

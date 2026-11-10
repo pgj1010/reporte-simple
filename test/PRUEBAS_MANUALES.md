@@ -3,7 +3,7 @@
 Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos mock (`test/data/`) y se registra el resultado al final de cada prueba.
 
 > **Estado (cierre de la Etapa 2, 2026-11-09):** pasos definidos, **todavía no ejecutados**.
-> - R8 se ejecuta al cerrar la **Etapa 3** (app Fiori con rutas relativas). Se repite en la **Etapa 4** si cambian los filtros o el value help de aeropuertos.
+> - R8 se ejecutó al cerrar la **Etapa 3** (2026-11-10, ver registro). Se repite en la **Etapa 4** si cambian los filtros o el value help de aeropuertos.
 > - R9 se ejecuta al cerrar la **Etapa 4**, cuando la tabla **Semántica del reporte** esté cerrada. El drilldown a Vuelos ya funciona con el mock (R7, D25); desplegado se verifica en la Etapa 5.
 > - Si cambia la tabla de semántica en `SPEC.md`, actualizar aquí los resultados esperados.
 
@@ -31,13 +31,14 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | 4 | Borrar el filtro anterior, escribir en **Aeropuerto destino** un código del CSV (p. ej. `JFK`) y pulsar **Ir**. | Solo aparecen las conexiones con ese destino (para `JFK`: `LH 0400` y `LH 0402`). |
 | 5 | Combinar salida y destino con valores que **no** coincidan en ninguna fila (p. ej. salida `FRA`, destino `SFO`). | La tabla queda vacía, con el mensaje de "sin datos" de Fiori, **sin error**. |
 | 6 | Pulsar el F4 (ayuda de valores) de **Aeropuerto salida**. | Hoy se espera que **no funcione**: el value help del RAP apunta a `/dmo/i_airport_stdvh`, que no se importó (ver SPEC, "Análisis del servicio origen"). Anotar el comportamiento observado. Se resuelve en la Etapa 4. |
-| 7 | Con DevTools → Red, revisar la petición `Conexiones?...$filter=...` de los pasos 3 y 4. | La URL **no empieza con `/`** (regla 17, una vez corregida en la Etapa 3), y el `$filter` usa `AirportFromId` / `AirportToId`. |
+
+> El antiguo paso 7 (revisar en DevTools que la URL sea relativa y que el `$filter` use `AirportFromId` / `AirportToId`) se quitó (D37): lo cubren el test de la regla 17 (D19), la verificación del proxy con curl (D21) y los pasos 3–4.
 
 **Registro de ejecución**
 
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
-| | | | | |
+| 2026-11-10 | 3 | Usuario | ✔ pasos 1–5 · paso 6 según lo esperado | 5 conexiones; filtros visibles; `FRA` y `JFK` devuelven LH 0400 y LH 0402; FRA→SFO vacía sin error. Paso 6: al pulsar el F4 de Aeropuerto salida no pasa nada (esperado: value help de `/dmo/i_airport_stdvh` no importado, se resuelve en la Etapa 4). |
 
 ---
 
