@@ -131,31 +131,22 @@ for (const [nombre, campos] of Object.entries(listas)) {
       }
     });
 
-    it('medidas (columna Medida = _SUM_, D38): @Analytics.Measure, @Aggregation.default #SUM y CustomAggregate', () => {
+    it('agregados predefinidos (columna Medida = _SUM_, D38, D45): @Aggregation.default #SUM y CustomAggregate', () => {
       const def = entidad(nombre);
       for (const c of campos) {
         const e = def.elements[c.campo];
-        assert.equal(e['@Analytics.Measure'] ?? false, c.suma, `${c.campo}: @Analytics.Measure`);
         assert.equal(e['@Aggregation.default']?.['#'], c.suma ? 'SUM' : undefined, `${c.campo}: @Aggregation.default`);
         assert.equal(def[`@Aggregation.CustomAggregate#${c.campo}`] !== undefined, c.suma, `${c.campo}: @Aggregation.CustomAggregate`);
       }
     });
 
-    it('con medidas: ApplySupported (agregables = medidas, agrupables = el resto) y AnalyticalTable con exportación (D41)', () => {
-      const medidas = campos.filter((c) => c.suma).map((c) => c.campo);
-      const apply = anotacion(entidad(nombre), '@Aggregation.ApplySupported');
+    it('sin tabla analítica (D47): ni @Analytics.Measure ni ApplySupported; ResponsiveTable con exportación (D41)', () => {
+      const def = entidad(nombre);
+      for (const c of campos) assert.equal(def.elements[c.campo]['@Analytics.Measure'], undefined, `${c.campo}: @Analytics.Measure`);
+      assert.equal(anotacion(def, '@Aggregation.ApplySupported'), undefined, 'ApplySupported activaría la analítica de Fiori');
       const tabla = tablaEnManifest(nombre as keyof typeof tablas);
+      assert.equal(tabla?.type, 'ResponsiveTable', 'el Gateway no soporta concat/top/$count que pide la AnalyticalTable (D47)');
       assert.equal(tabla?.enableExport, true, 'exportar a Excel');
-      if (!medidas.length) {
-        assert.equal(apply, undefined);
-        assert.notEqual(tabla?.type, 'AnalyticalTable');
-        return;
-      }
-      assert.deepEqual((apply.AggregatableProperties ?? []).map((p: any) => ruta(p.Property)).sort(), [...medidas].sort());
-      assert.deepEqual((apply.GroupableProperties ?? []).map((p: unknown) => ruta(p)).sort(),
-        campos.filter((c) => !c.suma).map((c) => c.campo).sort());
-      assert.ok(!(apply.Transformations ?? []).includes('concat'), 'el RAP no soporta concat (D46)');
-      assert.equal(tabla?.type, 'AnalyticalTable', 'los totales solo se ven en la tabla analítica');
     });
 
     it('la tabla incluye todos los campos de la entidad (ningún texto del RAP sin traducir, D40)', () => {

@@ -3,7 +3,14 @@ using { ZMAKS_SB_CONEXIONES as external } from './external/ZMAKS_SB_CONEXIONES';
 @requires: 'authenticated-user' // R3
 service ReporteService {
   @readonly
-  entity Conexiones as projection on external.Conexiones;
+  entity Conexiones as projection on external.Conexiones {
+    *,
+    // R14 / D47: totales de los vuelos de la conexión para la cabecera del detalle. El RAP no los
+    // tiene: srv/service.ts los quita de la consulta delegada y los calcula con una sola petición
+    // groupby/aggregate al RAP.
+    virtual null as TotalAsientosOcupados : Integer,
+    virtual null as TotalCapacidad        : Integer
+  };
 
   @readonly
   entity Vuelos     as projection on external.Vuelos;

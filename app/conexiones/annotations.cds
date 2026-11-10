@@ -25,8 +25,14 @@ annotate service.Conexiones with @(
 
   UI.HeaderFacets           : [
     { $Type: 'UI.ReferenceFacet', ID: 'idAirportFrom', Label: 'Aeropuerto Salida',  Target: '@UI.DataPoint#tqAirportFrom' },
-    { $Type: 'UI.ReferenceFacet', ID: 'idAirportTo',   Label: 'Aeropuerto Destino', Target: '@UI.DataPoint#tqAirportTo'   }
+    { $Type: 'UI.ReferenceFacet', ID: 'idAirportTo',   Label: 'Aeropuerto Destino', Target: '@UI.DataPoint#tqAirportTo'   },
+    // R14 / D47: totales de los vuelos de la conexión (campos virtual que calcula srv/service.ts)
+    { $Type: 'UI.ReferenceFacet', ID: 'idTotalOcupados',  Label: 'Asientos ocupados', Target: '@UI.DataPoint#tqTotalOcupados'  },
+    { $Type: 'UI.ReferenceFacet', ID: 'idTotalCapacidad', Label: 'Capacidad',         Target: '@UI.DataPoint#tqTotalCapacidad' }
   ],
+
+  UI.DataPoint #tqTotalOcupados  : { Value: TotalAsientosOcupados, Title: 'Asientos ocupados' },
+  UI.DataPoint #tqTotalCapacidad : { Value: TotalCapacidad,        Title: 'Capacidad'         },
 
   UI.Facets                 : [
     { $Type: 'UI.ReferenceFacet', ID: 'idConnection', Label: 'Detalles de conexión', Target: '@UI.Identification'   },
@@ -118,6 +124,13 @@ annotate service.Conexiones with {
   CarrierName    @Common.Label: 'Nombre aerolínea'
                  @Common.Heading: 'Aerolínea'
                  @Common.QuickInfo: 'Nombre de la aerolínea';
+  // R14 / D47: totales en la cabecera del detalle (virtual en srv/service.cds)
+  TotalAsientosOcupados @Common.Label: 'Asientos ocupados'
+                        @Common.Heading: 'Ocupados'
+                        @Common.QuickInfo: 'Total de asientos ocupados en los vuelos de la conexión';
+  TotalCapacidad        @Common.Label: 'Capacidad'
+                        @Common.Heading: 'Capacidad'
+                        @Common.QuickInfo: 'Total de asientos disponibles en los vuelos de la conexión';
 };
 
 annotate service.Vuelos with {
@@ -154,26 +167,18 @@ annotate service.Vuelos with {
 };
 
 // ---------------------------------------------------------------------------
-// D38 / D43 / D45: totales. Columna "Medida" = _SUM_ en la tabla de semántica.
-// SeatsOccupied y SeatsMax son agregados predefinidos (CustomAggregate + Aggregation.default: #SUM),
-// igual que en el RAP desde D45: Fiori pide `aggregate(SeatsOccupied)` y el RAP lo acepta. CAP necesita
-// las mismas anotaciones para publicarlas en su $metadata y para entender esa sintaxis.
-// ApplySupported: las transformaciones que declara el RAP (sin concat, ver D46).
-// GroupableProperties: todas las columnas que no son medida (la tabla analítica agrupa por ellas).
+// D38 / D47: los totales de SeatsOccupied y SeatsMax van en la cabecera de la conexión (R14), no al pie
+// de la tabla de vuelos: este Gateway no soporta concat, top ni $count en $apply, que la tabla analítica
+// necesita. Por eso Vuelos NO lleva ApplySupported ni @Analytics.Measure (lo que activa la analítica de
+// Fiori) y su tabla es responsive. La alternativa con AnalyticalTable queda documentada en D46.
+// Sí se mantienen los agregados predefinidos (CustomAggregate + Aggregation.default: #SUM), iguales a los
+// del RAP desde D45: sin ellos CAP no entiende `aggregate(SeatsOccupied)` en las lecturas con $apply que
+// reenvía al RAP (D43).
 // ---------------------------------------------------------------------------
 annotate service.Vuelos with @(
-  Aggregation.ApplySupported              : {
-    Transformations     : ['aggregate', 'groupby', 'filter'],
-    Rollup              : #None,
-    GroupableProperties : [CarrierId, CarrierId_Text, ConnectionId, FlightDate, Price, CurrencyCode, PlaneTypeId, CarrierName],
-    AggregatableProperties : [
-      { $Type: 'Aggregation.AggregatablePropertyType', Property: SeatsOccupied },
-      { $Type: 'Aggregation.AggregatablePropertyType', Property: SeatsMax      }
-    ]
-  },
   Aggregation.CustomAggregate #SeatsOccupied : 'Edm.Int32',
   Aggregation.CustomAggregate #SeatsMax      : 'Edm.Int32'
 ) {
-  SeatsOccupied @Analytics.Measure @Aggregation.default: #SUM;
-  SeatsMax      @Analytics.Measure @Aggregation.default: #SUM;
+  SeatsOccupied @Aggregation.default: #SUM;
+  SeatsMax      @Aggregation.default: #SUM;
 };
