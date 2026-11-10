@@ -9,7 +9,8 @@ import { raiz } from './helpers.ts';
 
 const RUTA_RAP = '/rap';
 
-/** Respuesta del RAP simulado para una URL (relativa a la raíz del servicio, ya decodificada). */
+/** Respuesta del RAP simulado para una URL (relativa a la raíz del servicio, ya decodificada).
+ *  Si el objeto trae `__status`, se responde con ese código HTTP (p. ej. 501 como el Gateway). */
 export type Responder = (url: string) => unknown;
 
 export interface Entorno {
@@ -36,8 +37,10 @@ export async function iniciar(responder: Responder = respuestaVacia): Promise<En
   const rap = http.createServer((req, res) => {
     const url = decodeURIComponent(req.url!.slice(RUTA_RAP.length));
     recibidas.push(url);
-    const cuerpo = JSON.stringify(responder(url));
+    const { __status, ...respuesta } = responder(url) as { __status?: number };
+    const cuerpo = JSON.stringify(respuesta);
     bytes += cuerpo.length;
+    if (__status) res.statusCode = __status;
     res.setHeader('content-type', 'application/json');
     res.end(cuerpo);
   });

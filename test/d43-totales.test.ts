@@ -19,7 +19,8 @@ const vuelos: Fila[] = filas.map(f => Object.fromEntries(cabecera.map((c, i) => 
 const suma = (lista: Fila[], campo: string) => lista.reduce((s, v) => s + Number(v[campo]), 0);
 const de = (aerolinea: string, conexion: string) => vuelos.filter(v => v.CarrierId === aerolinea && v.ConnectionId === conexion);
 
-const APPLY = 'aggregate(SeatsOccupied with sum as SeatsOccupied,SeatsMax with sum as SeatsMax)';
+// Como pide Fiori (agregados predefinidos, D45). El RAP real NO acepta `with sum as <mismo campo>` ni `concat`.
+const APPLY = 'aggregate(SeatsOccupied,SeatsMax)';
 const apply = (t: string) => `$apply=${encodeURIComponent(t)}`;
 
 describe('D43 / D38 — totales con $apply (mock)', () => {
@@ -47,8 +48,20 @@ describe('D43 / D38 — totales con $apply (mock)', () => {
     assert.deepEqual(data.value, [{ SeatsOccupied: suma(aa, 'SeatsOccupied'), SeatsMax: suma(aa, 'SeatsMax') }]);
   });
 
+  it('con alias distinto del campo (forma explícita que acepta el RAP)', async () => {
+    const { data } = await GET(`${URL}Vuelos?${apply('aggregate(SeatsOccupied with sum as TotalOcupados)')}`, alice);
+    assert.deepEqual(data.value, [{ TotalOcupados: suma(vuelos, 'SeatsOccupied') }]);
+  });
+
+  it('como el Gateway real: alias igual al campo → 400, concat → 501', async () => {
+    const r1 = await GET(`${URL}Vuelos?${apply('aggregate(SeatsOccupied with sum as SeatsOccupied)')}`, alice).catch(e => e.response);
+    assert.equal(r1.status, 400);
+    const r2 = await GET(`${URL}Vuelos?${apply('concat(aggregate(SeatsOccupied),groupby((CurrencyCode)))')}`, alice).catch(e => e.response);
+    assert.equal(r2.status, 501);
+  });
+
   it('con groupby: un total por moneda (patrón para reportes por moneda, p. ej. TRM)', async () => {
-    const { data } = await GET(`${URL}Vuelos?${apply('groupby((CurrencyCode),aggregate(SeatsMax with sum as SeatsMax))')}`, alice);
+    const { data } = await GET(`${URL}Vuelos?${apply('groupby((CurrencyCode),aggregate(SeatsMax))')}`, alice);
     const monedas = [...new Set(vuelos.map(v => v.CurrencyCode))].sort();
     const esperado = monedas.map(m => ({ CurrencyCode: m, SeatsMax: suma(vuelos.filter(v => v.CurrencyCode === m), 'SeatsMax') }));
     const efectivo = [...data.value].sort((a: Fila, b: Fila) => a.CurrencyCode.localeCompare(b.CurrencyCode))

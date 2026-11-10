@@ -152,3 +152,28 @@ annotate service.Vuelos with {
                  @Common.Heading: 'Aerolínea'
                  @Common.QuickInfo: 'Nombre de la aerolínea';
 };
+
+// ---------------------------------------------------------------------------
+// D38 / D43 / D45: totales. Columna "Medida" = _SUM_ en la tabla de semántica.
+// SeatsOccupied y SeatsMax son agregados predefinidos (CustomAggregate + Aggregation.default: #SUM),
+// igual que en el RAP desde D45: Fiori pide `aggregate(SeatsOccupied)` y el RAP lo acepta. CAP necesita
+// las mismas anotaciones para publicarlas en su $metadata y para entender esa sintaxis.
+// ApplySupported: las transformaciones que declara el RAP (sin concat, ver D46).
+// GroupableProperties: todas las columnas que no son medida (la tabla analítica agrupa por ellas).
+// ---------------------------------------------------------------------------
+annotate service.Vuelos with @(
+  Aggregation.ApplySupported              : {
+    Transformations     : ['aggregate', 'groupby', 'filter'],
+    Rollup              : #None,
+    GroupableProperties : [CarrierId, CarrierId_Text, ConnectionId, FlightDate, Price, CurrencyCode, PlaneTypeId, CarrierName],
+    AggregatableProperties : [
+      { $Type: 'Aggregation.AggregatablePropertyType', Property: SeatsOccupied },
+      { $Type: 'Aggregation.AggregatablePropertyType', Property: SeatsMax      }
+    ]
+  },
+  Aggregation.CustomAggregate #SeatsOccupied : 'Edm.Int32',
+  Aggregation.CustomAggregate #SeatsMax      : 'Edm.Int32'
+) {
+  SeatsOccupied @Analytics.Measure @Aggregation.default: #SUM;
+  SeatsMax      @Analytics.Measure @Aggregation.default: #SUM;
+};

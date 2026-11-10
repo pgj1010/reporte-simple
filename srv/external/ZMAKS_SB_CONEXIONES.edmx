@@ -581,11 +581,13 @@
 <Annotation Term="SAP__common.QuickInfo" String="Flight Reference Scenario: Flight Date"/>
 </Annotations>
 <Annotations Target="SAP__self.VuelosType/SeatsMax">
+<Annotation Term="SAP__aggregation.CustomAggregate" Qualifier="SeatsMax" String="Edm.Int32"/>
 <Annotation Term="SAP__common.Label" String="Maximum Capacity"/>
 <Annotation Term="SAP__common.Heading" String="Capacity"/>
 <Annotation Term="SAP__common.QuickInfo" String="Flight Reference Scenario: Plane Seats Max"/>
 </Annotations>
 <Annotations Target="SAP__self.VuelosType/SeatsOccupied">
+<Annotation Term="SAP__aggregation.CustomAggregate" Qualifier="SeatsOccupied" String="Edm.Int32"/>
 <Annotation Term="SAP__common.Label" String="Occupied Seats"/>
 <Annotation Term="SAP__common.Heading" String="Occupied"/>
 <Annotation Term="SAP__common.QuickInfo" String="Flight Reference Scenario: Plane Seats Occupied"/>

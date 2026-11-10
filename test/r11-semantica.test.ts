@@ -30,7 +30,7 @@ function tabla(encabezado: string): Record<string, string>[] {
 const sinComillas = (s: string) => s.replace(/`/g, '');
 const ruta = (v: unknown) => (v && typeof v === 'object' && '=' in v ? (v as { '=': string })['='] : v);
 
-interface Campo { campo: string; etiqueta: string; encabezado: string; ayuda: string; filtro: boolean; obligatorio: boolean; orden?: number; texto?: string; moneda?: string; unidad?: string }
+interface Campo { campo: string; etiqueta: string; encabezado: string; ayuda: string; suma: boolean; filtro: boolean; obligatorio: boolean; orden?: number; texto?: string; moneda?: string; unidad?: string }
 
 function semantica(encabezado: string): Campo[] {
   return tabla(encabezado).map((f) => {
@@ -39,6 +39,7 @@ function semantica(encabezado: string): Campo[] {
     const orden = Number(f['Columna (orden)']);
     return {
       campo: f['Campo'], etiqueta: f['Etiqueta'], encabezado: f['Encabezado'], ayuda: f['Ayuda'],
+      suma: f['Medida'].includes('_SUM_'),
       filtro: f['Filtro'].includes('✅'), obligatorio: f['Obligatorio'].includes('✅'),
       orden: Number.isInteger(orden) ? orden : undefined,
       texto: de('texto'), moneda: de('moneda'), unidad: de('unidad'),
@@ -67,6 +68,17 @@ function anotacion(def: Record<string, any>, termino: string): any {
   if (!partes.length) return undefined;
   return Object.fromEntries(partes.map((k) => [k.slice(prefijo.length), def[k]]));
 }
+
+// Tabla de cada entidad en el manifest (D41): [página, clave de controlConfiguration].
+const manifest = JSON.parse(readFileSync(join(raiz, 'app/conexiones/webapp/manifest.json'), 'utf8'));
+const tablas = {
+  Conexiones: ['ConexionesList', '@com.sap.vocabularies.UI.v1.LineItem'],
+  Vuelos: ['ConexionesObjectPage', '_Flight/@com.sap.vocabularies.UI.v1.LineItem'],
+} as const;
+const tablaEnManifest = (nombre: keyof typeof tablas) => {
+  const [pagina, clave] = tablas[nombre];
+  return manifest['sap.ui5'].routing.targets[pagina].options.settings.controlConfiguration?.[clave]?.tableSettings;
+};
 
 const comoTarget = (t: string) => (t.startsWith('@') || t.startsWith('_') ? t : '@' + t);
 
@@ -117,6 +129,33 @@ for (const [nombre, campos] of Object.entries(listas)) {
         assert.equal(els[c.campo]['@Common.Heading'], c.encabezado, `${c.campo}: @Common.Heading`);
         assert.equal(els[c.campo]['@Common.QuickInfo'], c.ayuda, `${c.campo}: @Common.QuickInfo`);
       }
+    });
+
+    it('medidas (columna Medida = _SUM_, D38): @Analytics.Measure, @Aggregation.default #SUM y CustomAggregate', () => {
+      const def = entidad(nombre);
+      for (const c of campos) {
+        const e = def.elements[c.campo];
+        assert.equal(e['@Analytics.Measure'] ?? false, c.suma, `${c.campo}: @Analytics.Measure`);
+        assert.equal(e['@Aggregation.default']?.['#'], c.suma ? 'SUM' : undefined, `${c.campo}: @Aggregation.default`);
+        assert.equal(def[`@Aggregation.CustomAggregate#${c.campo}`] !== undefined, c.suma, `${c.campo}: @Aggregation.CustomAggregate`);
+      }
+    });
+
+    it('con medidas: ApplySupported (agregables = medidas, agrupables = el resto) y AnalyticalTable con exportación (D41)', () => {
+      const medidas = campos.filter((c) => c.suma).map((c) => c.campo);
+      const apply = anotacion(entidad(nombre), '@Aggregation.ApplySupported');
+      const tabla = tablaEnManifest(nombre as keyof typeof tablas);
+      assert.equal(tabla?.enableExport, true, 'exportar a Excel');
+      if (!medidas.length) {
+        assert.equal(apply, undefined);
+        assert.notEqual(tabla?.type, 'AnalyticalTable');
+        return;
+      }
+      assert.deepEqual((apply.AggregatableProperties ?? []).map((p: any) => ruta(p.Property)).sort(), [...medidas].sort());
+      assert.deepEqual((apply.GroupableProperties ?? []).map((p: unknown) => ruta(p)).sort(),
+        campos.filter((c) => !c.suma).map((c) => c.campo).sort());
+      assert.ok(!(apply.Transformations ?? []).includes('concat'), 'el RAP no soporta concat (D46)');
+      assert.equal(tabla?.type, 'AnalyticalTable', 'los totales solo se ven en la tabla analítica');
     });
 
     it('la tabla incluye todos los campos de la entidad (ningún texto del RAP sin traducir, D40)', () => {

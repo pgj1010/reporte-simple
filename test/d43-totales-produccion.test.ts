@@ -5,6 +5,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { iniciar, respuestaVacia, type Entorno } from './rap-simulado.ts';
+import { rechazoDelGateway } from './mock/rap.ts';
 
 // El RAP simulado tiene N vuelos: si CAP los pidiera para sumarlos, se notaría en las peticiones y bytes.
 const N = 50_000;
@@ -16,6 +17,9 @@ let rap: Entorno;
 describe('D43 — producción: $apply se reenvía al RAP', () => {
   before(async () => {
     rap = await iniciar(url => {
+      // Rechaza lo mismo que el Gateway real (concat, alias igual al campo): ver rechazoDelGateway.
+      const rechazo = rechazoDelGateway(url, Object.keys(vuelo));
+      if (rechazo) return { __status: rechazo.status, error: { code: String(rechazo.status), message: rechazo.message } };
       const u = new URL('http://x' + url);
       if (u.searchParams.has('$apply')) return { value: [totalRap] };
       if (/\/Vuelos\?/.test(url)) {
@@ -27,7 +31,8 @@ describe('D43 — producción: $apply se reenvía al RAP', () => {
   });
   after(() => rap?.cerrar());
 
-  const APPLY = 'aggregate(SeatsOccupied with sum as SeatsOccupied,SeatsMax with sum as SeatsMax)';
+  // Como pide Fiori (agregados predefinidos, D45); el RAP real no acepta `with sum as <mismo campo>` ni `concat`.
+  const APPLY = 'aggregate(SeatsOccupied,SeatsMax)';
 
   it('Vuelos?$apply=… llega al RAP tal cual, en una sola petición, y CAP devuelve el total del RAP', async () => {
     const r = await rap.pedir(`Vuelos?$apply=${encodeURIComponent(APPLY)}`);
@@ -53,7 +58,7 @@ describe('D43 — producción: $apply se reenvía al RAP', () => {
   });
 
   it('con filter y groupby (totales por moneda, como en TRM) el RAP recibe la transformación completa', async () => {
-    const apply = "filter(CarrierId eq 'AA')/groupby((CurrencyCode),aggregate(SeatsMax with sum as SeatsMax))";
+    const apply = "filter(CarrierId eq 'AA')/groupby((CurrencyCode),aggregate(SeatsMax))";
     await rap.pedir(`Vuelos?$apply=${encodeURIComponent(apply)}`);
     assert.deepEqual(rap.recibidas, [`/Vuelos?$apply=${apply}`]);
   });
