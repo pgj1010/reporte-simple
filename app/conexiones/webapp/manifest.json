@@ -17,7 +17,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/odata/v4/reporte/",
+        "uri": "odata/v4/reporte/",
         "type": "OData",
         "settings": {
           "annotations": [],

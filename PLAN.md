@@ -99,19 +99,25 @@ Decisiones del usuario en esta etapa: D11, D17, D18, la ampliación de D10 y el 
 
 ## Etapa 3 — App Fiori Elements (List Report + Object Page)
 Rama: `etapa-3-fiori`
-- [ ] ~~Generar app~~ La app `app/conexiones` ya fue generada (2026-11-09, antes de la Etapa 2; List Report V4, `Conexiones` + `_Flight`): **revisarla** en lugar de regenerarla
-- [ ] Corregir rutas del `manifest.json` a **relativas** (`odata/v4/reporte/`)
+- [x] ~~Generar app~~ La app `app/conexiones` ya fue generada (2026-11-09, antes de la Etapa 2; List Report V4, `Conexiones` + `_Flight`): **revisarla** en lugar de regenerarla. Revisada el 2026-11-10; hallazgos en los pendientes de abajo
+- [x] Corregir rutas del `manifest.json` a **relativas** (`odata/v4/reporte/`). Test automático de la regla 17 (D19, mutación manual detectada con `/` y `http://`); los tests OPA quedan fuera (D20); proxy local en `ui5.yaml` (D21). Verificado con curl (4 conexiones con `alice`, 401 sin usuario, sin bucle de proxy) y en el navegador por el usuario: los datos llegan por `/conexiones/odata/v4/reporte/` y aparecen los filtros de aeropuerto de salida y de destino
 - [ ] Verificar tabla, filtros (R8) y textos heredados del RAP
+- [ ] **Adelantado de la Etapa 4 (bloquea R7):** la tabla sale **sin columnas** por defecto (el usuario tuvo que agregarlas a mano; la variante queda "Estándar*"): el `@UI.LineItem` del RAP no se aplica. Investigar la causa (¿avisos `SAP__UI.* is not a known vocabulary type`?) y resolverlo sin editar `srv/external`, con la tabla **Semántica del reporte** como fuente (D8). Revisar también la página de detalle (`Facets`, `HeaderInfo`)
 - [ ] Resolver la asociación `_Flight` (condición `CarrierId` + `ConnectionId`) para que el detalle muestre vuelos (R7)
 - [ ] Probar drilldown a la página de detalle
 - [ ] Ejecutar R8 de `test/PRUEBAS_MANUALES.md` y registrar el resultado
 - [ ] Arrancar siempre con `npm run watch` (D13); no instalar `tsx`
+- [ ] **Pendiente (revisión de la app):** `webapp/index.html` tiene `lang="en"` → `lang="es"` (D11)
+- [ ] **Pendiente (revisión de la app):** `annotations.cds` vacío (solo `using`) · UI5 1.154.0 cargado desde el CDN en `index.html` · `sap.fiori.archeType: transactional` en una app de solo lectura · `.appGenInfo.json` conserva `http://localhost:4004/...` (registro del generador, no se toca, D20)
 - [ ] **Pendiente (de Etapa 2):** `cds add typescript` instaló TypeScript 7 y `@sap-ux/eslint-plugin-fiori-tools` (vía `typescript-eslint`) pide `typescript <6.1`. Afecta solo al lint de la app; decidir cómo resolverlo
 
 Salida: la app abre, lista las conexiones mock y navega al detalle con sus vuelos; `npm test` en verde.
 
 ### Decisiones de la etapa
-- _(anotar aquí al tomarlas)_
+- D19 — Test automático de la regla 17 (`test/regla17-rutas.test.ts`): ningún `dataSources.*.uri` de `app/*/webapp/manifest.json` empieza con `/` ni con `http`. Propuesta propia, aprobada por el usuario.
+- D20 — La regla 17 aplica a la app desplegable, no a los tests OPA: `FirstJourney.js` conserva la ruta absoluta (una relativa se resolvería contra la página de test). Decisión del usuario.
+- D21 — En local la ruta relativa resuelve a `/conexiones/odata/...` (404): `backend` en el `fiori-tools-proxy` de `app/conexiones/ui5.yaml` (`/odata` → `http://localhost:4004`), solo desarrollo. Decisión del usuario (opción 1).
+- Cambio de plan (usuario, 2026-11-10): las anotaciones de tabla y detalle se adelantan de la Etapa 4 a la Etapa 3 porque bloquean R7.
 
 ## Etapa 4 — Presentación del reporte
 Rama: `etapa-4-presentacion`
@@ -207,3 +213,5 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-09 — Etapa 2: el test de R5 fallaba de forma intermitente con `cds build -o` (dos tareas escriben el mismo `package.json`). Ahora usa `CDS_BUILD_TARGET=_out/r5-build-<pid>`, el mismo camino que el despliegue.
 - 2026-11-09 — **Etapa 2 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 43/43, mutaciones R2/R3 detectadas (manual y `npm run test:mutacion`). Decisiones D9–D18; D6 reemplazada por D13. Etapa activa: 3.
 - 2026-11-09 — D8: tabla "Semántica del reporte" como fuente de verdad de anotaciones (filtros, obligatorios, columnas, medidas, textos, value helps), para servicios que no vienen enriquecidos. Nueva regla R11 y sección "Análisis del servicio origen". Se detecta que el value help de aeropuertos no funciona en CAP (apunta a otro servicio). Etapa 7 se amplía a "generalización" por pedido del usuario.
+- 2026-11-10 — Etapa 2 aprobada por el usuario y mergeada a `main` (`--no-ff`); D11 aclarada a "siempre en español". Rama `etapa-3-fiori`.
+- 2026-11-10 — Etapa 3, pasos 1 y 2: ruta relativa en `manifest.json` (D19, D20); en local resolvía a `/conexiones/odata/...` (404) → proxy en `ui5.yaml` (D21). Hallazgo del usuario en el navegador: la tabla sale sin columnas (el `@UI.LineItem` del RAP no se aplica) → se adelanta a la Etapa 3.
