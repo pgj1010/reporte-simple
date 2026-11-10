@@ -41,7 +41,7 @@ Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etap
 
 - **IDE:** SAP Business Application Studio, Dev Space *Full Stack Cloud Application*.
 - **Proyecto:** `/home/user/projects/reporte-simple` (abrir esta carpeta como raíz del workspace).
-- **CAP:** `@sap/cds` 10.x, `@sap/cds-dk` 10.x global, Node 24.
+- **CAP:** `@sap/cds` 10.x, `@sap/cds-dk` 10.x global, Node 24, **TypeScript `~6.0`** (no subir a 7, ver Lecciones aprendidas).
 - **Módulos:** `"type": "module"` → ESM (`import` / `export default`). Nunca `require` ni `module.exports`.
 - **TypeScript nativo de Node 24 (D13):** sin `tsx` ni `ts-node`. Solo sintaxis borrable (`erasableSyntaxOnly`: nada de `enum`, `namespace` ni parameter properties); `import type` para tipos (`verbatimModuleSyntax`); imports relativos con extensión `.ts`. Revisar tipos con **`npx tsc --noEmit -p tsconfig.test.json`** (incluye `test/`). `tsconfig.json` solo incluye `srv` y `@cds-models` para que `cds build` no compile los tests ni el mock (D30).
 - **Cloud Foundry:** API `<CF_API>`, org `<CF_ORG>`, space `dev`. Login con `cf login --sso`.
@@ -114,6 +114,7 @@ reporte-simple/
 - Las **asociaciones importadas de RAP llegan sin condición `on`** (`_Flight : Association to many Vuelos { }`): el `$metadata` V4 no publica condiciones. **En producción las resuelve el RAP** (CAP delega `/_Flight` y `$expand=_Flight` tal cual); **solo el mock necesita ayuda** (SQLite: "has no foreign keys"). No redefinir la asociación en `srv/`: CAP pediría al RAP una navegación que no existe. Confirmar la condición en ADT y simularla en `test/mock/` (cargado por `test/mocked.js`, que CAP desactiva en producción) — D25, D26, D29.
 - El generador de Fiori suele crear rutas absolutas (`/odata/v4/...`) → corregir a relativas (regla 17).
 - **`tsx` + `cds-plugin-ui5` agota la memoria** (~2 GB en ~12 s) tanto en `cds watch` como en `node:test`. Por eso el proyecto usa TypeScript nativo de Node 24 (D13) y no tiene `tsx`. `CDS_TYPESCRIPT=false` no se puede fijar con `.env` ni en `package.json` (cds-dk lo lee de `process.env` antes de cargar la configuración): va en los scripts `npm run watch` / `watch-conexiones` y en `.vscode/`.
+- **TypeScript 7 rompe el lint de Fiori tools:** `typescript-eslint` (vía `@sap-ux/eslint-plugin-fiori-tools`) pide `typescript <6.1` y con TS 7 ESLint se cae (`Cannot read properties of undefined (reading 'Intrinsic')`). `cds add typescript` instala TS 7: fijar `typescript: "~6.0"` y no subirlo hasta que `typescript-eslint` lo soporte (`npm view typescript-eslint peerDependencies`). `npm test` incluye `npm run lint` (D35), así que un lint roto se detecta.
 - Con el plugin UI5 activo, `node --test` no termina (el livereload deja el proceso abierto): `npm test` corre con `CDS_PLUGIN_UI5_ACTIVE=false` (D12).
 - `cds.test` necesita `@cap-js/cds-test` y, para simular el servicio remoto, los argumentos `--with-mocks --in-memory`.
 - TypeScript 6+ ya no carga `@types/*` automáticamente: `tsconfig.json` declara `"types": ["node", "@cap-js/cds-types"]`. No mapear `@sap/cds` en `paths`: el runtime lo resolvería al `.d.ts`.

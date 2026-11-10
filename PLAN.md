@@ -111,7 +111,7 @@ Rama: `etapa-3-fiori`
 - [ ] Arrancar siempre con `npm run watch` (D13); no instalar `tsx`
 - [x] ~~**Pendiente (revisión de la app):** `webapp/index.html` tiene `lang="en"` → `lang="es"` (D11). Relacionado: el UI5 tooling avisa `Generated supported locales ('') for bundle 'i18n/i18n.properties' do not contain default fallback locale 'en'` (falta `supportedLocales` / `fallbackLocale` en `manifest.json`, o `i18n_es.properties`)~~ **Hecho (2026-11-10):** R13 — `lang="es"` y `data-sap-ui-language="es"` en `index.html`; `supportedLocales: [""]` + `fallbackLocale: ""` en los 3 bundles de `manifest.json`, manteniendo `i18n.properties` (D33, D34). El aviso de locales desapareció del manifiesto servido. Test `r13-idioma-app` (mutaciones detectadas: `lang="en"`, sin `fallbackLocale`, `i18n_en.properties`). Prueba manual R13 hecha por el usuario (Chrome en inglés, ventana normal con recarga forzada): pasos 1–3 ✔
 - [ ] **Pendiente (revisión de la app):** `annotations.cds` vacío (solo `using`) · UI5 1.154.0 cargado desde el CDN en `index.html` · `sap.fiori.archeType: transactional` en una app de solo lectura · `.appGenInfo.json` conserva `http://localhost:4004/...` (registro del generador, no se toca, D20)
-- [ ] **Pendiente (de Etapa 2):** `cds add typescript` instaló TypeScript 7 y `@sap-ux/eslint-plugin-fiori-tools` (vía `typescript-eslint`) pide `typescript <6.1`. Afecta solo al lint de la app; decidir cómo resolverlo
+- [x] **Pendiente (de Etapa 2):** `cds add typescript` instaló TypeScript 7 y `@sap-ux/eslint-plugin-fiori-tools` (vía `typescript-eslint`) pide `typescript <6.1`. Afecta solo al lint de la app; decidir cómo resolverlo. **Hecho (2026-11-10, D35):** el lint no solo avisaba, se caía (`reading 'Intrinsic'`). `typescript: "~6.0"` (6.0.3); lint en verde (2,6 s, 167 reglas, error de control detectado) y dentro de `npm test` (`test/lint.test.ts`); `cds build --production` sin cambios; `npm test` 97/97
 
 Salida: la app abre, lista las conexiones mock y navega al detalle con sus vuelos; `npm test` en verde.
 
@@ -133,6 +133,7 @@ Salida: la app abre, lista las conexiones mock y navega al detalle con sus vuelo
 - D32 — La anotación de D31 va en `srv/service.cds`, no en `annotations.cds`. Decisión del usuario.
 - D33 — App de un solo idioma: `supportedLocales: [""]` + `fallbackLocale: ""` con `i18n.properties` sin sufijo (en vez de renombrar a `i18n_es.properties`): es lo que el UI5 tooling ya generaba y donde escribe Fiori tools. Decisión propia tras comparar las dos opciones, pedida por el usuario.
 - D34 — R13 como regla aparte de R10; idioma de UI5 fijo en `index.html`. Límite: en Work Zone / Launchpad manda el idioma del launchpad (verificar en Etapa 5). Decisión del usuario.
+- D35 — `typescript: "~6.0"` (TS 7 rompe `typescript-eslint`) y `npm run lint` dentro de `npm test` (~3 s). Decisión del usuario (opción a).
 
 ## Etapa 4 — Presentación del reporte
 Rama: `etapa-4-presentacion`
@@ -240,3 +241,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-10 — R7 verificado en el navegador (AA 0017; LH 0402 sin confirmar). Hallazgo del usuario: `Price` sale sin decimales (423 USD). Causa: `cds import` convierte `Scale="variable"` en `Decimal(16)` (escala 0) y CAP publica `Precision="16"` sin `Scale`. Nueva regla R12; D31 (`@odata.Type`/`Precision`/`Scale: 'variable'`) y D32 (en `srv/service.cds`) aprobadas.
 - 2026-11-10 — Verificación del usuario en el navegador: R7 completo (LH 0402 vacía con "Todavía no hay entradas", sin error) y R12 (AA 0017 con decimales). Próximo paso aprobado: idioma de UI5 fijo en español (R13, D33, D34).
 - 2026-11-10 — R13: idioma de UI5 fijo en español (D34). D33: se compararon `[""]` sin sufijo y `i18n_es.properties` + `["es"]`; se eligió `[""]` (el tooling ya lo generaba, Fiori tools escribe en `i18n.properties`). El aviso de locales desapareció.
+- 2026-11-10 — D35: TS 7 rompía el lint de Fiori tools (se caía, no solo avisaba) → `typescript: "~6.0"`; lint dentro de `npm test` (2,6 s). `npm test` 97/97.
