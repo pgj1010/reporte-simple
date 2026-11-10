@@ -70,10 +70,11 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 
 | # | Paso | Resultado esperado |
 |---|---|---|
-| 1 | Abrir la app y pulsar **Ir**. | La tabla muestra estas columnas **en este orden**: 1 Id aerolínea · 2 Número vuelo · 3 Aeropuerto salida · 4 Aeropuerto destino · 5 Hora salida · 6 Hora llegada · 7 Distancia · 8 Medida. |
+| 1 | Abrir la app y pulsar **Ir**. | La tabla muestra estas columnas **en este orden**: 1 Id aerolínea · 2 Número vuelo · 3 Aeropuerto salida · 4 Aeropuerto destino · 5 Hora salida · 6 Hora llegada · 7 Distancia. **Sin** columna "Medida" (D39). |
 | 2 | Revisar la columna **Id aerolínea**. | Muestra el código con su texto (`CarrierId_Text`, p. ej. "American Airlines"), según `@Common.Text` / `@UI.TextArrangement`. |
-| 3 | Revisar la columna **Distancia**. | Muestra la unidad de `DistanceUnit` (p. ej. `MI`, `KM`). |
+| 3 | Revisar la columna **Distancia** y la sección "Detalles de conexión" del detalle. | La distancia muestra su unidad junto al número (p. ej. `2572 MI`, `6162 KM`); no hay campo "Medida" aparte, ni en la lista ni en el detalle (D39). |
 | 4 | Comparar cada etiqueta de columna con la columna "Etiqueta" de la tabla de semántica. | Coinciden todas, en español. |
+| 4b | Abrir **Ajustes de tabla** (selector de columnas) y pasar el ratón por algunos campos y filtros. | Los nombres (p. ej. "Aerolínea", "Moneda") y los tooltips (p. ej. "Cantidad de asientos ocupados") están en español; no aparece "Airline Name", "Currency Code" ni "Flight Reference Scenario: …" (D40). |
 
 ### B. Drilldown: Conexión → detalle → Vuelos
 

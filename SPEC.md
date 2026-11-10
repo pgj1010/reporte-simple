@@ -48,34 +48,37 @@ Se completa al inicio de cada reporte, revisando el `$metadata` / el `.cds` impo
 
 Fuente de verdad para las anotaciones del reporte. Columna **Origen**: `RAP` = viene del servicio; `CAP` = se define o sobrescribe en `app/conexiones/annotations.cds`. Cambiar esta tabla primero; luego las anotaciones; luego el test R11.
 
-> **Columnas, secciones y cabecera = `CAP` (D22):** el RAP las trae con el alias `SAP__UI`, que CAP no reconoce. Etiquetas y orden se toman del RAP, pero se definen en `annotations.cds`. La columna **Origen** de las tablas de abajo se refiere a la etiqueta, el filtro, el texto y la unidad del campo; las columnas (`UI.LineItem`) son siempre `CAP`. La columna **Etiqueta** es a la vez la etiqueta de la columna (`UI.DataField.Label`) y la del campo (`@Common.Label`, la que usan el selector de columnas, los filtros y los value helps) (D24).
+> **Columnas, secciones y cabecera = `CAP` (D22):** el RAP las trae con el alias `SAP__UI`, que CAP no reconoce. Etiquetas y orden se toman del RAP, pero se definen en `annotations.cds`. La columna **Origen** de las tablas de abajo se refiere a la etiqueta, el filtro, el texto y la unidad del campo; las columnas (`UI.LineItem`) son siempre `CAP`. La columna **Etiqueta** es a la vez la etiqueta de la columna (`UI.DataField.Label`) y la del campo (`@Common.Label`, la que usan el selector de columnas, los filtros y los value helps) (D24). **Encabezado** = `@Common.Heading` y **Ayuda** = `@Common.QuickInfo` (tooltip), en español (D40). La tabla incluye **todos** los campos de cada entidad, también los que no son columna, para que ningún texto en inglés del RAP quede sin traducir; R11 lo verifica. En **Medida**, `_SUM_` = total de la columna (D38).
 
 ### Conexiones (List Report)
 
-| Campo | Etiqueta | Filtro | Obligatorio | Columna (orden) | Medida | Texto de / Unidad | Value help | Origen |
-|---|---|---|---|---|---|---|---|---|
-| CarrierId | Id aerolínea | — | — | 1 | — | texto: `CarrierId_Text` | — | RAP |
-| ConnectionId | Número vuelo | — | — | 2 | — | — | — | RAP |
-| AirportFromId | Aeropuerto salida | ✅ | — | 3 | — | — | Aeropuertos ⚠️ | RAP |
-| AirportToId | Aeropuerto destino | ✅ | — | 4 | — | — | Aeropuertos ⚠️ | RAP |
-| DepartureTime | Hora salida | — | — | 5 | — | — | — | RAP |
-| ArrivalTime | Hora llegada | — | — | 6 | — | — | — | RAP |
-| Distance | Distancia | — | — | 7 | _por definir_ | unidad: `DistanceUnit` | — | RAP; unidad CAP (D23) |
-| DistanceUnit | Medida | — | — | 8 | — | — | — | RAP |
-| CarrierName | Nombre aerolínea | — | — | (título del detalle) | — | — | — | RAP |
+| Campo | Etiqueta | Encabezado | Ayuda | Filtro | Obligatorio | Columna (orden) | Medida | Texto de / Unidad | Value help | Origen |
+|---|---|---|---|---|---|---|---|---|---|---|
+| CarrierId | Id aerolínea | Id aerolínea | Código de la aerolínea | — | — | 1 | — | texto: `CarrierId_Text` | — | RAP; encabezado y ayuda CAP (D40) |
+| CarrierId_Text | Aerolínea | Aerolínea | Nombre de la aerolínea (texto del Id aerolínea) | — | — | — | — | — | — | CAP (D40) |
+| ConnectionId | Número vuelo | N.º vuelo | Número de la conexión | — | — | 2 | — | — | — | RAP; encabezado y ayuda CAP (D40) |
+| AirportFromId | Aeropuerto salida | Salida | Código del aeropuerto de salida | ✅ | — | 3 | — | — | Aeropuertos ⚠️ | RAP; encabezado y ayuda CAP (D40) |
+| AirportToId | Aeropuerto destino | Destino | Código del aeropuerto de destino | ✅ | — | 4 | — | — | Aeropuertos ⚠️ | RAP; encabezado y ayuda CAP (D40) |
+| DepartureTime | Hora salida | Hora salida | Hora de salida del vuelo | — | — | 5 | — | — | — | RAP; encabezado y ayuda CAP (D40) |
+| ArrivalTime | Hora llegada | Hora llegada | Hora de llegada del vuelo | — | — | 6 | — | — | — | RAP; encabezado y ayuda CAP (D40) |
+| Distance | Distancia | Distancia | Distancia del vuelo | — | — | 7 | — | unidad: `DistanceUnit` | — | RAP; unidad CAP (D23); encabezado y ayuda CAP (D40) |
+| DistanceUnit | Medida | Unidad | Unidad de medida de la distancia | — | — | — (D39) | — | — | — | RAP; encabezado y ayuda CAP (D40) |
+| CarrierName | Nombre aerolínea | Aerolínea | Nombre de la aerolínea | — | — | (título del detalle) | — | — | — | RAP; encabezado y ayuda CAP (D40) |
 
 ### Vuelos (sección del detalle)
 
-| Campo | Etiqueta | Filtro | Obligatorio | Columna (orden) | Medida | Texto de / Unidad | Value help | Origen |
-|---|---|---|---|---|---|---|---|---|
-| CarrierId | Id aerolínea | — | — | 1 | — | texto: `CarrierId_Text` | — | RAP; etiqueta CAP (D24) |
-| ConnectionId | Número vuelo | — | — | 2 | — | — | — | RAP; etiqueta CAP (D24) |
-| FlightDate | Fecha vuelo | — | — | 3 | — | — | — | RAP; etiqueta CAP (D24) |
-| Price | Precio vuelo | — | — | 4 | _por definir_ | moneda: `CurrencyCode` | — | RAP; etiqueta CAP (D24) |
-| PlaneTypeId | Tipo vuelo | — | — | 5 | — | — | — | RAP; etiqueta CAP (D24) |
-| SeatsMax | Capacidad máxima | — | — | 6 | _por definir_ | — | — | RAP; etiqueta CAP (D24) |
-| SeatsOccupied | Ocupación asientos | — | — | 7 | _por definir_ | — | — | RAP; etiqueta CAP (D24) |
-| CarrierName | Nombre aerolínea | — | — | 8 | — | — | — | RAP; etiqueta CAP (D24) |
+| Campo | Etiqueta | Encabezado | Ayuda | Filtro | Obligatorio | Columna (orden) | Medida | Texto de / Unidad | Value help | Origen |
+|---|---|---|---|---|---|---|---|---|---|---|
+| CarrierId | Id aerolínea | Id aerolínea | Código de la aerolínea | — | — | 1 | — | texto: `CarrierId_Text` | — | RAP; etiqueta CAP (D24); encabezado y ayuda CAP (D40) |
+| CarrierId_Text | Aerolínea | Aerolínea | Nombre de la aerolínea (texto del Id aerolínea) | — | — | — | — | — | — | CAP (D40) |
+| ConnectionId | Número vuelo | N.º vuelo | Número de la conexión | — | — | 2 | — | — | — | RAP; etiqueta CAP (D24); encabezado y ayuda CAP (D40) |
+| FlightDate | Fecha vuelo | Fecha | Fecha del vuelo | — | — | 3 | — | — | — | RAP; etiqueta CAP (D24); encabezado y ayuda CAP (D40) |
+| Price | Precio vuelo | Precio | Precio del vuelo | — | — | 4 | — (mezcla monedas, D38) | moneda: `CurrencyCode` | — | RAP; etiqueta CAP (D24); encabezado y ayuda CAP (D40) |
+| CurrencyCode | Moneda | Moneda | Código de la moneda del precio | — | — | — | — | — | — | CAP (D40) |
+| PlaneTypeId | Tipo vuelo | Avión | Tipo de avión | — | — | 5 | — | — | — | RAP; etiqueta CAP (D24); encabezado y ayuda CAP (D40) |
+| SeatsMax | Capacidad máxima | Capacidad | Cantidad máxima de asientos | — | — | 6 | _SUM_ (D38) | — | — | RAP; etiqueta CAP (D24); encabezado y ayuda CAP (D40) |
+| SeatsOccupied | Ocupación asientos | Ocupados | Cantidad de asientos ocupados | — | — | 7 | _SUM_ (D38) | — | — | RAP; etiqueta CAP (D24); encabezado y ayuda CAP (D40) |
+| CarrierName | Nombre aerolínea | Aerolínea | Nombre de la aerolínea | — | — | 8 | — | — | — | RAP; etiqueta CAP (D24); encabezado y ayuda CAP (D40) |
 
 ### Página de detalle (Object Page) — Origen `CAP` (D22), contenido tomado del RAP
 
@@ -85,14 +88,14 @@ Fuente de verdad para las anotaciones del reporte. Columna **Origen**: `RAP` = v
 | Conexión | Descripción (`HeaderInfo.Description`) | `ConnectionId` |
 | Conexión | Tipo (`TypeName` / `TypeNamePlural`) | Conexión / Conexiones (RAP, sin `$Type`: funciona) |
 | Conexión | Cabecera (`HeaderFacets`) | 1. Aeropuerto Salida (`DataPoint#tqAirportFrom` → `AirportFromId`) · 2. Aeropuerto Destino (`DataPoint#tqAirportTo` → `AirportToId`) |
-| Conexión | Sección 1 "Detalles de conexión" (`idConnection` → `UI.Identification`) | Hora salida (`DepartureTime`) · Hora llegada (`ArrivalTime`) · Distancia (`Distance`) · Medida (`DistanceUnit`) |
+| Conexión | Sección 1 "Detalles de conexión" (`idConnection` → `UI.Identification`) | Hora salida (`DepartureTime`) · Hora llegada (`ArrivalTime`) · Distancia (`Distance`) — sin "Medida" (D39) |
 | Conexión | Sección 2 "Detalles de vuelos" (`idFlight` → `_Flight/@UI.LineItem`) | Tabla de vuelos con las columnas de la tabla **Vuelos** (requiere R7) |
 | Vuelo | Título (`HeaderInfo.Title`) | `CarrierName` |
 | Vuelo | Tipo (`TypeName` / `TypeNamePlural`) | Vuelo / Vuelos (RAP) |
 | Vuelo | Cabecera (`HeaderFacets`) | 1. Número vuelo (`DataPoint#tqFlightNumber` → `ConnectionId`) · 2. Fecha vuelo (`DataPoint#tqFlightDate` → `FlightDate`) |
 | Vuelo | Sección 1 "Detalle vuelo" (`idFlight` → `UI.Identification`) | Precio vuelo (`Price`) · Tipo vuelo (`PlaneTypeId`) · Capacidad máxima (`SeatsMax`) · Ocupación asientos (`SeatsOccupied`) |
 
-Pendientes para la Etapa 4: decidir medidas y totales (p. ej. `SUM` de `SeatsOccupied` / `SeatsMax`), si se cambia el orden de columnas y cómo se resuelve el value help de aeropuertos.
+Decidido en la Etapa 4: totales `SUM` de `SeatsOccupied` y `SeatsMax` (D38), sin columna "Medida" (D39), textos en español (D40), orden de columnas sin cambios (D41), value help con `/dmo/i_airport_stdvh` (D42).
 
 ---
 
@@ -146,7 +149,8 @@ Pendientes para la Etapa 4: decidir medidas y totales (p. ej. `SUM` de `SeatsOcc
 | D36 | `sap.fiori.archeType: "transactional"` (lo pone el generador de Fiori Elements) se deja en `manifest.json` aunque la app sea de solo lectura: es un metadato descriptivo del tipo de app y no cambia el comportamiento (la solo lectura la garantizan `@readonly`, R2). Propuesta propia, aprobada por el usuario. | R2, R9 | Cambiándolo a `analytical` no cambiaría nada en pantalla y la app quedaría distinta de lo que generan las herramientas; si en el futuro un launchpad o un catálogo filtrara por este valor, habría que revisarlo (Etapa 5). |
 | D37 | Se quita de R8 el paso manual que revisaba en DevTools → Red que la URL sea relativa y que el `$filter` use `AirportFromId` / `AirportToId`. Lo cubren: el test automático de la regla 17 (D19), la verificación con curl del proxy local (D21) y los pasos 3–4 de R8 (si el filtro usara otro campo, no devolvería LH 0400 y LH 0402). Propuesta del usuario. | R8, regla técnica 17, D19, D21 | Manteniéndolo, cada ejecución de R8 repetiría a mano una comprobación que ya es automática; si se elimina el test de D19, este paso habría que recuperarlo. |
 | D38 | Totales del reporte: **`SUM` de `SeatsOccupied` y `SeatsMax`** en la tabla de Vuelos. `Price` y `Distance` **sin total** (mezclan monedas y unidades). Este reporte es el **laboratorio del patrón de totales** para futuros reportes (p. ej. posiciones TRM por moneda): el patrón se documenta en detalle. Decisión del usuario. | R11, R9, D8 | Con total de `Price`, se sumarían USD, EUR y SGD en un número sin significado; con total de `Distance`, millas con kilómetros. Sin totales, la Etapa 4 no probaría el patrón que necesitan los próximos reportes. |
-| D39 | Se quita la **columna 8 "Medida"** (`DistanceUnit`) del List Report: la unidad ya se ve junto a la distancia (D23). Decisión del usuario. | R11, R9, D23 | Dejándola, la unidad aparece dos veces en cada fila. |
-| D40 | Se traducen al español **todas** las etiquetas que siguen en inglés desde el RAP (D11). Decisión del usuario; alcance exacto (etiquetas, `Heading`, `QuickInfo`) por confirmar. | R11, D24, D11, regla 16 | Sin traducir, el selector de columnas, los filtros y la exportación a Excel mostrarían "Airline Name", "Currency Code", … |
+| D39 | Se quita **"Medida"** (`DistanceUnit`) de la lista (columna 8) **y** de la sección "Detalles de conexión" del detalle: la unidad ya se ve junto a la distancia (D23). Decisión del usuario. | R11, R9, D23 | Dejándola, la unidad aparece dos veces en cada fila. |
+| D40 | Se traducen al español **todas** las etiquetas que siguen en inglés desde el RAP (D11). Alcance confirmado por el usuario: **etiquetas, `Heading` y `QuickInfo`** de todos los campos, con columnas "Encabezado" y "Ayuda" en la tabla de semántica y la tabla completa (todos los campos de cada entidad), verificado por R11. Decisión del usuario. | R11, D24, D11, regla 16 | Sin traducir, el selector de columnas, los filtros y la exportación a Excel mostrarían "Airline Name", "Currency Code", … |
 | D41 | **Exportar a Excel: sí.** Tipo de tabla: el que requieran los totales (D43). Drilldown al vuelo y orden de columnas: se mantienen. Decisión del usuario. | R9 | Sin exportación, el usuario tendría que copiar a mano; con otro tipo de tabla que el que piden los totales, no se verían. |
 | D42 | Value help de aeropuertos: **importar el servicio `/dmo/i_airport_stdvh`** (el F4 original del RAP). El `$metadata` lo baja el usuario desde S/4 (desde BAS no se llega, D4). Decisión del usuario (opción a). | R8, D1, regla técnica 10 | Con `@Common.ValueList` propio sobre `Conexiones` solo se listarían aeropuertos con conexiones y sin nombre; sin F4, el usuario debe saber los códigos. |
+| D44 | **Textos en español propuestos por Claude** para D40 (columnas Encabezado y Ayuda, y la etiqueta de los campos que no estaban en la tabla): `CarrierId_Text` = "Aerolínea", `CurrencyCode` = "Moneda"; encabezados cortos ("N.º vuelo", "Salida", "Ocupados", …) y ayudas descriptivas ("Cantidad de asientos ocupados", …). Los textos están en la tabla de semántica para que el usuario los revise. Propuesta propia. | D40, R11, regla 16 | Copiando literalmente las etiquetas como encabezado y ayuda, los tooltips no agregarían información; traduciendo literalmente el inglés del RAP ("Flight Reference Scenario: …"), el tooltip sería un texto técnico del modelo de demo. |

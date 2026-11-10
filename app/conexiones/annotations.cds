@@ -16,8 +16,8 @@ annotate service.Conexiones with @(
     { $Type: 'UI.DataField', Label: 'Aeropuerto destino', Value: AirportToId   },
     { $Type: 'UI.DataField', Label: 'Hora salida',        Value: DepartureTime },
     { $Type: 'UI.DataField', Label: 'Hora llegada',       Value: ArrivalTime   },
-    { $Type: 'UI.DataField', Label: 'Distancia',          Value: Distance      },
-    { $Type: 'UI.DataField', Label: 'Medida',             Value: DistanceUnit  }
+    { $Type: 'UI.DataField', Label: 'Distancia',          Value: Distance      }
+    // D39: sin "Medida" (DistanceUnit): la unidad se ve junto a la distancia (D23)
   ],
 
   UI.HeaderInfo.Title       : { $Type: 'UI.DataField', Value: CarrierName  },
@@ -36,8 +36,8 @@ annotate service.Conexiones with @(
   UI.Identification         : [
     { $Type: 'UI.DataField', Label: 'Hora salida',  Value: DepartureTime },
     { $Type: 'UI.DataField', Label: 'Hora llegada', Value: ArrivalTime   },
-    { $Type: 'UI.DataField', Label: 'Distancia',    Value: Distance      },
-    { $Type: 'UI.DataField', Label: 'Medida',       Value: DistanceUnit  }
+    { $Type: 'UI.DataField', Label: 'Distancia',    Value: Distance      }
+    // D39: sin "Medida" (DistanceUnit): la unidad se ve junto a la distancia (D23)
   ]
 );
 
@@ -84,14 +84,71 @@ annotate service.Conexiones with {
   Distance @Measures.Unit: DistanceUnit;
 };
 
-// D24 / D11: el RAP trae las etiquetas de Vuelos en inglés. "Etiqueta" de la tabla = @Common.Label.
+// D24 / D40 / D11: textos de cada campo en español, desde la tabla de semántica (columnas Etiqueta,
+// Encabezado y Ayuda). El RAP los trae en inglés ("Airline Name", "Airfare", "Flight Reference Scenario: …").
+// Incluye los campos que no son columna (CarrierId_Text, CurrencyCode, …): R11 exige que estén todos.
+annotate service.Conexiones with {
+  CarrierId      @Common.Label: 'Id aerolínea'
+                 @Common.Heading: 'Id aerolínea'
+                 @Common.QuickInfo: 'Código de la aerolínea';
+  CarrierId_Text @Common.Label: 'Aerolínea'
+                 @Common.Heading: 'Aerolínea'
+                 @Common.QuickInfo: 'Nombre de la aerolínea (texto del Id aerolínea)';
+  ConnectionId   @Common.Label: 'Número vuelo'
+                 @Common.Heading: 'N.º vuelo'
+                 @Common.QuickInfo: 'Número de la conexión';
+  AirportFromId  @Common.Label: 'Aeropuerto salida'
+                 @Common.Heading: 'Salida'
+                 @Common.QuickInfo: 'Código del aeropuerto de salida';
+  AirportToId    @Common.Label: 'Aeropuerto destino'
+                 @Common.Heading: 'Destino'
+                 @Common.QuickInfo: 'Código del aeropuerto de destino';
+  DepartureTime  @Common.Label: 'Hora salida'
+                 @Common.Heading: 'Hora salida'
+                 @Common.QuickInfo: 'Hora de salida del vuelo';
+  ArrivalTime    @Common.Label: 'Hora llegada'
+                 @Common.Heading: 'Hora llegada'
+                 @Common.QuickInfo: 'Hora de llegada del vuelo';
+  Distance       @Common.Label: 'Distancia'
+                 @Common.Heading: 'Distancia'
+                 @Common.QuickInfo: 'Distancia del vuelo';
+  DistanceUnit   @Common.Label: 'Medida'
+                 @Common.Heading: 'Unidad'
+                 @Common.QuickInfo: 'Unidad de medida de la distancia';
+  CarrierName    @Common.Label: 'Nombre aerolínea'
+                 @Common.Heading: 'Aerolínea'
+                 @Common.QuickInfo: 'Nombre de la aerolínea';
+};
+
 annotate service.Vuelos with {
-  CarrierId     @Common.Label: 'Id aerolínea';
-  ConnectionId  @Common.Label: 'Número vuelo';
-  FlightDate    @Common.Label: 'Fecha vuelo';
-  Price         @Common.Label: 'Precio vuelo';
-  PlaneTypeId   @Common.Label: 'Tipo vuelo';
-  SeatsMax      @Common.Label: 'Capacidad máxima';
-  SeatsOccupied @Common.Label: 'Ocupación asientos';
-  CarrierName   @Common.Label: 'Nombre aerolínea';
+  CarrierId      @Common.Label: 'Id aerolínea'
+                 @Common.Heading: 'Id aerolínea'
+                 @Common.QuickInfo: 'Código de la aerolínea';
+  CarrierId_Text @Common.Label: 'Aerolínea'
+                 @Common.Heading: 'Aerolínea'
+                 @Common.QuickInfo: 'Nombre de la aerolínea (texto del Id aerolínea)';
+  ConnectionId   @Common.Label: 'Número vuelo'
+                 @Common.Heading: 'N.º vuelo'
+                 @Common.QuickInfo: 'Número de la conexión';
+  FlightDate     @Common.Label: 'Fecha vuelo'
+                 @Common.Heading: 'Fecha'
+                 @Common.QuickInfo: 'Fecha del vuelo';
+  Price          @Common.Label: 'Precio vuelo'
+                 @Common.Heading: 'Precio'
+                 @Common.QuickInfo: 'Precio del vuelo';
+  CurrencyCode   @Common.Label: 'Moneda'
+                 @Common.Heading: 'Moneda'
+                 @Common.QuickInfo: 'Código de la moneda del precio';
+  PlaneTypeId    @Common.Label: 'Tipo vuelo'
+                 @Common.Heading: 'Avión'
+                 @Common.QuickInfo: 'Tipo de avión';
+  SeatsMax       @Common.Label: 'Capacidad máxima'
+                 @Common.Heading: 'Capacidad'
+                 @Common.QuickInfo: 'Cantidad máxima de asientos';
+  SeatsOccupied  @Common.Label: 'Ocupación asientos'
+                 @Common.Heading: 'Ocupados'
+                 @Common.QuickInfo: 'Cantidad de asientos ocupados';
+  CarrierName    @Common.Label: 'Nombre aerolínea'
+                 @Common.Heading: 'Aerolínea'
+                 @Common.QuickInfo: 'Nombre de la aerolínea';
 };

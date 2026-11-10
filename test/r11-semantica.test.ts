@@ -30,7 +30,7 @@ function tabla(encabezado: string): Record<string, string>[] {
 const sinComillas = (s: string) => s.replace(/`/g, '');
 const ruta = (v: unknown) => (v && typeof v === 'object' && '=' in v ? (v as { '=': string })['='] : v);
 
-interface Campo { campo: string; etiqueta: string; filtro: boolean; obligatorio: boolean; orden?: number; texto?: string; moneda?: string; unidad?: string }
+interface Campo { campo: string; etiqueta: string; encabezado: string; ayuda: string; filtro: boolean; obligatorio: boolean; orden?: number; texto?: string; moneda?: string; unidad?: string }
 
 function semantica(encabezado: string): Campo[] {
   return tabla(encabezado).map((f) => {
@@ -38,7 +38,7 @@ function semantica(encabezado: string): Campo[] {
     const de = (tipo: string) => extra.match(new RegExp(`${tipo}: \`(\\w+)\``))?.[1];
     const orden = Number(f['Columna (orden)']);
     return {
-      campo: f['Campo'], etiqueta: f['Etiqueta'],
+      campo: f['Campo'], etiqueta: f['Etiqueta'], encabezado: f['Encabezado'], ayuda: f['Ayuda'],
       filtro: f['Filtro'].includes('✅'), obligatorio: f['Obligatorio'].includes('✅'),
       orden: Number.isInteger(orden) ? orden : undefined,
       texto: de('texto'), moneda: de('moneda'), unidad: de('unidad'),
@@ -109,6 +109,21 @@ for (const [nombre, campos] of Object.entries(listas)) {
     it('etiqueta del campo (@Common.Label) = columna Etiqueta (D24)', () => {
       const els = entidad(nombre).elements;
       for (const c of campos) assert.equal(els[c.campo]['@Common.Label'], c.etiqueta, `${c.campo}: @Common.Label`);
+    });
+
+    it('encabezado (@Common.Heading) y ayuda (@Common.QuickInfo) = columnas Encabezado y Ayuda (D40)', () => {
+      const els = entidad(nombre).elements;
+      for (const c of campos) {
+        assert.equal(els[c.campo]['@Common.Heading'], c.encabezado, `${c.campo}: @Common.Heading`);
+        assert.equal(els[c.campo]['@Common.QuickInfo'], c.ayuda, `${c.campo}: @Common.QuickInfo`);
+      }
+    });
+
+    it('la tabla incluye todos los campos de la entidad (ningún texto del RAP sin traducir, D40)', () => {
+      const delModelo = Object.entries(entidad(nombre).elements)
+        .filter(([, e]) => !e.isAssociation && e.type !== 'cds.Association' && e.type !== 'cds.Composition')
+        .map(([n]) => n).sort();
+      assert.deepEqual(campos.map((c) => c.campo).sort(), delModelo);
     });
   });
 

@@ -181,8 +181,8 @@ Rama: `etapa-4-presentacion`
 - [ ] Decidir drilldown (sí/no, hasta qué nivel) en `manifest.json`
 - [ ] Opcional: exportar a Excel, variantes, tabla responsive vs grid
 - [ ] Actualizar y ejecutar `test/PRUEBAS_MANUALES.md` (R8, R9), registrando el resultado
-- [ ] **Pendiente (de Etapa 3, D23):** decidir si se quita la columna 8 "Medida" (`DistanceUnit`), ya que la unidad se ve junto a la distancia
-- [ ] **Pendiente (de Etapa 3, D24):** campos fuera de la tabla de semántica con etiqueta en inglés desde el RAP (`CarrierId_Text` "Airline Name", `CurrencyCode` "Currency Code", …): decidir si se agregan a la tabla para traducirlos (D11)
+- [x] **Pendiente (de Etapa 3, D23):** decidir si se quita la columna 8 "Medida" (`DistanceUnit`), ya que la unidad se ve junto a la distancia → **quitada de la lista y del detalle (D39)**
+- [x] **Pendiente (de Etapa 3, D24):** campos fuera de la tabla de semántica con etiqueta en inglés desde el RAP (`CarrierId_Text` "Airline Name", `CurrencyCode` "Currency Code", …): decidir si se agregan a la tabla para traducirlos (D11) → **traducidos todos: etiquetas, `Heading` y `QuickInfo`; tabla completa verificada por R11 (D40, D44)**
 - [x] **Pendiente (de Etapa 2):** avisos del build `SAP__UI.* is not a known vocabulary type` (vienen de `srv/external`, generado — no editar): evaluar si afectan las anotaciones efectivas. **Evaluado en la Etapa 3 (D22):** `cds compile` del servicio da 0 avisos y R11 exige que el `$metadata` de `ReporteService` no tenga ningún `SAP__UI.`; `cds build --production` sigue mostrando los 34 avisos porque compila también `srv/external`. No afectan; se aceptan
 
 Salida: el reporte se ve y navega como dice la tabla de semántica, con datos mock; R11 en verde.
@@ -190,10 +190,12 @@ Salida: el reporte se ve y navega como dice la tabla de semántica, con datos mo
 ### Decisiones de la etapa
 - D8 — Tabla "Semántica del reporte" como fuente de verdad de las anotaciones (decisión del usuario, tomada antes de iniciar la etapa).
 - D38 — Totales: `SUM` de `SeatsOccupied` y `SeatsMax` en Vuelos; `Price` y `Distance` sin total. Laboratorio del patrón de totales. Decisión del usuario.
-- D39 — Se quita la columna 8 "Medida". Decisión del usuario.
-- D40 — Traducir todas las etiquetas en inglés del RAP (alcance por confirmar). Decisión del usuario.
+- D39 — Se quita "Medida" de la lista y del detalle. Decisión del usuario.
+- D40 — Traducir todo (etiquetas, `Heading`, `QuickInfo`) con columnas "Encabezado" y "Ayuda" en la tabla de semántica y la tabla completa; R11 lo verifica. Decisión del usuario.
 - D41 — Exportar a Excel; tipo de tabla según los totales; drilldown y orden se mantienen. Decisión del usuario.
 - D42 — Value help: importar `/dmo/i_airport_stdvh`. Decisión del usuario (opción a).
+- D43 — Totales: reenviar al RAP las lecturas con `$apply` (no pasan por la delegación CQN), con test que vigila `@restrict` por filas. Decisión del usuario (opción a).
+- D44 — Textos en español de Encabezado y Ayuda (y etiquetas nuevas) propuestos por Claude, en la tabla de semántica para revisión. Propuesta propia.
 
 ## Etapa 5 — Despliegue a Cloud Foundry
 Rama: `etapa-5-despliegue`
