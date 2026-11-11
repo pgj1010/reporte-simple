@@ -6,6 +6,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 > - R8 se ejecutó al cerrar la **Etapa 3** (2026-11-10, ver registro). **Se repite en la Etapa 4** (value help de aeropuertos, D50: pasos 6–6d).
 > - R9 y R14 se ejecutan al cerrar la **Etapa 4** (pasos actualizados el 2026-11-10). El drilldown a Vuelos ya funciona con el mock (R7, D25); desplegado se verifica en la Etapa 5.
 > - **Cierre de la Etapa 4 (2026-11-10):** R8 (pasos 6, 6c, 6d), R9 (pasos 1, 3, 8, 10b) y R14 (pasos 1, 4, 5) ejecutados por el usuario, todos ✔; R13 paso 5 verificado por Claude en la configuración servida. Los pasos que el usuario no reportó quedan marcados como **no reportados** en cada registro.
+> - **Cierre de la Etapa 5 (2026-11-11):** pruebas en el despliegue con datos reales de `<S4_SISTEMA>` (sección "Despliegue" al final), todas ✔; R8 6b y R14 repetidos contra el RAP real. Cloud Connector Monitor no revisado: las llamadas al RAP se confirmaron en los logs (D63). R13 en Work Zone, postergado por el usuario.
 > - Si cambia la tabla de semántica en `SPEC.md`, actualizar aquí los resultados esperados.
 
 ## Preparación (común)
@@ -45,6 +46,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | 2026-11-10 | 3 | Usuario | ✔ pasos 1–5 · paso 6 según lo esperado | 5 conexiones; filtros visibles; `FRA` y `JFK` devuelven LH 0400 y LH 0402; FRA→SFO vacía sin error. Paso 6: al pulsar el F4 de Aeropuerto salida no pasa nada (esperado: value help de `/dmo/i_airport_stdvh` no importado, se resuelve en la Etapa 4). |
 | 2026-11-10 | 4 | Usuario | ✔ pasos 1, 6, 6c, 6d | Lista con 5 conexiones. F4 de Aeropuerto salida abre la lista; elegir `FRA` da LH 0400 y LH 0402. F4 de Aeropuerto destino con `JFK` da LH 0400 y LH 0402. **No reportados:** el detalle del paso 6 (columnas del diálogo, 5 aeropuertos con `MIA`); 2–5 ya ✔ en la Etapa 3. |
 | 2026-11-10 | 4 | Usuario | ✖ paso 6b | En el diálogo del F4, escribir `Frankfurt` o `FRA` no encuentra FRA: quedan todos los valores. Directo en el campo del filtro da error por tener 3 caracteres (esperado). Elegir a mano funciona. **Causa (Claude):** faltaba `SearchSupported: true` en el `@Common.ValueList` (el servicio sí resuelve `$search`) → **corregido (D52)**, R11 lo vigila. **Pendiente: repetir 6b** en el navegador; contra el RAP real, en la Etapa 5. |
+| 2026-11-11 | 5 | Usuario | ✔ paso 6b (desplegado) | Contra el RAP real (`<S4_SISTEMA>`, despliegue de la Etapa 5): en el diálogo del F4, `Frankfurt` encuentra el aeropuerto. Cierra el ✖ de la Etapa 4 (D52). |
 
 ---
 
@@ -129,3 +131,30 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
 | 2026-11-10 | 4 | Usuario | ✔ pasos 1, 4, 5 | AA 0017 = 573 / 770, LH 0400 = 314 / 330, LH 0402 = 0 / 0. **No reportados:** 2, 3, 6 (textos de los totales revisados por el usuario: "se ven bien en la app"). |
+| 2026-11-11 | 5 | Usuario | ✔ pasos 1–2 con datos reales (desplegado) | `AA 0015` en `<S4_SISTEMA>`: 2 vuelos (capacidad 260 c/u; ocupación 213 y 137) → cabecera **Capacidad 520 · Asientos ocupados 350**, igual a la suma de la tabla y a la prueba A de `GW_CLIENT` (520). **No reportados:** 3–6 (ya ✔ en la Etapa 4 con el mock). |
+
+---
+
+## Despliegue — Reporte desplegado en Cloud Foundry contra el RAP real (Etapa 5)
+
+**Cubre:** R3 (403 sin el rol, D53), R5 (datos de la destination `S4_BACKEND`), R7 y R14 contra el RAP real, R8 (F4), R12 / R13 (importes). Lo que no necesita navegador (401 sin token, `/health`, logs) lo hace Claude con `curl` y `cf logs`. Repetir después de cada `cf deploy`.
+
+**Preparación:** URL de la app (managed app router): `<URL_APP>`. El prefijo es el GUID de la instancia `reporte-simple-destination` (`cf service reporte-simple-destination --guid`) y el sufijo, `sap.cloud.service` + id + versión de la app (D59).
+
+| # | Paso | Resultado esperado |
+|---|---|---|
+| 1 | Abrir la URL **antes** de tener la role collection `ReporteSimple_Visualizador`. | Login de BTP y después error en la lista, **sin datos** (403, R3 / D53). |
+| 2 | BTP Cockpit → Security → Users: asignarse `ReporteSimple_Visualizador`; abrir la URL en incógnito (token nuevo). | La app abre. |
+| 3 | Pulsar **Ir**. | Conexiones **reales** de `<S4_SISTEMA>` (no las 5 del mock), en español. |
+| 4 | Abrir una conexión con vuelos (p. ej. `AA 0015`). | "Detalles de vuelos" con sus vuelos (R7); cabecera con **Capacidad** y **Asientos ocupados** = suma de la tabla y de `GW_CLIENT` `…/_Flight?$apply=aggregate(SeatsOccupied,SeatsMax)` (R14). |
+| 5 | Filtro Aeropuerto salida → F4 → buscar `Frankfurt`. | El diálogo encuentra el aeropuerto (R8 6b, D52). |
+| 6 | Ver un precio en "Detalles de vuelos". | Decimales completos y formato en español (p. ej. `422,94 USD`, R12 / R13). |
+| 7 | Cloud Connector → Monitor (opcional, D63). | Llegan peticiones a `/sap/opu/odata4/...`. Si no se revisa, Claude confirma las llamadas en `cf logs reporte-simple-srv --recent`. |
+
+**Registro de ejecución**
+
+| Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
+|---|---|---|---|---|
+| 2026-11-11 | 5 | Usuario | ✔ pasos 1–6 | 403 sin rol; datos reales de `<S4_SISTEMA>`; `AA 0015` con 2 vuelos (260 / 260; 213 / 137) y cabecera 520 · 350; F4 `Frankfurt` encuentra; precio con decimales. Paso 7 no revisado por el usuario. |
+| 2026-11-11 | 5 | Claude | ✔ 401 / `/health` · paso 7 por logs | `/health` UP; sin token 401 `Unauthorized` (excepción de R10, D62). Logs 15:05–15:09: 8 `$batch` de Fiori → 200; 4 lecturas de cabecera (`AA 15` ×3, `AA 17`) y 4 de `_Flight`, y **12** resoluciones de la destination OnPremise del Cloud SDK = 4 × (conexión + totales de R14) + 4 `_Flight`: una por llamada al RAP. Sin errores; único aviso, "basic authentication… Principal propagation is recommended" (pendiente para la Etapa 6). |
+

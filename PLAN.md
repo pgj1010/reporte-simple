@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 5 (al aprobarse la revisión y el merge a `main` de la Etapa 4)
+**Etapa activa:** 6 (al aprobarse la revisión y el merge a `main` de la Etapa 5)
 
 ---
 
@@ -246,22 +246,22 @@ Decisiones del usuario en esta etapa: D8 (antes de iniciarla), D38, D39, D40, D4
 - **Etapa 5:** transportar el cambio del RAP `@Aggregation.default: #SUM` (D45) **antes** de desplegar · probar contra el RAP real: R14 (totales), el reenvío de `$apply` (D43), el F4 de aeropuertos con su ruta `;ps=…;va=…` y el `$search` del diálogo (R8 6b: repetir primero con mock tras D52; en el RAP, probar `$search` en `/IWFND/GW_CLIENT`, D51), R7 · R13 en Work Zone / Launchpad y captura de red del paso 5 · los demás pendientes ya listados en la Etapa 5.
 - **Etapa 7 (plantilla):** patrón de totales (D43 reenvío + D47 cabecera; D46 como alternativa para Gateways con `concat`/`top`/`$count`), pregunta inicial sobre `$apply` en el Gateway, `scripts/limpiar-edmx-f4.ts` y el procedimiento de F4 (D49–D51), tabla de semántica completa con Encabezado y Ayuda (D40).
 
-## Etapa 5 — Despliegue a Cloud Foundry
+## Etapa 5 — Despliegue a Cloud Foundry ✅
 Rama: `etapa-5-despliegue`
 - [x] **Paso 1** `mta.yaml` (+ `xsuaa`, `destination`, `connectivity`; managed app router, D54) **Hecho (2026-11-11):** escritos a mano tomando `etiquetas` como referencia, sin módulo de base de datos; script `npm run build` (= `cds build --production`); `@sap/xssec` como dependencia y `auth` `xsuaa` en `[production]`
 - [x] Roles en `xs-security.json` coherentes con `@requires` / `@restrict`. **Hecho (2026-11-11, D53):** `@requires: 'Visualizador'`, role collection `ReporteSimple_Visualizador`; usuarios mock `alice` (con el rol) y `sinrol` (sin él); R3 con 403 sin rol; test `d53-roles` (mutación manual detectada: scope renombrado en `xs-security.json`, 4/5 fallan); `npm run test:mutacion` 2/2; `npm test` 173/173
 - [x] Reutilizar o crear instancias `destination` / `connectivity` (lite). **Hecho (2026-11-11, D55):** nuevas `reporte-simple-*`; la cuota alcanzó
 - [x] **Paso 2** Configuración de despliegue de la app Fiori (HTML5 repo). **Hecho (2026-11-11, D54, D59):** `app/conexiones/xs-app.json` (ruta `^/odata/` → destination `reporte-simple-srv-api`), `ui5-deploy.yaml` + `ui5-task-zipper` + script `build:cf` (zip de 10 archivos con `xs-app.json`), `sap.cloud` e inbound `ReporteConexiones-display` en `manifest.json`, módulos html5 / app-content / destination-content en `mta.yaml`; `dist/` y `resources/` en `.gitignore`. Test `d54-despliegue` (8 tests; 3 mutaciones manuales detectadas)
 - [x] **(de Etapa 3)** Resuelto con D58 (Work Zone usa su UI5; `index.html` solo local / URL directa). Texto original: `index.html` carga UI5 1.154.0 desde el CDN (`sapui5.hana.ondemand.com`): decidir la versión y el origen de UI5 para el despliegue (app router / HTML5 repo, o Work Zone, que usa su propio UI5)
-- [ ] **Paso 6 — postergado por el usuario (2026-11-11), sigue pendiente en esta etapa.** R13 desplegado (D34): si la app se publica en Work Zone / Launchpad, verificar con el launchpad en inglés qué textos y formatos salen en español (los de la app sí, por D33; los de Fiori y el formato dependen del idioma del launchpad) y decidir si hace falta fijarlo ahí
+- [ ] **Paso 6 — postergado por el usuario (2026-11-11); pasa a los pendientes (la etapa se cierra sin él, a pedido del usuario).** R13 desplegado (D34): si la app se publica en Work Zone / Launchpad, verificar con el launchpad en inglés qué textos y formatos salen en español (los de la app sí, por D33; los de Fiori y el formato dependen del idioma del launchpad) y decidir si hace falta fijarlo ahí
 - [x] **Paso 3** **Hecho (2026-11-11, D60):** `gen/srv` compilado (`service.js`, `server.js`, `@cds-models`, sin `.ts` ni `test/`), `npm ci --omit=dev` en una copia, arranque con `NODE_ENV=production` sin `tsx` (`/health` UP; 401 / 403 / 200). `gen/db` sin usar (no se despliega). Un `cds.build.tasks` explícito deja de compilar el TS: R5 lo detecta (mutación manual). Texto original: Verificar que `cds build --production` compila el TypeScript correctamente sin `tsx` (`gen/srv` con `service.js`, imports `#cds-models` resueltos, sin `.ts` en el runtime) — D13. **Hallazgo 2026-11-09 (Etapa 2):** con `cds build -o <dir>` el build copia `srv/service.ts` sin compilar y no incluye `@cds-models`. Con el destino normal (`gen/`, o `CDS_BUILD_TARGET` **relativo**) sí compila el TS, pero como `tsconfig.json` no tiene `include`, compila **todo** el proyecto: los tests (`test/*.test.js`) terminan en `gen/srv/test/` y viajarían a producción. Con un `CDS_BUILD_TARGET` absoluto, `tsc` escribe dentro del proyecto (`./tmp/...`). ~~Revisar `include` / un `tsconfig` de build.~~ Resuelto en la Etapa 3 (D30). También genera artefactos HANA (`src/gen`, `cds.outbox.Messages`) aunque el reporte no tiene base de datos propia: revisar si hacen falta
 - [x] Verificar con XSUAA que el 401 sale por la clave i18n traducida ("No autenticado"). **Resultado (2026-11-11):** no, sale `Unauthorized` de XSUAA → excepción de R10 (D62)
-- [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global
+- [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global. **No aplica en esta etapa** (no hay CI); pasa a los pendientes
 - [x] ~~**(D45)** Transportar al sistema destino~~ No aplica en esta etapa (D56: mismo `<S4_SISTEMA>` cliente <S4_CLIENTE>, el cambio ya está activo). **Transportar antes de QAS/PRD.** Texto original: Transportar al sistema destino el cambio del RAP `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (CDS de vuelos) antes de desplegar; verificar en el `$metadata` desplegado que `aggregate(SeatsOccupied)` funciona
 - [x] **Paso 4** `mbt build` y **pedir aprobación** antes de `cf deploy`. `mbt build` hecho (2026-11-11): `mta_archives/reporte-simple_1.0.0.mtar` (61 KB; `gen/srv` sin `node_modules`, sin tests ni CSV; app `conexiones.zip`). **Desplegado (2026-11-11, aprobado por el usuario):** cuota suficiente (400 instancias / 5 en uso, 4096 MB / 0, 10 rutas / 1), instancias nuevas `reporte-simple-*` (D55 sin cambios); `/health` UP, 401 sin token. Hallazgos: memoria 250,5/256 MB → 512 MB (D61; redeploy aprobado y hecho: 81,7/512 MB); el 401 de XSUAA dice `Unauthorized` → excepción de R10 (D62)
-- [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
-- [ ] R7 desplegado: `Conexiones(...)/_Flight`, `$expand=_Flight` y la sección "Detalles de vuelos" contra el RAP real (la condición ya está confirmada en ADT; aquí se verifica que el RAP la aplique). D26 no cubre el join del RAP
-- [ ] Confirmar en Cloud Connector → Monitor que llegan las peticiones
+- [x] **Paso 5** Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP. **Hecho (2026-11-11, usuario):** datos reales de `<S4_SISTEMA>` en la app; 403 sin el rol y 200 con `ReporteSimple_Visualizador` (R3, D53); F4 `Frankfurt` ✔ (R8 6b, D52); precio con decimales ✔ (R12 / R13). Registro en `PRUEBAS_MANUALES.md` → "Despliegue"
+- [x] R7 desplegado. **Hecho (2026-11-11, usuario):** `AA 0015` muestra sus 2 vuelos (260 / 260; 213 / 137) y R14 en la cabecera da Capacidad 520 · Asientos ocupados 350 (= tabla y `GW_CLIENT`). La app usa `Conexiones(...)/_Flight` (visto en los logs); `$expand=_Flight` no lo pide la app y no se probó desplegado (lo cubre D26 con el RAP simulado). Texto original: `Conexiones(...)/_Flight`, `$expand=_Flight` y la sección "Detalles de vuelos" contra el RAP real (la condición ya está confirmada en ADT; aquí se verifica que el RAP la aplique). D26 no cubre el join del RAP
+- [x] ~~Confirmar en Cloud Connector → Monitor que llegan las peticiones~~ Confirmado en los logs de `reporte-simple-srv` (D63): 12 llamadas al RAP por la destination OnPremise, `$batch` 200, sin errores
 
 Salida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CLIENTE>.
 
@@ -278,6 +278,42 @@ Salida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CL
 - Cambio de plan (usuario, 2026-11-11): el paso 6 (Work Zone, R13) se deja para después.
 - D60 — Build con las tareas por defecto; `gen/db` se genera pero no se despliega; R5 verifica el TS compilado. Propuesta propia.
 - D59 — `sap.cloud.service: reportesimple`, inbound `ReporteConexiones-display`, zip `conexiones.zip`; test `d54-despliegue`. Propuesta propia.
+- D63 — Llamadas al RAP confirmadas en los logs de la app en vez del Cloud Connector Monitor (no revisado por el usuario). Propuesta propia.
+
+### Informe de cierre — Etapa 5 (2026-11-11)
+
+**Resultado:** `npm test` **182/182** en verde (incluye lint, R1–R14, regla 17, D43, D50 y los nuevos `d53-roles` y `d54-despliegue`); `npm run test:mutacion` **2/2** (R2, R3 con el rol `Visualizador`); `npx tsc --noEmit -p tsconfig.test.json` sin errores. **Desplegado** en `<CF_ORG> / dev` con aprobación del usuario (deploy inicial + redeploy a 512 MB): instancias nuevas `reporte-simple-uaa`, `-destination`, `-connectivity`, `-html5-host`; app `reporte-simple-srv` (81,7 / 512 MB); app Fiori en el HTML5 repo por el managed app router. Pruebas en el despliegue (usuario, datos reales de `<S4_SISTEMA>`): 403 sin rol ✔, datos reales ✔, R7 + R14 en `AA 0015` (2 vuelos; 520 · 350) ✔, F4 `Frankfurt` ✔, precio con decimales ✔. Claude: `/health` UP, 401 sin token, llamadas al RAP en los logs (D63). Salida de la etapa cumplida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CLIENTE>. **Excepción:** el paso 6 (R13 en Work Zone) queda postergado por el usuario. Rama `etapa-5-despliegue` con un commit por paso; **sin merge a `main`** (pendiente de revisión del usuario).
+
+**Decisiones tomadas por mi cuenta** (propuestas por Claude, dentro del plan aprobado por el usuario):
+
+| ID | Decisión | Regla que afecta | Qué pasaría si fuera al revés |
+|---|---|---|---|
+| D58 | UI5 en producción: el que carga Work Zone; `index.html` (CDN 1.154.0) solo para local y la URL directa del HTML5 repo; `minUI5Version` 1.154.0 | R13, D34 | Con un bootstrap propio versionado habría que mantener la versión a mano y podría diferir del launchpad; sin `index.html` no se podría abrir la app fuera de Work Zone para diagnosticar (como se hizo en esta etapa). |
+| D59 | `sap.cloud.service: reportesimple`, inbound `ReporteConexiones-display`, zip `conexiones.zip`; test `d54-despliegue` que cruza `mta.yaml`, `xs-app.json`, `manifest.json` y `ui5-deploy.yaml` | D54, reglas técnicas 13 y 17 | Un nombre distinto entre esos archivos no lo detecta `mbt build`: Work Zone no encontraría la app o el servicio daría 404, recién desplegado. |
+| D60 | Build con las tareas por defecto (`gen/db` se genera pero no se despliega); R5 verifica que `srv/` viaje compilado | D13, D30, R5 | Con `cds.build.tasks: [{ for: 'nodejs' }]` (para quitar `gen/db`), `service.ts` viajaría sin compilar y el servicio no arrancaría en Cloud Foundry (comprobado). |
+| D61 | `reporte-simple-srv` con 512 MB (con 256 MB quedó en 250,5 MB) | Proceso 5 (redeploy aprobado) | Con 256 MB, riesgo de reinicios por memoria con carga real. Ahora usa 81,7 MB: si se quisiera ahorrar cuota, 256 MB podría bastar, pero sin margen confirmado. |
+| D63 | Llamadas al RAP confirmadas en los logs de la app en vez del Cloud Connector Monitor | R4, R5 | Exigiendo el Monitor, la etapa esperaría un acceso que no agrega evidencia (los datos reales ya pasaron por el Cloud Connector); los logs no muestran la URL exacta que llega al S/4. |
+
+Decisiones del usuario en esta etapa: aprobación del plan de 6 pasos de una vez, D53 (rol `Visualizador`), D54 (managed app router), D55 (instancias nuevas; la cuota alcanzó), D56 (sin transporte de D45 por ahora; **transportar antes de QAS/PRD**), D57 (`ESTADO.md`), D62 (401 de XSUAA como excepción de R10), aprobación de los dos `cf deploy` y la postergación del paso 6. Detalle completo, con "si fuera al revés", en `SPEC.md` → Decisiones.
+
+**Reglas cambiadas en esta etapa:** R3 pasa de `authenticated-user` a rol `Visualizador` (sin usuario 401, sin rol 403; D53). R10 suma una excepción: el 401 de XSUAA (D62).
+
+**Mutaciones** (D3: la obligatoria es R2/R3):
+- `npm run test:mutacion`: R3 (quitar `@requires: 'Visualizador'`) y R2 detectadas, 2/2.
+- Manuales, restauradas: `d53-roles` con el scope renombrado en `xs-security.json` (4/5 fallan); `d54-despliegue` con destination distinta en `xs-app.json`, `sap.cloud.service` distinto y zip con otro nombre (1 falla cada una); R5 con `cds.build.tasks` explícito (falla "srv/ viaja compilado").
+
+**Hallazgos y correcciones durante la etapa** (no son decisiones, pero cambiaron lo hecho):
+- Un `cds.build.tasks` explícito desactiva la compilación de TypeScript del build (D60).
+- La memoria del primer deploy (250,5 / 256 MB) era el límite del contenedor, no el consumo: con 512 MB usa 81,7 MB (D61).
+- El 401 sin token lo responde XSUAA en inglés, antes de CAP (D62).
+- `cf login --sso` no funciona con `!` (no puede leer el código): usar `cf login --sso-passcode <código>`.
+
+**Pendientes para próximas etapas:**
+- **Paso 6 postergado:** R13 en Work Zone / Launchpad (D34) y `archeType` si el launchpad lo usa (D36): publicar la app (intent `ReporteConexiones-display`) en un sitio y probar con el launchpad en inglés.
+- **Antes de QAS/PRD:** transportar el cambio del RAP de D45 (D56).
+- **Etapa 6 (seguridad):** el Cloud SDK avisa "basic authentication… Principal propagation is recommended" (destination `S4_BACKEND` con usuario técnico); revisar `npm audit` (avisos en el `npm install` de la etapa).
+- Si se agrega CI: los tests de R4/R5 usan el `cds` de cds-dk global.
+- **Etapa 7 (plantilla):** cada reporte necesita su `xs-security.json` con un rol propio (D53, test `d53-roles`), sus instancias `<reporte>-*` (D55), `sap.cloud.service` sin guion y coherente (D59, test `d54-despliegue`), 512 MB (D61) y no fijar `cds.build.tasks` (D60).
 
 ## Etapa 6 — Seguridad y limpieza
 Rama: `etapa-6-limpieza`
@@ -355,3 +391,6 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-10 — Etapa 4: totales en la cabecera del detalle (R14, D47, D48) con mutaciones; pasos manuales de R9/R14; value help de aeropuertos con el F4 del RAP (D49–D51, R1 = tres entidades; prueba b del usuario en `GW_CLIENT`). `npm test` 164/164, mutación R2/R3 2/2. **Etapa 4 lista para revisión** (pendiente: pruebas manuales R8, R9, R13 paso 5, R14 y revisión de textos D44/D47; merge a `main` tras la revisión del usuario).
 - 2026-11-10 — Pruebas manuales de la Etapa 4 ejecutadas por el usuario: R8 ✔ (F4 de salida y destino), R9 ✔ (sin "Medida", drilldown al vuelo, Excel en español), R14 ✔ (573 / 770, 314 / 330, 0 / 0); textos D44/D47 aprobados. R13 paso 5 ✔ por configuración (Claude; sin navegador en el Dev Space). Pasos no reportados anotados en `PRUEBAS_MANUALES.md` (entre ellos R8 6b, `$search`). **Etapa 4 cerrada** (pendiente de revisión y merge a `main` por el usuario). `npm test` 164/164, mutaciones R2/R3 2/2. Etapa activa: 5 tras el merge.
 - 2026-11-10 — R8 6b ✖ (usuario): la búsqueda del diálogo del F4 no filtraba. El servicio sí resolvía `$search`; faltaba `SearchSupported: true` en el `@Common.ValueList` → D52 con R11 y mutación. Pendiente repetir 6b. Pasos no reportados de R9 y R14 quedan así (usuario). **Etapa 4 aprobada por el usuario.**
+- 2026-11-11 — Etapa 5: plan de 6 pasos aprobado de una vez; rol `Visualizador` (D53, R3 con 403), managed app router (D54), instancias `reporte-simple-*` (D55), `ESTADO.md` (D57). Build revisado: `cds.build.tasks` explícito no compila el TS (D60).
+- 2026-11-11 — Primer despliegue en `<CF_ORG> / dev` (aprobado): cuota suficiente; 250,5 / 256 MB → redeploy a 512 MB (D61, 81,7 MB en uso); 401 de XSUAA en inglés → excepción de R10 (D62).
+- 2026-11-11 — Pruebas del usuario en el despliegue con datos reales de `<S4_SISTEMA>`: 403 sin rol, R7 + R14 (`AA 0015`: 520 · 350), F4 `Frankfurt`, decimales, todo ✔. Llamadas al RAP confirmadas en los logs (D63). Work Zone postergado. **Etapa 5 cerrada** (pendiente de revisión y merge a `main` por el usuario). Etapa activa: 6.
