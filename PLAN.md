@@ -250,7 +250,7 @@ Decisiones del usuario en esta etapa: D8 (antes de iniciarla), D38, D39, D40, D4
 Rama: `etapa-5-despliegue`
 - [x] **Paso 1** `mta.yaml` (+ `xsuaa`, `destination`, `connectivity`; managed app router, D54) **Hecho (2026-11-11):** escritos a mano tomando `etiquetas` como referencia, sin módulo de base de datos; script `npm run build` (= `cds build --production`); `@sap/xssec` como dependencia y `auth` `xsuaa` en `[production]`
 - [x] Roles en `xs-security.json` coherentes con `@requires` / `@restrict`. **Hecho (2026-11-11, D53):** `@requires: 'Visualizador'`, role collection `ReporteSimple_Visualizador`; usuarios mock `alice` (con el rol) y `sinrol` (sin él); R3 con 403 sin rol; test `d53-roles` (mutación manual detectada: scope renombrado en `xs-security.json`, 4/5 fallan); `npm run test:mutacion` 2/2; `npm test` 173/173
-- [ ] Reutilizar o crear instancias `destination` / `connectivity` (lite). En `mta.yaml` como `reporte-simple-*` (D55); falta confirmar la cuota del Trial (necesita `cf login`)
+- [x] Reutilizar o crear instancias `destination` / `connectivity` (lite). **Hecho (2026-11-11, D55):** nuevas `reporte-simple-*`; la cuota alcanzó
 - [x] **Paso 2** Configuración de despliegue de la app Fiori (HTML5 repo). **Hecho (2026-11-11, D54, D59):** `app/conexiones/xs-app.json` (ruta `^/odata/` → destination `reporte-simple-srv-api`), `ui5-deploy.yaml` + `ui5-task-zipper` + script `build:cf` (zip de 10 archivos con `xs-app.json`), `sap.cloud` e inbound `ReporteConexiones-display` en `manifest.json`, módulos html5 / app-content / destination-content en `mta.yaml`; `dist/` y `resources/` en `.gitignore`. Test `d54-despliegue` (8 tests; 3 mutaciones manuales detectadas)
 - [x] **(de Etapa 3)** Resuelto con D58 (Work Zone usa su UI5; `index.html` solo local / URL directa). Texto original: `index.html` carga UI5 1.154.0 desde el CDN (`sapui5.hana.ondemand.com`): decidir la versión y el origen de UI5 para el despliegue (app router / HTML5 repo, o Work Zone, que usa su propio UI5)
 - [ ] R13 desplegado (D34): si la app se publica en Work Zone / Launchpad, verificar con el launchpad en inglés qué textos y formatos salen en español (los de la app sí, por D33; los de Fiori y el formato dependen del idioma del launchpad) y decidir si hace falta fijarlo ahí
@@ -258,7 +258,7 @@ Rama: `etapa-5-despliegue`
 - [ ] Verificar con XSUAA que el 401 sale por la clave i18n traducida ("No autenticado")
 - [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global
 - [x] ~~**(D45)** Transportar al sistema destino~~ No aplica en esta etapa (D56: mismo `<S4_SISTEMA>` cliente <S4_CLIENTE>, el cambio ya está activo). **Transportar antes de QAS/PRD.** Texto original: Transportar al sistema destino el cambio del RAP `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (CDS de vuelos) antes de desplegar; verificar en el `$metadata` desplegado que `aggregate(SeatsOccupied)` funciona
-- [ ] **Paso 4** `mbt build` y **pedir aprobación** antes de `cf deploy`. `mbt build` hecho (2026-11-11): `mta_archives/reporte-simple_1.0.0.mtar` (61 KB; `gen/srv` sin `node_modules`, sin tests ni CSV; app `conexiones.zip`). Pendiente: `cf login`, cuota del Trial (D55) y aprobación
+- [ ] **Paso 4** `mbt build` y **pedir aprobación** antes de `cf deploy`. `mbt build` hecho (2026-11-11): `mta_archives/reporte-simple_1.0.0.mtar` (61 KB; `gen/srv` sin `node_modules`, sin tests ni CSV; app `conexiones.zip`). **Desplegado (2026-11-11, aprobado por el usuario):** cuota suficiente (400 instancias / 5 en uso, 4096 MB / 0, 10 rutas / 1), instancias nuevas `reporte-simple-*` (D55 sin cambios); `/health` UP, 401 sin token. Hallazgos: memoria 250,5/256 MB → 512 MB (D61, redeploy pendiente de aprobación); el 401 de XSUAA dice `Unauthorized` (pendiente de decisión del usuario)
 - [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
 - [ ] R7 desplegado: `Conexiones(...)/_Flight`, `$expand=_Flight` y la sección "Detalles de vuelos" contra el RAP real (la condición ya está confirmada en ADT; aquí se verifica que el RAP la aplique). D26 no cubre el join del RAP
 - [ ] Confirmar en Cloud Connector → Monitor que llegan las peticiones
@@ -273,6 +273,7 @@ Salida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CL
 - D56 — Mismo `<S4_SISTEMA>` cliente <S4_CLIENTE>: sin transporte de D45 ahora; transportarlo antes de QAS/PRD. Decisión del usuario.
 - D57 — `ESTADO.md` en el repo, actualizado al terminar cada paso. Decisión del usuario.
 - D58 — UI5 en producción: el de Work Zone; `index.html` (CDN 1.154.0) solo local / URL directa. Propuesta propia.
+- D61 — `reporte-simple-srv` a 512 MB (250,5/256 MB en reposo); redeploy pendiente de aprobación. Propuesta propia.
 - D60 — Build con las tareas por defecto; `gen/db` se genera pero no se despliega; R5 verifica el TS compilado. Propuesta propia.
 - D59 — `sap.cloud.service: reportesimple`, inbound `ReporteConexiones-display`, zip `conexiones.zip`; test `d54-despliegue`. Propuesta propia.
 

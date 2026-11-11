@@ -22,7 +22,7 @@ modules:
       NODE_ENV: production
     parameters:
       buildpack: nodejs_buildpack
-      memory: 256M
+      memory: 512M  # D61: con 256M quedó en 250M en reposo
       disk-quota: 1G
       readiness-health-check-type: http
       readiness-health-check-http-endpoint: /health
