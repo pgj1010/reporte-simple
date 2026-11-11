@@ -17,7 +17,7 @@ Resumen corto para retomar una sesión (D57). La fuente completa es `PLAN.md`; l
 | 1 | `mta.yaml` + `xs-security.json` + rol `Visualizador` (R3) | ✅ |
 | 2 | Despliegue de la app Fiori (HTML5 repo, `xs-app.json`, UI5) | ✅ |
 | 3 | `cds build --production` revisado | ✅ |
-| 4 | `mbt build` → **aprobación del usuario** → `cf deploy` | ⏳ |
+| 4 | `mbt build` → **aprobación del usuario** → `cf deploy` | 🟡 `mbt build` hecho (`reporte-simple_1.0.0.mtar`, 61 KB); falta `cf login`, cuota y aprobación |
 | 5 | Pruebas contra el RAP real (datos, R7, R14, 401/403, Cloud Connector) | ⏳ |
 | 6 | R13 en Work Zone / Launchpad | ⏳ |
 
@@ -27,4 +27,6 @@ Resumen corto para retomar una sesión (D57). La fuente completa es `PLAN.md`; l
 
 ## Esperando al usuario
 
-- (nada todavía)
+- `! cf login --sso` (token expirado al 2026-11-11)
+- Aprobación explícita del `cf deploy` (regla 5)
+- Después del deploy: asignar la role collection `ReporteSimple_Visualizador` al usuario (sin ella, 403)

@@ -258,7 +258,7 @@ Rama: `etapa-5-despliegue`
 - [ ] Verificar con XSUAA que el 401 sale por la clave i18n traducida ("No autenticado")
 - [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global
 - [x] ~~**(D45)** Transportar al sistema destino~~ No aplica en esta etapa (D56: mismo `<S4_SISTEMA>` cliente <S4_CLIENTE>, el cambio ya está activo). **Transportar antes de QAS/PRD.** Texto original: Transportar al sistema destino el cambio del RAP `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (CDS de vuelos) antes de desplegar; verificar en el `$metadata` desplegado que `aggregate(SeatsOccupied)` funciona
-- [ ] `mbt build` y **pedir aprobación** antes de `cf deploy`
+- [ ] **Paso 4** `mbt build` y **pedir aprobación** antes de `cf deploy`. `mbt build` hecho (2026-11-11): `mta_archives/reporte-simple_1.0.0.mtar` (61 KB; `gen/srv` sin `node_modules`, sin tests ni CSV; app `conexiones.zip`). Pendiente: `cf login`, cuota del Trial (D55) y aprobación
 - [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
 - [ ] R7 desplegado: `Conexiones(...)/_Flight`, `$expand=_Flight` y la sección "Detalles de vuelos" contra el RAP real (la condición ya está confirmada en ADT; aquí se verifica que el RAP la aplique). D26 no cubre el join del RAP
 - [ ] Confirmar en Cloud Connector → Monitor que llegan las peticiones
