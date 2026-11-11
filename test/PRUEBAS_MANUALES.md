@@ -149,12 +149,13 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | 4 | Abrir una conexión con vuelos (p. ej. `AA 0015`). | "Detalles de vuelos" con sus vuelos (R7); cabecera con **Capacidad** y **Asientos ocupados** = suma de la tabla y de `GW_CLIENT` `…/_Flight?$apply=aggregate(SeatsOccupied,SeatsMax)` (R14). |
 | 5 | Filtro Aeropuerto salida → F4 → buscar `Frankfurt`. | El diálogo encuentra el aeropuerto (R8 6b, D52). |
 | 6 | Ver un precio en "Detalles de vuelos". | Decimales completos y formato en español (p. ej. `422,94 USD`, R12 / R13). |
-| 7 | Cloud Connector → Monitor (opcional, D63). | Llegan peticiones a `/sap/opu/odata4/...`. Si no se revisa, Claude confirma las llamadas en `cf logs reporte-simple-srv --recent`. |
+| 7 | Cloud Connector → Monitor (opcional en cada deploy, D63). | Llegan peticiones a `/sap/opu/odata4/...`. Si no se revisa, Claude confirma las llamadas en `cf logs reporte-simple-srv --recent`. |
+| 7b | **Pendiente, una sola vez (D63):** confirmar la **URL exacta** que llega al S/4, con el Cloud Connector → Monitor o con `DEBUG=remote` en la app (`cf set-env reporte-simple-srv DEBUG remote` + `cf restage`; quitarlo al terminar). | `/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd/sap/zmaks_sd_conexiones/0001/Conexiones…` (con `/_Flight` y, para R14, `Vuelos?$apply=filter(...)/groupby(...)`), y la del F4 con `;ps=…;va=…`. Los logs normales de la app no la muestran. |
 
 **Registro de ejecución**
 
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
-| 2026-11-11 | 5 | Usuario | ✔ pasos 1–6 | 403 sin rol; datos reales de `<S4_SISTEMA>`; `AA 0015` con 2 vuelos (260 / 260; 213 / 137) y cabecera 520 · 350; F4 `Frankfurt` encuentra; precio con decimales. Paso 7 no revisado por el usuario. |
+| 2026-11-11 | 5 | Usuario | ✔ pasos 1–6 | 403 sin rol; datos reales de `<S4_SISTEMA>`; `AA 0015` con 2 vuelos (260 / 260; 213 / 137) y cabecera 520 · 350; F4 `Frankfurt` encuentra; precio con decimales. Paso 7 no revisado por el usuario. **7b pendiente** (URL exacta al S/4, una vez). |
 | 2026-11-11 | 5 | Claude | ✔ 401 / `/health` · paso 7 por logs | `/health` UP; sin token 401 `Unauthorized` (excepción de R10, D62). Logs 15:05–15:09: 8 `$batch` de Fiori → 200; 4 lecturas de cabecera (`AA 15` ×3, `AA 17`) y 4 de `_Flight`, y **12** resoluciones de la destination OnPremise del Cloud SDK = 4 × (conexión + totales de R14) + 4 `_Flight`: una por llamada al RAP. Sin errores; único aviso, "basic authentication… Principal propagation is recommended" (pendiente para la Etapa 6). |
 

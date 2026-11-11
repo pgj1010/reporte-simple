@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 6 (al aprobarse la revisión y el merge a `main` de la Etapa 5)
+**Etapa activa:** 6 — **no iniciada** (Etapa 5 aprobada y mergeada a `main` el 2026-11-11; el usuario pidió detenerse antes de la Etapa 6)
 
 ---
 
@@ -278,13 +278,15 @@ Salida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CL
 - Cambio de plan (usuario, 2026-11-11): el paso 6 (Work Zone, R13) se deja para después.
 - D60 — Build con las tareas por defecto; `gen/db` se genera pero no se despliega; R5 verifica el TS compilado. Propuesta propia.
 - D59 — `sap.cloud.service: reportesimple`, inbound `ReporteConexiones-display`, zip `conexiones.zip`; test `d54-despliegue`. Propuesta propia.
-- D63 — Llamadas al RAP confirmadas en los logs de la app en vez del Cloud Connector Monitor (no revisado por el usuario). Propuesta propia.
+- D63 — Llamadas al RAP confirmadas en los logs de la app en vez del Cloud Connector Monitor (no revisado por el usuario). Propuesta propia. La URL exacta al S/4 se confirma una vez con el Monitor o `DEBUG=remote` (paso 7b de "Despliegue", pedido del usuario).
+- Revisión del usuario (2026-11-11): **D58–D63 aprobadas**; R7 se ajusta a la navegación `/_Flight` y `$expand=_Flight` queda fuera de alcance.
+- D64 — `$expand=_Flight` fuera de R7; sus tests se mantienen como regresión, marcados como fuera de R7. Ajuste de R7 del usuario; mantener los tests, propuesta propia.
 
 ### Informe de cierre — Etapa 5 (2026-11-11)
 
 **Resultado:** `npm test` **182/182** en verde (incluye lint, R1–R14, regla 17, D43, D50 y los nuevos `d53-roles` y `d54-despliegue`); `npm run test:mutacion` **2/2** (R2, R3 con el rol `Visualizador`); `npx tsc --noEmit -p tsconfig.test.json` sin errores. **Desplegado** en `<CF_ORG> / dev` con aprobación del usuario (deploy inicial + redeploy a 512 MB): instancias nuevas `reporte-simple-uaa`, `-destination`, `-connectivity`, `-html5-host`; app `reporte-simple-srv` (81,7 / 512 MB); app Fiori en el HTML5 repo por el managed app router. Pruebas en el despliegue (usuario, datos reales de `<S4_SISTEMA>`): 403 sin rol ✔, datos reales ✔, R7 + R14 en `AA 0015` (2 vuelos; 520 · 350) ✔, F4 `Frankfurt` ✔, precio con decimales ✔. Claude: `/health` UP, 401 sin token, llamadas al RAP en los logs (D63). Salida de la etapa cumplida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CLIENTE>. **Excepción:** el paso 6 (R13 en Work Zone) queda postergado por el usuario. Rama `etapa-5-despliegue` con un commit por paso; **sin merge a `main`** (pendiente de revisión del usuario).
 
-**Decisiones tomadas por mi cuenta** (propuestas por Claude, dentro del plan aprobado por el usuario):
+**Decisiones tomadas por mi cuenta** (propuestas por Claude, dentro del plan aprobado por el usuario; **D58–D63 aprobadas por el usuario en la revisión del 2026-11-11**):
 
 | ID | Decisión | Regla que afecta | Qué pasaría si fuera al revés |
 |---|---|---|---|
@@ -292,11 +294,12 @@ Salida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CL
 | D59 | `sap.cloud.service: reportesimple`, inbound `ReporteConexiones-display`, zip `conexiones.zip`; test `d54-despliegue` que cruza `mta.yaml`, `xs-app.json`, `manifest.json` y `ui5-deploy.yaml` | D54, reglas técnicas 13 y 17 | Un nombre distinto entre esos archivos no lo detecta `mbt build`: Work Zone no encontraría la app o el servicio daría 404, recién desplegado. |
 | D60 | Build con las tareas por defecto (`gen/db` se genera pero no se despliega); R5 verifica que `srv/` viaje compilado | D13, D30, R5 | Con `cds.build.tasks: [{ for: 'nodejs' }]` (para quitar `gen/db`), `service.ts` viajaría sin compilar y el servicio no arrancaría en Cloud Foundry (comprobado). |
 | D61 | `reporte-simple-srv` con 512 MB (con 256 MB quedó en 250,5 MB) | Proceso 5 (redeploy aprobado) | Con 256 MB, riesgo de reinicios por memoria con carga real. Ahora usa 81,7 MB: si se quisiera ahorrar cuota, 256 MB podría bastar, pero sin margen confirmado. |
-| D63 | Llamadas al RAP confirmadas en los logs de la app en vez del Cloud Connector Monitor | R4, R5 | Exigiendo el Monitor, la etapa esperaría un acceso que no agrega evidencia (los datos reales ya pasaron por el Cloud Connector); los logs no muestran la URL exacta que llega al S/4. |
+| D63 | Llamadas al RAP confirmadas en los logs de la app en vez del Cloud Connector Monitor | R4, R5 | Exigiendo el Monitor, la etapa esperaría un acceso que no agrega evidencia (los datos reales ya pasaron por el Cloud Connector); los logs no muestran la URL exacta que llega al S/4 (se confirma una vez, paso 7b). |
+| D64 (en la revisión) | `$expand=_Flight` fuera de R7 (decisión del usuario); sus tests se mantienen como regresión (propuesta propia) | R7, D25, D26 | Borrándolos, una regresión de `$expand` en el mock o en la delegación pasaría inadvertida si una app futura lo usara. |
 
 Decisiones del usuario en esta etapa: aprobación del plan de 6 pasos de una vez, D53 (rol `Visualizador`), D54 (managed app router), D55 (instancias nuevas; la cuota alcanzó), D56 (sin transporte de D45 por ahora; **transportar antes de QAS/PRD**), D57 (`ESTADO.md`), D62 (401 de XSUAA como excepción de R10), aprobación de los dos `cf deploy` y la postergación del paso 6. Detalle completo, con "si fuera al revés", en `SPEC.md` → Decisiones.
 
-**Reglas cambiadas en esta etapa:** R3 pasa de `authenticated-user` a rol `Visualizador` (sin usuario 401, sin rol 403; D53). R10 suma una excepción: el 401 de XSUAA (D62).
+**Reglas cambiadas en esta etapa:** R7 se limita a la navegación `/_Flight`, la que usa la app; `$expand=_Flight` queda fuera de alcance (revisión del usuario, D64). R3 pasa de `authenticated-user` a rol `Visualizador` (sin usuario 401, sin rol 403; D53). R10 suma una excepción: el 401 de XSUAA (D62).
 
 **Mutaciones** (D3: la obligatoria es R2/R3):
 - `npm run test:mutacion`: R3 (quitar `@requires: 'Visualizador'`) y R2 detectadas, 2/2.
@@ -311,6 +314,7 @@ Decisiones del usuario en esta etapa: aprobación del plan de 6 pasos de una vez
 **Pendientes para próximas etapas:**
 - **Paso 6 postergado:** R13 en Work Zone / Launchpad (D34) y `archeType` si el launchpad lo usa (D36): publicar la app (intent `ReporteConexiones-display`) en un sitio y probar con el launchpad en inglés.
 - **Antes de QAS/PRD:** transportar el cambio del RAP de D45 (D56).
+- **Una vez:** confirmar la URL exacta que llega al S/4 con el Cloud Connector Monitor o `DEBUG=remote` (D63, paso 7b de "Despliegue" en `PRUEBAS_MANUALES.md`).
 - **Etapa 6 (seguridad):** el Cloud SDK avisa "basic authentication… Principal propagation is recommended" (destination `S4_BACKEND` con usuario técnico); revisar `npm audit` (avisos en el `npm install` de la etapa).
 - Si se agrega CI: los tests de R4/R5 usan el `cds` de cds-dk global.
 - **Etapa 7 (plantilla):** cada reporte necesita su `xs-security.json` con un rol propio (D53, test `d53-roles`), sus instancias `<reporte>-*` (D55), `sap.cloud.service` sin guion y coherente (D59, test `d54-despliegue`), 512 MB (D61) y no fijar `cds.build.tasks` (D60).
@@ -394,3 +398,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-11 — Etapa 5: plan de 6 pasos aprobado de una vez; rol `Visualizador` (D53, R3 con 403), managed app router (D54), instancias `reporte-simple-*` (D55), `ESTADO.md` (D57). Build revisado: `cds.build.tasks` explícito no compila el TS (D60).
 - 2026-11-11 — Primer despliegue en `<CF_ORG> / dev` (aprobado): cuota suficiente; 250,5 / 256 MB → redeploy a 512 MB (D61, 81,7 MB en uso); 401 de XSUAA en inglés → excepción de R10 (D62).
 - 2026-11-11 — Pruebas del usuario en el despliegue con datos reales de `<S4_SISTEMA>`: 403 sin rol, R7 + R14 (`AA 0015`: 520 · 350), F4 `Frankfurt`, decimales, todo ✔. Llamadas al RAP confirmadas en los logs (D63). Work Zone postergado. **Etapa 5 cerrada** (pendiente de revisión y merge a `main` por el usuario). Etapa activa: 6.
+- 2026-11-11 — Revisión del usuario: D58–D63 aprobadas; R7 ajustada a `/_Flight`, `$expand` fuera de alcance (D64, tests como regresión); URL exacta al S/4 pendiente una vez (D63, paso 7b). **Etapa 5 aprobada y mergeada a `main`** (`--no-ff`). Etapa 6 no iniciada.

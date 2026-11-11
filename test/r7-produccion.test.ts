@@ -28,13 +28,14 @@ describe('R7 / D26 — producción: _Flight se delega al RAP', () => {
     assert.match(r[0], /^\/Conexiones\(CarrierId='AA',ConnectionId='0017'\)\/_Flight(\?|$)/);
   });
 
-  it('$expand=_Flight llega al RAP como $expand=_Flight, en una sola petición', async () => {
+  // D64: los dos tests con $expand=_Flight quedan fuera de R7 (la app usa /_Flight); regresión.
+  it('(fuera de R7, D64) $expand=_Flight llega al RAP como $expand=_Flight, en una sola petición', async () => {
     const r = await alRap('Conexiones?$expand=_Flight($select=FlightDate)');
     assert.equal(r.length, 1, `peticiones al RAP: ${JSON.stringify(r)}`);
     assert.match(r[0], /^\/Conexiones\?.*\$expand=_Flight\(/);
   });
 
-  it('el detalle de una conexión pide sus vuelos con $expand=_Flight en una sola petición', async () => {
+  it('(fuera de R7, D64) el detalle de una conexión pide sus vuelos con $expand=_Flight en una sola petición', async () => {
     // Sin $select se piden todos los campos, también los totales de la cabecera (R14): esa petición
     // groupby/aggregate es aparte y no cuenta aquí; lo que se verifica es que _Flight no se divide.
     const r = (await alRap("Conexiones(CarrierId='AA',ConnectionId='0017')?$expand=_Flight")).filter(u => !u.includes('$apply'));

@@ -65,7 +65,7 @@ describe('R14 — totales en la cabecera del detalle (mock)', () => {
     for (const c of data.value) assert.deepEqual(Object.keys(c).sort(), ['CarrierId', 'ConnectionId']);
   });
 
-  it('junto con $expand=_Flight (como el detalle) el total coincide con los vuelos expandidos', async () => {
+  it('(regresión, $expand fuera de R7 por D64) junto con $expand=_Flight el total coincide con los vuelos expandidos', async () => {
     const { data } = await GET(`${URL}Conexiones(CarrierId='AA',ConnectionId='0017')?${SELECT_CABECERA}&$expand=_Flight($select=SeatsMax)`, alice);
     assert.equal(data.TotalCapacidad, data._Flight.reduce((s: number, v: { SeatsMax: number }) => s + v.SeatsMax, 0));
   });

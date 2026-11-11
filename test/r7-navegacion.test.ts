@@ -1,4 +1,5 @@
-// R7 — Desde una conexión se puede navegar a sus vuelos (mismo CarrierId y ConnectionId).
+// R7 — Desde una conexión se puede navegar a sus vuelos con /_Flight (mismo CarrierId y ConnectionId).
+// $expand=_Flight está fuera de R7 (D64): sus tests quedan como regresión.
 // Con el mock de D25 (test/mock/rap.ts), que usa la condición de `_Flight` confirmada en ADT.
 // El camino de producción (delegar `_Flight` al RAP) se prueba en r7-produccion.test.ts (D26).
 import { describe, it } from 'node:test';
@@ -60,7 +61,8 @@ describe('R7 — navegación de una conexión a sus vuelos', () => {
     });
   });
 
-  describe('$expand=_Flight', () => {
+  // D64: $expand=_Flight está fuera de R7 (la app usa /_Flight); se mantiene como regresión del mock.
+  describe('$expand=_Flight (fuera de R7, regresión, D64)', () => {
     it('en la lista, cada conexión trae solo sus vuelos (comparado contra test/data)', async () => {
       const { data } = await GET(`${URL}Conexiones?$expand=_Flight`, alice);
       assert.equal(data.value.length, conexionesCsv.length);
