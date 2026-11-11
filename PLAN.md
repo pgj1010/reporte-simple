@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 6 — **no iniciada** (Etapa 5 aprobada y mergeada a `main` el 2026-11-11; el usuario pidió detenerse antes de la Etapa 6)
+**Etapa activa:** 6 — Seguridad, limpieza y publicación como portafolio (en curso, rama `etapa-6-limpieza`)
 
 ---
 
@@ -319,17 +319,30 @@ Decisiones del usuario en esta etapa: aprobación del plan de 6 pasos de una vez
 - Si se agrega CI: los tests de R4/R5 usan el `cds` de cds-dk global.
 - **Etapa 7 (plantilla):** cada reporte necesita su `xs-security.json` con un rol propio (D53, test `d53-roles`), sus instancias `<reporte>-*` (D55), `sap.cloud.service` sin guion y coherente (D59, test `d54-despliegue`), 512 MB (D61) y no fijar `cds.build.tasks` (D60).
 
-## Etapa 6 — Seguridad y limpieza
+## Etapa 6 — Seguridad, limpieza y publicación como portafolio
 Rama: `etapa-6-limpieza`
-- [ ] Regenerar service key de connectivity (`cf delete-service-key ...` + `cds bind`)
-- [ ] Deshabilitar SSH en `etiquetas-srv` si no se usa (`cf disable-ssh etiquetas-srv`)
-- [ ] Eliminar recurso redundante `/sap/opu/odata4/` del Cloud Connector (opcional)
+
+> Pedido del usuario (2026-11-11): preparar el repo para publicarlo en GitHub (`github.com/pgj1010/reporte-simple`) como portafolio público. Plan aprobado de una vez, con commit por paso; **sin push** (lo hace el usuario). El usuario confirmó que tiene permiso de la empresa para publicar.
+
+- [x] **Paso 0** Escaneo de secretos en archivos e historial (51 commits, todas las ramas): **ningún secreto**. `.cdsrc-private.json` nunca se versionó. Datos internos encontrados: host, cliente, org y API de CF, URL de la app, destination, email corporativo en los commits.
+- [ ] **Paso 1** `npm audit`: resolver al menos las 5 altas sin `--force` ni bajar versiones mayores (D66)
+- [ ] **Paso 2** Marcadores para datos internos (host, cliente, org, API, URL de la app) + sección "Configuración" del README (D67)
+- [ ] **Paso 3** Destination genérica `S4_BACKEND` + `.mtaext` no versionado (D65)
+- [ ] **Paso 4** `README.md` para reclutadores (problema, Mermaid, stack, decisiones, métricas, "Cómo lo construí con Claude Code") + espacios de capturas en `docs/img/`
+- [ ] **Paso 5** `.github/workflows/test.yml` (solo mocks, sin backend SAP) + badge
+- [ ] **Paso 6** Licencia MIT a nombre de Pablo Gallardo
+- [ ] **Paso 7** Reescritura del historial en un **clon nuevo** con `git filter-repo` (51 commits, autor noreply, datos internos reemplazados, archivos sensibles fuera) + escaneo de todas las revisiones + `origin` sin token. **Sin push.**
 - [ ] Revisar `.gitignore`
 
-Salida: sin secretos expuestos; repo limpio.
+Pendientes de la etapa que requieren a Cloud Foundry o al Cloud Connector (quedan para el usuario):
+- [ ] Regenerar service key de connectivity (`cf delete-service-key ...` + `cds bind`)
+- [ ] Deshabilitar SSH en la app del servicio si no se usa (`cf disable-ssh reporte-simple-srv`)
+- [ ] Eliminar recurso redundante `/sap/opu/odata4/` del Cloud Connector (opcional)
+
+Salida: sin secretos expuestos; datos internos reemplazados por marcadores; clon con historial reescrito listo para `git push`.
 
 ### Decisiones de la etapa
-- _(anotar aquí al tomarlas)_
+- D66 — `npm audit`: `overrides` acotados (`pacote` ^21.5.3, `sigstore` ^4.1.1, `@sigstore/core` ^3.2.1, `glob` 9–14.0.1 → ^14.0.4, `minimatch` 7–11.0.0 → ^11.0.8) en vez del "fix" de npm, que bajaba `cds-plugin-ui5` a 0.13 y `@ui5/cli` a 2. 37 → 0 vulnerabilidades; `npm test`, mutación, `cds watch` con el plugin UI5, `ui5 build` y `cds build --production` verificados.
 
 ## Etapa 7 — Generalización y plantilla para nuevos reportes
 Rama: `etapa-7-plantilla`
