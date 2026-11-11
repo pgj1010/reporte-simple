@@ -54,7 +54,7 @@ export async function iniciar(responder: Responder = respuestaVacia): Promise<En
 
   const config = {
     requires: {
-      auth: { kind: 'mocked' },                              // usuario alice sin XSUAA
+      auth: { kind: 'mocked', users: { alice: { roles: ['Visualizador'] } } }, // alice con el rol de R3 (D53), sin XSUAA
       db: { kind: 'sqlite', credentials: { url: ':memory:' } },
       ZMAKS_SB_CONEXIONES: {                                 // en lugar de la destination S4_BACKEND
         credentials: { url: `http://localhost:${puerto}${RUTA_RAP}`, destination: null, path: null },

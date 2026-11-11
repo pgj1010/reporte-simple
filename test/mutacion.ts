@@ -25,9 +25,9 @@ interface Mutacion {
 const mutaciones: Mutacion[] = [
   {
     regla: 'R3',
-    descripcion: "quitar @requires: 'authenticated-user' de ReporteService",
+    descripcion: "quitar @requires: 'Visualizador' de ReporteService",
     archivo: 'srv/service.cds',
-    quitar: /^\s*@requires\s*:\s*'authenticated-user'.*\n/gm,
+    quitar: /^\s*@requires\s*:\s*'Visualizador'.*\n/gm,
     tests: ['test/r3-autenticacion.test.ts'],
   },
   {

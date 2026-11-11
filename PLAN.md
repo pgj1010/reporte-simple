@@ -248,16 +248,16 @@ Decisiones del usuario en esta etapa: D8 (antes de iniciarla), D38, D39, D40, D4
 
 ## Etapa 5 — Despliegue a Cloud Foundry
 Rama: `etapa-5-despliegue`
-- [ ] `cds add mta` (+ `xsuaa`, `destination`, `connectivity`, app router o managed app router según `etiquetas`)
-- [ ] Roles en `xs-security.json` coherentes con `@requires` / `@restrict`
-- [ ] Reutilizar o crear instancias `destination` / `connectivity` (lite)
+- [x] **Paso 1** `mta.yaml` (+ `xsuaa`, `destination`, `connectivity`; managed app router, D54) **Hecho (2026-11-11):** escritos a mano tomando `etiquetas` como referencia, sin módulo de base de datos; script `npm run build` (= `cds build --production`); `@sap/xssec` como dependencia y `auth` `xsuaa` en `[production]`
+- [x] Roles en `xs-security.json` coherentes con `@requires` / `@restrict`. **Hecho (2026-11-11, D53):** `@requires: 'Visualizador'`, role collection `ReporteSimple_Visualizador`; usuarios mock `alice` (con el rol) y `sinrol` (sin él); R3 con 403 sin rol; test `d53-roles` (mutación manual detectada: scope renombrado en `xs-security.json`, 4/5 fallan); `npm run test:mutacion` 2/2; `npm test` 173/173
+- [ ] Reutilizar o crear instancias `destination` / `connectivity` (lite). En `mta.yaml` como `reporte-simple-*` (D55); falta confirmar la cuota del Trial (necesita `cf login`)
 - [ ] Configuración de despliegue de la app Fiori (HTML5 repo)
 - [ ] **(de Etapa 3)** `index.html` carga UI5 1.154.0 desde el CDN (`sapui5.hana.ondemand.com`): decidir la versión y el origen de UI5 para el despliegue (app router / HTML5 repo, o Work Zone, que usa su propio UI5)
 - [ ] R13 desplegado (D34): si la app se publica en Work Zone / Launchpad, verificar con el launchpad en inglés qué textos y formatos salen en español (los de la app sí, por D33; los de Fiori y el formato dependen del idioma del launchpad) y decidir si hace falta fijarlo ahí
 - [ ] Verificar que `cds build --production` compila el TypeScript correctamente sin `tsx` (`gen/srv` con `service.js`, imports `#cds-models` resueltos, sin `.ts` en el runtime) — D13. **Hallazgo 2026-11-09 (Etapa 2):** con `cds build -o <dir>` el build copia `srv/service.ts` sin compilar y no incluye `@cds-models`. Con el destino normal (`gen/`, o `CDS_BUILD_TARGET` **relativo**) sí compila el TS, pero como `tsconfig.json` no tiene `include`, compila **todo** el proyecto: los tests (`test/*.test.js`) terminan en `gen/srv/test/` y viajarían a producción. Con un `CDS_BUILD_TARGET` absoluto, `tsc` escribe dentro del proyecto (`./tmp/...`). ~~Revisar `include` / un `tsconfig` de build.~~ Resuelto en la Etapa 3 (D30). También genera artefactos HANA (`src/gen`, `cds.outbox.Messages`) aunque el reporte no tiene base de datos propia: revisar si hacen falta
 - [ ] Verificar con XSUAA que el 401 sale por la clave i18n traducida ("No autenticado")
 - [ ] Si se agrega CI: los tests de R4/R5 necesitan el `cds` de cds-dk global
-- [ ] **(D45)** Transportar al sistema destino el cambio del RAP `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (CDS de vuelos) antes de desplegar; verificar en el `$metadata` desplegado que `aggregate(SeatsOccupied)` funciona
+- [x] ~~**(D45)** Transportar al sistema destino~~ No aplica en esta etapa (D56: mismo `<S4_SISTEMA>` cliente <S4_CLIENTE>, el cambio ya está activo). **Transportar antes de QAS/PRD.** Texto original: Transportar al sistema destino el cambio del RAP `@Aggregation.default: #SUM` en `SeatsOccupied` y `SeatsMax` (CDS de vuelos) antes de desplegar; verificar en el `$metadata` desplegado que `aggregate(SeatsOccupied)` funciona
 - [ ] `mbt build` y **pedir aprobación** antes de `cf deploy`
 - [ ] Probar `/odata/v4/reporte/Conexiones` desplegado → datos **reales** del RAP
 - [ ] R7 desplegado: `Conexiones(...)/_Flight`, `$expand=_Flight` y la sección "Detalles de vuelos" contra el RAP real (la condición ya está confirmada en ADT; aquí se verifica que el RAP la aplique). D26 no cubre el join del RAP
@@ -266,7 +266,12 @@ Rama: `etapa-5-despliegue`
 Salida: la app desplegada muestra datos reales de `<S4_SISTEMA>`, cliente <S4_CLIENTE>.
 
 ### Decisiones de la etapa
-- _(anotar aquí al tomarlas)_
+- Plan de 6 pasos aprobado por el usuario de una vez (2026-11-11): 1) `mta.yaml` + `xs-security.json` · 2) despliegue de la app (HTML5 repo, UI5) · 3) `cds build --production` · 4) `mbt build` → aprobación → `cf deploy` · 5) pruebas contra el RAP real · 6) R13 en Work Zone. Commit por paso; Claude se detiene solo para `cf login`, la aprobación del `cf deploy` o pruebas del usuario (todo junto).
+- D53 — Rol `Visualizador` (`@requires: 'Visualizador'`); R3: sin usuario 401, sin rol 403. Decisión del usuario.
+- D54 — Managed app router (Work Zone / HTML5 repo), como `etiquetas`. Decisión del usuario.
+- D55 — Instancias nuevas `reporte-simple-*`; si la cuota del Trial no alcanza, reusar las de `etiquetas` y registrarlo. Decisión del usuario.
+- D56 — Mismo `<S4_SISTEMA>` cliente <S4_CLIENTE>: sin transporte de D45 ahora; transportarlo antes de QAS/PRD. Decisión del usuario.
+- D57 — `ESTADO.md` en el repo, actualizado al terminar cada paso. Decisión del usuario.
 
 ## Etapa 6 — Seguridad y limpieza
 Rama: `etapa-6-limpieza`

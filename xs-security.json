@@ -1,0 +1,25 @@
+{
+  "xsappname": "reporte-simple",
+  "tenant-mode": "dedicated",
+  "description": "Reporte de conexiones y vuelos",
+  "scopes": [
+    { "name": "$XSAPPNAME.Visualizador", "description": "Ver el reporte de conexiones y vuelos" }
+  ],
+  "role-templates": [
+    {
+      "name": "Visualizador",
+      "description": "Ver el reporte de conexiones y vuelos (solo lectura)",
+      "scope-references": ["$XSAPPNAME.Visualizador"]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "ReporteSimple_Visualizador",
+      "description": "Usuarios del reporte de conexiones y vuelos",
+      "role-template-references": ["$XSAPPNAME.Visualizador"]
+    }
+  ],
+  "oauth2-configuration": {
+    "redirect-uris": ["https://*.hana.ondemand.com/**"]
+  }
+}

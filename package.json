@@ -6,7 +6,8 @@
     "@sap-cloud-sdk/connectivity": "^4",
     "@sap-cloud-sdk/http-client": "^4",
     "@sap-cloud-sdk/resilience": "^4",
-    "@sap/cds": "^10"
+    "@sap/cds": "^10",
+    "@sap/xssec": "^4"
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1.0.2",
@@ -25,7 +26,8 @@
     "pretest": "cds-typer '*' --outputDirectory @cds-models",
     "watch": "CDS_TYPESCRIPT=false cds watch",
     "pretest:mutacion": "cds-typer '*' --outputDirectory @cds-models",
-    "test:mutacion": "node test/mutacion.ts"
+    "test:mutacion": "node test/mutacion.ts",
+    "build": "cds build --production"
   },
   "private": true,
   "cds": {
@@ -63,6 +65,24 @@
             "destination": "S4_BACKEND",
             "path": "/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd_f4/dmo/i_airport_stdvh/0001;ps='srvd-zmaks_sd_conexiones-0001';va='com.sap.gateway.srvd.zmaks_sd_conexiones.v0001.et-zmaks_i_conexiones.airportfromid'"
           }
+        }
+      },
+      "auth": {
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "alice": {
+              "roles": [
+                "Visualizador"
+              ]
+            },
+            "sinrol": {
+              "roles": []
+            }
+          }
+        },
+        "[production]": {
+          "kind": "xsuaa"
         }
       }
     }
