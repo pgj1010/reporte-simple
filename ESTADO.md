@@ -21,7 +21,7 @@ Resumen corto para retomar una sesión (D57). La fuente completa es `PLAN.md`; l
 | 4 | README para reclutadores | ✅ faltan las 3 capturas (usuario, `docs/img/CAPTURAS.md`) |
 | 5 | GitHub Actions + badge | ✅ (D68) |
 | 6 | Licencia MIT | ✅ |
-| 7–9 | Historial reescrito en un clon + escaneo + `origin` | ⛔ bloqueado: `git filter-repo` no disponible |
+| 7–9 | Historial reescrito en un clon + escaneo + `origin` | ✅ `/home/user/projects/reporte-simple-publico`, escaneo en 0; **push pendiente del usuario** |
 
 ## Último resultado
 
@@ -29,7 +29,7 @@ Resumen corto para retomar una sesión (D57). La fuente completa es `PLAN.md`; l
 
 ## Esperando al usuario
 
-- Instalar o autorizar `git filter-repo` para los pasos 7–9
+- `cd /home/user/projects/reporte-simple-publico && git push -u origin main`
 - Tomar las capturas (con mock y `alice`) y revisar que no se vean datos reales
 - Revisión y merge de la Etapa 6 en este repo
 - Pendientes de CF / Cloud Connector (service key, SSH, recurso `/odata4/`) · pendientes de la Etapa 5 (Work Zone, URL exacta al S/4, transporte de D45)
