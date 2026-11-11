@@ -1,0 +1,41 @@
+# CI de reporte-simple: corre 100 % con mocks (CSV de test/data/ y un RAP simulado en localhost).
+# No necesita backend SAP, destination ni credenciales: no usa secretos del repo.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # R4, R5 y los tests de producción simulada usan el `cds` de cds-dk global (PLAN.md, pendientes de la Etapa 5).
+      - name: Instalar @sap/cds-dk global
+        run: npm install -g @sap/cds-dk@^10
+
+      - name: npm test (lint + reglas R1–R14 con mocks)
+        run: npm test
+
+      # Después de npm test: su `pretest` genera los tipos de @cds-models con cds-typer.
+      - name: Revisar tipos (incluye test/)
+        run: npx tsc --noEmit -p tsconfig.test.json
+
+      - name: Pruebas de mutación (R2 solo lectura, R3 autorización)
+        run: npm run test:mutacion

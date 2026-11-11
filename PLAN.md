@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 6 — **no iniciada** (Etapa 5 aprobada y mergeada a `main` el 2026-11-11; el usuario pidió detenerse antes de la Etapa 6)
+**Etapa activa:** 6 — Seguridad, limpieza y publicación como portafolio (rama `etapa-6-limpieza`; pasos 0–7 hechos, clon listo para push; **pendiente de revisión y merge a `main` por el usuario**)
 
 ---
 
@@ -319,17 +319,47 @@ Decisiones del usuario en esta etapa: aprobación del plan de 6 pasos de una vez
 - Si se agrega CI: los tests de R4/R5 usan el `cds` de cds-dk global.
 - **Etapa 7 (plantilla):** cada reporte necesita su `xs-security.json` con un rol propio (D53, test `d53-roles`), sus instancias `<reporte>-*` (D55), `sap.cloud.service` sin guion y coherente (D59, test `d54-despliegue`), 512 MB (D61) y no fijar `cds.build.tasks` (D60).
 
-## Etapa 6 — Seguridad y limpieza
+## Etapa 6 — Seguridad, limpieza y publicación como portafolio
 Rama: `etapa-6-limpieza`
-- [ ] Regenerar service key de connectivity (`cf delete-service-key ...` + `cds bind`)
-- [ ] Deshabilitar SSH en `etiquetas-srv` si no se usa (`cf disable-ssh etiquetas-srv`)
-- [ ] Eliminar recurso redundante `/sap/opu/odata4/` del Cloud Connector (opcional)
-- [ ] Revisar `.gitignore`
 
-Salida: sin secretos expuestos; repo limpio.
+> Pedido del usuario (2026-11-11): preparar el repo para publicarlo en GitHub (`github.com/pgj1010/reporte-simple`) como portafolio público. Plan aprobado de una vez, con commit por paso; **sin push** (lo hace el usuario). El usuario confirmó que tiene permiso de la empresa para publicar.
+
+- [x] **Paso 0** Escaneo de secretos en archivos e historial (51 commits, todas las ramas): **ningún secreto**. `.cdsrc-private.json` nunca se versionó. Datos internos encontrados: host, cliente, org y API de CF, URL de la app, destination, email corporativo en los commits.
+- [x] **Paso 1** `npm audit`: resolver al menos las 5 altas sin `--force` ni bajar versiones mayores (D66)
+- [x] **Paso 2** Marcadores para datos internos (host, cliente, org, API, URL de la app) + sección "Configuración" del README (D67). Hecho: 5 documentos; valores reales en `LOCAL.md` (ignorado); `readme.md` → `README.md` con *Configuración*.
+- [x] **Paso 3** Destination genérica `S4_BACKEND` + `.mtaext` no versionado (D65). Hecho: plantilla `deploy/destination.mtaext.ejemplo`, validada con `cds env` y `mbt build -e`; 4 tests nuevos en R5.
+- [x] **Paso 4** `README.md` para reclutadores (problema, Mermaid, stack, decisiones, métricas, "Cómo lo construí con Claude Code") + espacios de capturas en `docs/img/`. Hecho: badge de CI; pasos de las capturas en `docs/img/CAPTURAS.md`. **Pendiente del usuario:** tomar las 3 capturas (con mock y `alice`, revisando que no se vean datos reales).
+- [x] **Paso 5** `.github/workflows/test.yml` (solo mocks, sin backend SAP) + badge (D68). Hecho: simulado en un clon limpio, 186/186 + `tsc` + mutaciones 2/2; ningún test necesitó backend. Badge en el paso 4.
+- [x] **Paso 6** Licencia MIT a nombre de Pablo Gallardo (`LICENSE`; `license`, `author` y `repository` en `package.json`). Topics sugeridos para el repo: `sap-cap`, `cap-nodejs`, `typescript`, `odata-v4`, `fiori-elements`, `sap-btp`, `cloud-foundry`, `s4hana`, `abap-rap`, `clean-core`, `mutation-testing`, `claude-code`, `ai-assisted-development`.
+- [x] **Paso 7** Reescritura del historial en un **clon nuevo** (`/home/user/projects/reporte-simple-publico`) con `git filter-repo` 2.47 (instalado por el usuario): los 51 commits de `main` + la Etapa 6 mergeada **solo en el clon** (`--no-ff`); autor y committer noreply en todos; datos internos reemplazados por marcadores en contenido y mensajes; `.cdsrc-private.json`, `default-env.json`, `*.mtaext`, service keys y `LOCAL.md` excluidos de todo el historial (nunca se habían versionado); `user.name`/`user.email` noreply y `origin` = `https://github.com/pgj1010/reporte-simple.git` sin token. Escaneo de **todas las revisiones** del clon: 0 datos internos, 0 secretos con valor, 0 archivos sensibles, un único autor noreply. **Sin push** (lo hace el usuario: solo `main`).
+- [x] Revisar `.gitignore`: se suman `LOCAL.md`, `*.mtaext`, `.env*`, `*-key.json`, `*service-key*`, `*.pem`, `*.p12`, `*.pfx`; ningún archivo versionado queda ignorado. En todo el historial nunca se versionaron `.cdsrc-private.json`, `default-env.json`, `*.mtaext` ni service keys.
+
+Pendientes de la etapa que requieren a Cloud Foundry o al Cloud Connector (quedan para el usuario):
+- [ ] Regenerar service key de connectivity (`cf delete-service-key ...` + `cds bind`)
+- [ ] Deshabilitar SSH en la app del servicio si no se usa (`cf disable-ssh reporte-simple-srv`)
+- [ ] Eliminar recurso redundante `/sap/opu/odata4/` del Cloud Connector (opcional)
+
+Salida: sin secretos expuestos; datos internos reemplazados por marcadores; clon con historial reescrito listo para `git push`.
 
 ### Decisiones de la etapa
-- _(anotar aquí al tomarlas)_
+- D65 — Destination genérica `S4_BACKEND`; el nombre real va en `deploy/destination.mtaext` (no versionado) vía `CDS_CONFIG`. Ya creado en este Dev Space con el nombre de `LOCAL.md`: **el próximo `cf deploy` va con `-e deploy/destination.mtaext`**.
+- D66 — `npm audit`: `overrides` acotados (`pacote` ^21.5.3, `sigstore` ^4.1.1, `@sigstore/core` ^3.2.1, `glob` 9–14.0.1 → ^14.0.4, `minimatch` 7–11.0.0 → ^11.0.8) en vez del "fix" de npm, que bajaba `cds-plugin-ui5` a 0.13 y `@ui5/cli` a 2. 37 → 0 vulnerabilidades; `npm test`, mutación, `cds watch` con el plugin UI5, `ui5 build` y `cds build --production` verificados.
+- D67 — Marcadores para datos internos en la documentación; valores reales en `LOCAL.md` (no versionado); `ZMAKS_*` se mantiene (namespace Z, `srv/external` no editable).
+- D68 — CI con GitHub Actions: `npm test`, `tsc` y mutaciones, 100 % con mocks (CSV + RAP simulado en `localhost`), sin secretos.
+
+### Informe de cierre
+**Resultado:** `npm test` **186/186** (182 + 4 de D65 en R5); `npm run test:mutacion` **2/2**; `tsc` sin errores; `npm audit` **0** vulnerabilidades; CI simulado en un clon limpio con el mismo resultado.
+
+| Decisión | Regla que afecta | Si fuera al revés |
+|---|---|---|
+| D65 — destination `S4_BACKEND` + `.mtaext` no versionado | R5, regla técnica 11 | El repo público mostraría la destination del subaccount; o, sin `-e` en el próximo deploy, fallaría la conexión si la destination real no se renombra |
+| D66 — `overrides` acotados para `npm audit` | Seguridad de dependencias, D35 | Con `--force` se bajaban de versión mayor `cds-plugin-ui5`, `@ui5/cli` y el lint de Fiori; sin nada, 5 alertas altas en el repo público |
+| D67 — marcadores + `LOCAL.md` no versionado; `ZMAKS_*` se mantiene | Reglas de desarrollo, CLAUDE.md → Sistema origen | Con valores reales se expone la red interna; sin `LOCAL.md` las sesiones pierden el contexto; renombrar `ZMAKS_*` obligaba a regenerar `srv/external` |
+| D68 — CI solo con mocks | Regla 4, D3, D12 | Un test que necesite el S/4 real fallaría siempre en GitHub |
+
+Decisiones menores sin número: `README.md` en español (como el resto del repo); el paso de SSH ahora apunta a `reporte-simple-srv` (el texto anterior nombraba `etiquetas-srv`, de otro proyecto); en el clon, `main` incluirá el merge de esta etapa para que el repo público tenga README, CI y licencia (el `main` de este repo **no** se toca hasta la revisión del usuario).
+
+**Pendiente del usuario:** `git push -u origin main` desde el clon; tomar las 3 capturas (`docs/img/CAPTURAS.md`); revisar y aprobar el merge de la etapa; pasos de CF y Cloud Connector de la lista de arriba. **Próximo `cf deploy`:** con `-e deploy/destination.mtaext` (D65).
 
 ## Etapa 7 — Generalización y plantilla para nuevos reportes
 Rama: `etapa-7-plantilla`
@@ -399,3 +429,5 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-11 — Primer despliegue en `<CF_ORG> / dev` (aprobado): cuota suficiente; 250,5 / 256 MB → redeploy a 512 MB (D61, 81,7 MB en uso); 401 de XSUAA en inglés → excepción de R10 (D62).
 - 2026-11-11 — Pruebas del usuario en el despliegue con datos reales de `<S4_SISTEMA>`: 403 sin rol, R7 + R14 (`AA 0015`: 520 · 350), F4 `Frankfurt`, decimales, todo ✔. Llamadas al RAP confirmadas en los logs (D63). Work Zone postergado. **Etapa 5 cerrada** (pendiente de revisión y merge a `main` por el usuario). Etapa activa: 6.
 - 2026-11-11 — Revisión del usuario: D58–D63 aprobadas; R7 ajustada a `/_Flight`, `$expand` fuera de alcance (D64, tests como regresión); URL exacta al S/4 pendiente una vez (D63, paso 7b). **Etapa 5 aprobada y mergeada a `main`** (`--no-ff`). Etapa 6 no iniciada.
+- 2026-11-11 — Etapa 6 (plan aprobado de una vez): `npm audit` 37 → 0 (D66), marcadores + `LOCAL.md` (D67), `S4_BACKEND` + `.mtaext` (D65), README, CI con mocks (D68), MIT. `npm test` 186/186, mutaciones 2/2. Paso 7 (historial en un clon) bloqueado: `git filter-repo` no disponible.
+- 2026-11-11 — Paso 7: el usuario instaló `git filter-repo`; clon `reporte-simple-publico` con historial reescrito y escaneo de todas las revisiones en 0. **Etapa 6 cerrada** (pendiente: push del usuario, capturas, revisión y merge a `main`, pasos de CF / Cloud Connector).
