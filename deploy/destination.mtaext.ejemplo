@@ -1,0 +1,17 @@
+# D65 — Extensión de despliegue con el nombre REAL de la destination de BTP.
+# El código usa la destination genérica S4_BACKEND (package.json, perfil [production]).
+# Si en tu subaccount la destination se llama distinto:
+#   1. Copia este archivo sin el sufijo ".ejemplo":  cp deploy/destination.mtaext.ejemplo deploy/destination.mtaext
+#      (*.mtaext está en .gitignore: nunca se versiona)
+#   2. Reemplaza <DESTINATION> por el nombre real (las dos veces).
+#   3. Despliega con:  cf deploy mta_archives/*.mtar -e deploy/destination.mtaext
+# Si la destination ya se llama S4_BACKEND, no hace falta este archivo.
+_schema-version: "3.2"
+ID: reporte-simple-destination
+extends: reporte-simple
+
+modules:
+  - name: reporte-simple-srv
+    properties:
+      # CAP combina CDS_CONFIG con package.json: solo cambia "destination", el "path" se mantiene.
+      CDS_CONFIG: '{"requires":{"ZMAKS_SB_CONEXIONES":{"credentials":{"destination":"<DESTINATION>"}},"I_AIRPORT_STDVH":{"credentials":{"destination":"<DESTINATION>"}}}}'

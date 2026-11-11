@@ -11,6 +11,7 @@ El repositorio no contiene datos de ningún sistema real. Los valores propios de
 | `<S4_HOST>:<S4_PUERTO>` | Host interno y puerto HTTP del S/4HANA on‑premise | **Cloud Connector**: mapeo del host virtual al interno, con el recurso `/sap/opu/odata` (*Path and all sub-paths*). En BTP, la **URL** de la destination apunta al host virtual. |
 | `<S4_SISTEMA>` | Nombre del sistema S/4 | Solo documentación (pruebas y decisiones). |
 | `<S4_CLIENTE>` | Mandante del S/4 | Propiedad adicional `sap-client` de la destination (si no, el cliente por defecto del sistema). |
+| Destination `S4_BACKEND` | Destination de BTP (OnPremise, BasicAuthentication) hacia el S/4 | Subaccount → *Connectivity → Destinations*. Si se llama distinto: `cp deploy/destination.mtaext.ejemplo deploy/destination.mtaext`, poner el nombre real y desplegar con `cf deploy mta_archives/*.mtar -e deploy/destination.mtaext` (D65). |
 | `<CF_API>`, `<CF_ORG>` | Endpoint de la API y org de Cloud Foundry (space `dev`) | `cf login -a <CF_API> -o <CF_ORG> -s dev --sso` antes de `cf deploy`. |
 | `<URL_APP>` | URL de la app desplegada (managed app router) | La genera BTP: *HTML5 Applications* del subaccount, o `https://<subdominio>.launchpad.cfapps.<región>.hana.ondemand.com/<GUID>.reportesimple.conexiones-0.0.1/index.html`. |
 

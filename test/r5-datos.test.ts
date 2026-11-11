@@ -1,9 +1,12 @@
 // R5 — En desarrollo y test los datos vienen de test/data/; en producción, de la
 // destination S4_BACKEND. Los CSV no se incluyen en el build.
+// D65: el nombre real de la destination se pasa al desplegar con un .mtaext no versionado.
 import cds from '@sap/cds';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { parse } from 'yaml';
 import path from 'node:path';
 import { iniciar, alice, cdsCli, raiz } from './helpers.ts';
 
@@ -49,6 +52,39 @@ describe('R5 — origen de los datos', () => {
         destination: 'S4_BACKEND',
         path: "/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd_f4/dmo/i_airport_stdvh/0001;ps='srvd-zmaks_sd_conexiones-0001';va='com.sap.gateway.srvd.zmaks_sd_conexiones.v0001.et-zmaks_i_conexiones.airportfromid'",
       });
+    });
+  });
+
+  describe('D65 — destination real vía .mtaext no versionado', () => {
+    const plantilla = 'deploy/destination.mtaext.ejemplo';
+    const ext = parse(readFileSync(path.join(raiz, plantilla), 'utf8'));
+
+    it('la plantilla extiende el MTA y fija CDS_CONFIG en el módulo del servicio', () => {
+      const mta = parse(readFileSync(path.join(raiz, 'mta.yaml'), 'utf8'));
+      assert.equal(ext.extends, mta.ID);
+      const srv = ext.modules.find((m: any) => m.name === 'reporte-simple-srv');
+      assert.ok(mta.modules.some((m: any) => m.name === srv?.name), 'el módulo existe en mta.yaml');
+      assert.match(srv.properties.CDS_CONFIG, /<DESTINATION>/);
+    });
+
+    for (const servicio of ['ZMAKS_SB_CONEXIONES', 'I_AIRPORT_STDVH']) {
+      it(`${servicio}: CDS_CONFIG de la plantilla cambia solo la destination y conserva el path`, async () => {
+        const cdsConfig = ext.modules[0].properties.CDS_CONFIG.replaceAll('<DESTINATION>', 'DESTINATION_REAL');
+        const env = (extra = {}) => cdsCli(['env', 'get', `requires.${servicio}.credentials`, '--profile', 'production', '--json'], extra)
+          .then(r => JSON.parse(r.stdout));
+        const [base, real] = await Promise.all([env(), env({ CDS_CONFIG: cdsConfig })]);
+        assert.equal(base.destination, 'S4_BACKEND');
+        assert.deepEqual(real, { ...base, destination: 'DESTINATION_REAL' });
+      });
+    }
+
+    it('*.mtaext y LOCAL.md están en .gitignore; la plantilla sí se versiona', () => {
+      const ignorado = (f: string) => {
+        try { execFileSync('git', ['check-ignore', '-q', f], { cwd: raiz }); return true; } catch { return false; }
+      };
+      assert.ok(ignorado('deploy/destination.mtaext'));
+      assert.ok(ignorado('LOCAL.md'));
+      assert.ok(!ignorado(plantilla));
     });
   });
 

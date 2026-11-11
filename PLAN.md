@@ -327,7 +327,7 @@ Rama: `etapa-6-limpieza`
 - [x] **Paso 0** Escaneo de secretos en archivos e historial (51 commits, todas las ramas): **ningún secreto**. `.cdsrc-private.json` nunca se versionó. Datos internos encontrados: host, cliente, org y API de CF, URL de la app, destination, email corporativo en los commits.
 - [x] **Paso 1** `npm audit`: resolver al menos las 5 altas sin `--force` ni bajar versiones mayores (D66)
 - [x] **Paso 2** Marcadores para datos internos (host, cliente, org, API, URL de la app) + sección "Configuración" del README (D67). Hecho: 5 documentos; valores reales en `LOCAL.md` (ignorado); `readme.md` → `README.md` con *Configuración*.
-- [ ] **Paso 3** Destination genérica `S4_BACKEND` + `.mtaext` no versionado (D65)
+- [x] **Paso 3** Destination genérica `S4_BACKEND` + `.mtaext` no versionado (D65). Hecho: plantilla `deploy/destination.mtaext.ejemplo`, validada con `cds env` y `mbt build -e`; 4 tests nuevos en R5.
 - [ ] **Paso 4** `README.md` para reclutadores (problema, Mermaid, stack, decisiones, métricas, "Cómo lo construí con Claude Code") + espacios de capturas en `docs/img/`
 - [ ] **Paso 5** `.github/workflows/test.yml` (solo mocks, sin backend SAP) + badge
 - [ ] **Paso 6** Licencia MIT a nombre de Pablo Gallardo
@@ -342,6 +342,7 @@ Pendientes de la etapa que requieren a Cloud Foundry o al Cloud Connector (queda
 Salida: sin secretos expuestos; datos internos reemplazados por marcadores; clon con historial reescrito listo para `git push`.
 
 ### Decisiones de la etapa
+- D65 — Destination genérica `S4_BACKEND`; el nombre real va en `deploy/destination.mtaext` (no versionado) vía `CDS_CONFIG`. Ya creado en este Dev Space con el nombre de `LOCAL.md`: **el próximo `cf deploy` va con `-e deploy/destination.mtaext`**.
 - D66 — `npm audit`: `overrides` acotados (`pacote` ^21.5.3, `sigstore` ^4.1.1, `@sigstore/core` ^3.2.1, `glob` 9–14.0.1 → ^14.0.4, `minimatch` 7–11.0.0 → ^11.0.8) en vez del "fix" de npm, que bajaba `cds-plugin-ui5` a 0.13 y `@ui5/cli` a 2. 37 → 0 vulnerabilidades; `npm test`, mutación, `cds watch` con el plugin UI5, `ui5 build` y `cds build --production` verificados.
 - D67 — Marcadores para datos internos en la documentación; valores reales en `LOCAL.md` (no versionado); `ZMAKS_*` se mantiene (namespace Z, `srv/external` no editable).
 

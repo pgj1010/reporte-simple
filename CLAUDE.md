@@ -57,7 +57,7 @@ Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etap
 | Service definition | `ZMAKS_SD_CONEXIONES` |
 | Ruta del servicio | `/sap/opu/odata4/sap/zmaks_sb_conexiones/srvd/sap/zmaks_sd_conexiones/0001` |
 | Entidades | `Conexiones` (key CarrierId, ConnectionId) → `_Flight` → `Vuelos` (key CarrierId, ConnectionId, FlightDate) |
-| Destination BTP | `S4_BACKEND` (OnPremise, BasicAuthentication, sin Location ID) |
+| Destination BTP | `S4_BACKEND` en el código (OnPremise, BasicAuthentication, sin Location ID). Si la del subaccount se llama distinto, el nombre real va en `deploy/destination.mtaext` (no versionado, D65; ver `LOCAL.md`) |
 | Cloud Connector | Recurso `/sap/opu/odata` con *Path and all sub-paths* (cubre también `odata4`) |
 
 ## Estructura
@@ -69,6 +69,7 @@ reporte-simple/
 │   ├── external/<SERVICIO>.cds  # GENERADO por cds import — NO EDITAR (también el F4 de aeropuertos, D49)
 │   ├── service.cds              # proyecciones expuestas + @requires/@restrict
 │   └── service.ts               # delegación de lecturas al servicio remoto
+├── deploy/destination.mtaext.ejemplo  # plantilla del .mtaext con la destination real (D65)
 ├── scripts/limpiar-edmx-f4.ts   # copia de un .edmx F4 de RAP sin SAP__ParentService, para cds import (D49)
 ├── test/
 │   ├── data/*.csv               # datos mock: <SERVICIO>-<Entidad>.csv (solo dev/test)
@@ -91,7 +92,7 @@ reporte-simple/
 - Navegación / drilldown, tipo de tabla y comportamiento → `app/<reporte>/webapp/manifest.json`.
 - Credenciales del servicio remoto **solo** en perfiles `[production]` y `[hybrid]` del `package.json`. Sin perfil → CAP usa mock con `test/data`.
 - Mantener `"cds": { "remote": { "native_fetch": false } }` → fuerza SAP Cloud SDK (native fetch ignora proxies OnPremise).
-- Nunca commitear `.cdsrc-private.json`, service keys, tokens ni contraseñas. No pegar `clientsecret` ni `Proxy-Authorization` en chats o logs.
+- Nunca commitear `.cdsrc-private.json`, `*.mtaext`, `LOCAL.md`, service keys, tokens ni contraseñas. No pegar `clientsecret` ni `Proxy-Authorization` en chats o logs.
 
 ## Cómo correr
 
@@ -99,7 +100,7 @@ reporte-simple/
 |---|---|---|
 | Local (default) | `npm run watch` (= `CDS_TYPESCRIPT=false cds watch`) | CSV en `test/data/` |
 | Tests | `npm test` | CSV en `test/data/` |
-| Desplegado | `mbt build && cf deploy mta_archives/*.mtar` (**solo con aprobación**) | RAP real vía destination + connectivity |
+| Desplegado | `mbt build && cf deploy mta_archives/*.mtar -e deploy/destination.mtaext` (**solo con aprobación**; `-e` solo si la destination no se llama `S4_BACKEND`, D65) | RAP real vía destination + connectivity |
 
 - Si el puerto 4004 está ocupado: `pkill -f "cds"` y volver a arrancar. Solo un `cds watch` a la vez.
 - Abrir: `Ctrl+Shift+P` → *Ports: Preview* → 4004. Usuario mock: `alice` sin contraseña.
