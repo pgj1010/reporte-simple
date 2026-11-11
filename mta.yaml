@@ -38,6 +38,64 @@ modules:
       - name: reporte-simple-destination
       - name: reporte-simple-connectivity
 
+  # D54: managed app router (Work Zone). La app viaja al HTML5 Application Repository.
+  - name: reporte-simple-conexiones
+    type: html5
+    path: app/conexiones
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm run build:cf
+      supported-platforms: []
+
+  - name: reporte-simple-app-content
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: reporte-simple-html5-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - name: reporte-simple-conexiones
+          artifacts:
+            - conexiones.zip
+          target-path: resources/
+
+  # Destinos que usa el app router administrado para llegar a la app (sap.cloud.service = manifest.json).
+  - name: reporte-simple-destination-content
+    type: com.sap.application.content
+    requires:
+      - name: reporte-simple-destination
+        parameters:
+          content-target: true
+      - name: reporte-simple-html5-host
+        parameters:
+          service-key:
+            name: reporte-simple-html5-host-key
+      - name: reporte-simple-uaa
+        parameters:
+          service-key:
+            name: reporte-simple-uaa-key
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: reportesimple_html_repo_host
+              ServiceInstanceName: reporte-simple-html5-host
+              ServiceKeyName: reporte-simple-html5-host-key
+              sap.cloud.service: reportesimple
+            - Name: reportesimple_uaa
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: reporte-simple-uaa
+              ServiceKeyName: reporte-simple-uaa-key
+              sap.cloud.service: reportesimple
+    build-parameters:
+      no-source: true
+
 resources:
   # R3 / D53: rol Visualizador.
   - name: reporte-simple-uaa
@@ -77,3 +135,9 @@ resources:
     parameters:
       service: connectivity
       service-plan: lite
+
+  - name: reporte-simple-html5-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host

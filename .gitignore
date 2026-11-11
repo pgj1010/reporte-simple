@@ -17,3 +17,7 @@ mta_archives/
 
 # @cap-js/cds-typer
 @cds-models
+
+# Build de la app para el HTML5 repo
+app/*/dist/
+resources/
