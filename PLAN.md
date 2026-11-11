@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 6 — Seguridad, limpieza y publicación como portafolio (en curso, rama `etapa-6-limpieza`)
+**Etapa activa:** 6 — Seguridad, limpieza y publicación como portafolio (rama `etapa-6-limpieza`; pasos 0–6 hechos, paso 7 bloqueado por `git filter-repo`)
 
 ---
 
@@ -331,8 +331,8 @@ Rama: `etapa-6-limpieza`
 - [x] **Paso 4** `README.md` para reclutadores (problema, Mermaid, stack, decisiones, métricas, "Cómo lo construí con Claude Code") + espacios de capturas en `docs/img/`. Hecho: badge de CI; pasos de las capturas en `docs/img/CAPTURAS.md`. **Pendiente del usuario:** tomar las 3 capturas (con mock y `alice`, revisando que no se vean datos reales).
 - [x] **Paso 5** `.github/workflows/test.yml` (solo mocks, sin backend SAP) + badge (D68). Hecho: simulado en un clon limpio, 186/186 + `tsc` + mutaciones 2/2; ningún test necesitó backend. Badge en el paso 4.
 - [x] **Paso 6** Licencia MIT a nombre de Pablo Gallardo (`LICENSE`; `license`, `author` y `repository` en `package.json`). Topics sugeridos para el repo: `sap-cap`, `cap-nodejs`, `typescript`, `odata-v4`, `fiori-elements`, `sap-btp`, `cloud-foundry`, `s4hana`, `abap-rap`, `clean-core`, `mutation-testing`, `claude-code`, `ai-assisted-development`.
-- [ ] **Paso 7** Reescritura del historial en un **clon nuevo** con `git filter-repo` (51 commits, autor noreply, datos internos reemplazados, archivos sensibles fuera) + escaneo de todas las revisiones + `origin` sin token. **Sin push.**
-- [ ] Revisar `.gitignore`
+- [ ] **Paso 7** Reescritura del historial en un **clon nuevo** con `git filter-repo` (51 commits, autor noreply, datos internos reemplazados, archivos sensibles fuera) + escaneo de todas las revisiones + `origin` sin token. **Sin push.** ⛔ **Bloqueado (2026-11-11):** `git filter-repo` no está instalado y la instalación (`pip install --user git-filter-repo`) fue denegada por los permisos de la sesión; el usuario pidió detenerse en ese caso. Preparado y probado en seco: reglas de reemplazo (simuladas sobre los 299 blobs y 57 mensajes: 0 datos internos tras reemplazar), mailmap, script del clon y escaneo (fuera del repo: contienen los valores reales).
+- [x] Revisar `.gitignore`: se suman `LOCAL.md`, `*.mtaext`, `.env*`, `*-key.json`, `*service-key*`, `*.pem`, `*.p12`, `*.pfx`; ningún archivo versionado queda ignorado. En todo el historial nunca se versionaron `.cdsrc-private.json`, `default-env.json`, `*.mtaext` ni service keys.
 
 Pendientes de la etapa que requieren a Cloud Foundry o al Cloud Connector (quedan para el usuario):
 - [ ] Regenerar service key de connectivity (`cf delete-service-key ...` + `cds bind`)
@@ -346,6 +346,20 @@ Salida: sin secretos expuestos; datos internos reemplazados por marcadores; clon
 - D66 — `npm audit`: `overrides` acotados (`pacote` ^21.5.3, `sigstore` ^4.1.1, `@sigstore/core` ^3.2.1, `glob` 9–14.0.1 → ^14.0.4, `minimatch` 7–11.0.0 → ^11.0.8) en vez del "fix" de npm, que bajaba `cds-plugin-ui5` a 0.13 y `@ui5/cli` a 2. 37 → 0 vulnerabilidades; `npm test`, mutación, `cds watch` con el plugin UI5, `ui5 build` y `cds build --production` verificados.
 - D67 — Marcadores para datos internos en la documentación; valores reales en `LOCAL.md` (no versionado); `ZMAKS_*` se mantiene (namespace Z, `srv/external` no editable).
 - D68 — CI con GitHub Actions: `npm test`, `tsc` y mutaciones, 100 % con mocks (CSV + RAP simulado en `localhost`), sin secretos.
+
+### Informe de cierre (parcial: falta el paso 7)
+**Resultado:** `npm test` **186/186** (182 + 4 de D65 en R5); `npm run test:mutacion` **2/2**; `tsc` sin errores; `npm audit` **0** vulnerabilidades; CI simulado en un clon limpio con el mismo resultado.
+
+| Decisión | Regla que afecta | Si fuera al revés |
+|---|---|---|
+| D65 — destination `S4_BACKEND` + `.mtaext` no versionado | R5, regla técnica 11 | El repo público mostraría la destination del subaccount; o, sin `-e` en el próximo deploy, fallaría la conexión si la destination real no se renombra |
+| D66 — `overrides` acotados para `npm audit` | Seguridad de dependencias, D35 | Con `--force` se bajaban de versión mayor `cds-plugin-ui5`, `@ui5/cli` y el lint de Fiori; sin nada, 5 alertas altas en el repo público |
+| D67 — marcadores + `LOCAL.md` no versionado; `ZMAKS_*` se mantiene | Reglas de desarrollo, CLAUDE.md → Sistema origen | Con valores reales se expone la red interna; sin `LOCAL.md` las sesiones pierden el contexto; renombrar `ZMAKS_*` obligaba a regenerar `srv/external` |
+| D68 — CI solo con mocks | Regla 4, D3, D12 | Un test que necesite el S/4 real fallaría siempre en GitHub |
+
+Decisiones menores sin número: `README.md` en español (como el resto del repo); el paso de SSH ahora apunta a `reporte-simple-srv` (el texto anterior nombraba `etiquetas-srv`, de otro proyecto); en el clon, `main` incluirá el merge de esta etapa para que el repo público tenga README, CI y licencia (el `main` de este repo **no** se toca hasta la revisión del usuario).
+
+**Pendiente del usuario:** instalar `git filter-repo` (o autorizarlo) para el paso 7; tomar las 3 capturas (`docs/img/CAPTURAS.md`); revisar y aprobar el merge de la etapa; pasos de CF y Cloud Connector de la lista de arriba. **Próximo `cf deploy`:** con `-e deploy/destination.mtaext` (D65).
 
 ## Etapa 7 — Generalización y plantilla para nuevos reportes
 Rama: `etapa-7-plantilla`
@@ -415,3 +429,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-11 — Primer despliegue en `<CF_ORG> / dev` (aprobado): cuota suficiente; 250,5 / 256 MB → redeploy a 512 MB (D61, 81,7 MB en uso); 401 de XSUAA en inglés → excepción de R10 (D62).
 - 2026-11-11 — Pruebas del usuario en el despliegue con datos reales de `<S4_SISTEMA>`: 403 sin rol, R7 + R14 (`AA 0015`: 520 · 350), F4 `Frankfurt`, decimales, todo ✔. Llamadas al RAP confirmadas en los logs (D63). Work Zone postergado. **Etapa 5 cerrada** (pendiente de revisión y merge a `main` por el usuario). Etapa activa: 6.
 - 2026-11-11 — Revisión del usuario: D58–D63 aprobadas; R7 ajustada a `/_Flight`, `$expand` fuera de alcance (D64, tests como regresión); URL exacta al S/4 pendiente una vez (D63, paso 7b). **Etapa 5 aprobada y mergeada a `main`** (`--no-ff`). Etapa 6 no iniciada.
+- 2026-11-11 — Etapa 6 (plan aprobado de una vez): `npm audit` 37 → 0 (D66), marcadores + `LOCAL.md` (D67), `S4_BACKEND` + `.mtaext` (D65), README, CI con mocks (D68), MIT. `npm test` 186/186, mutaciones 2/2. Paso 7 (historial en un clon) bloqueado: `git filter-repo` no disponible.

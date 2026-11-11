@@ -25,3 +25,12 @@ resources/
 # Valores reales y configuración local de despliegue (D65, D67)
 LOCAL.md
 *.mtaext
+
+# Secretos que nunca deben versionarse (Etapa 6)
+.env
+.env.*
+*-key.json
+*service-key*
+*.pem
+*.p12
+*.pfx
