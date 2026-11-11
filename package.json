@@ -1,6 +1,13 @@
 {
   "name": "reporte-simple",
   "version": "1.0.0",
+  "description": "Reporte Fiori Elements de solo lectura en SAP CAP (TypeScript) sobre un servicio RAP OData V4 de S/4HANA on-premise",
+  "license": "MIT",
+  "author": "Pablo Gallardo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pgj1010/reporte-simple.git"
+  },
   "type": "module",
   "dependencies": {
     "@sap-cloud-sdk/connectivity": "^4",

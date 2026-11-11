@@ -330,7 +330,7 @@ Rama: `etapa-6-limpieza`
 - [x] **Paso 3** Destination genérica `S4_BACKEND` + `.mtaext` no versionado (D65). Hecho: plantilla `deploy/destination.mtaext.ejemplo`, validada con `cds env` y `mbt build -e`; 4 tests nuevos en R5.
 - [x] **Paso 4** `README.md` para reclutadores (problema, Mermaid, stack, decisiones, métricas, "Cómo lo construí con Claude Code") + espacios de capturas en `docs/img/`. Hecho: badge de CI; pasos de las capturas en `docs/img/CAPTURAS.md`. **Pendiente del usuario:** tomar las 3 capturas (con mock y `alice`, revisando que no se vean datos reales).
 - [x] **Paso 5** `.github/workflows/test.yml` (solo mocks, sin backend SAP) + badge (D68). Hecho: simulado en un clon limpio, 186/186 + `tsc` + mutaciones 2/2; ningún test necesitó backend. Badge en el paso 4.
-- [ ] **Paso 6** Licencia MIT a nombre de Pablo Gallardo
+- [x] **Paso 6** Licencia MIT a nombre de Pablo Gallardo (`LICENSE`; `license`, `author` y `repository` en `package.json`). Topics sugeridos para el repo: `sap-cap`, `cap-nodejs`, `typescript`, `odata-v4`, `fiori-elements`, `sap-btp`, `cloud-foundry`, `s4hana`, `abap-rap`, `clean-core`, `mutation-testing`, `claude-code`, `ai-assisted-development`.
 - [ ] **Paso 7** Reescritura del historial en un **clon nuevo** con `git filter-repo` (51 commits, autor noreply, datos internos reemplazados, archivos sensibles fuera) + escaneo de todas las revisiones + `origin` sin token. **Sin push.**
 - [ ] Revisar `.gitignore`
 
