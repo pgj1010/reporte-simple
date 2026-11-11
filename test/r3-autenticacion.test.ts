@@ -1,12 +1,13 @@
-// R3 — Todo acceso a ReporteService requiere usuario autenticado
-// (@requires: 'authenticated-user'). Sin usuario → 401.
+// R3 — Todo acceso a ReporteService requiere el rol Visualizador
+// (@requires: 'Visualizador', D53). Sin usuario → 401; sin el rol → 403.
 import cds from '@sap/cds';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 const raiz = import.meta.dirname + '/..';
 const { GET } = cds.test('serve', '--project', raiz, '--with-mocks', '--in-memory');
-const alice = { auth: { username: 'alice', password: '' } };
+const alice = { auth: { username: 'alice', password: '' } };   // con el rol (cds.requires.auth [development])
+const sinrol = { auth: { username: 'sinrol', password: '' } }; // autenticado, sin el rol
 
 /** Devuelve el código HTTP, también cuando la petición es rechazada. */
 async function estado(url: string, config?: object): Promise<number> {
@@ -35,7 +36,15 @@ describe('R3 — autenticación obligatoria en ReporteService', () => {
     }
   });
 
-  describe('con usuario autenticado (alice) → 200', () => {
+  describe('usuario autenticado sin el rol Visualizador (sinrol) → 403', () => {
+    for (const ruta of rutas) {
+      it(`GET ${ruta}`, async () => {
+        assert.equal(await estado(ruta, sinrol), 403);
+      });
+    }
+  });
+
+  describe('con el rol Visualizador (alice) → 200', () => {
     for (const ruta of rutas) {
       it(`GET ${ruta}`, async () => {
         assert.equal(await estado(ruta, alice), 200);

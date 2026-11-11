@@ -1,7 +1,7 @@
 using { ZMAKS_SB_CONEXIONES as external } from './external/ZMAKS_SB_CONEXIONES';
 using { I_AIRPORT_STDVH as f4 } from './external/I_AIRPORT_STDVH';
 
-@requires: 'authenticated-user' // R3
+@requires: 'Visualizador' // R3 / D53: rol de xs-security.json
 service ReporteService {
   @readonly
   entity Conexiones as projection on external.Conexiones {

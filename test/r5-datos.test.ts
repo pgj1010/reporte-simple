@@ -76,6 +76,14 @@ describe('R5 — origen de los datos', () => {
       assert.ok(archivos.includes('srv/srv/csn.json'), 'falta srv/srv/csn.json en el build');
     });
 
+    // D13 / D60: el TypeScript viaja compilado (sin tsx en producción). Un `cds.build.tasks`
+    // explícito o `cds build -o` copian los .ts sin compilar y dejan fuera @cds-models.
+    it('srv/ viaja compilado a JavaScript, sin .ts (D13, D60)', () => {
+      for (const f of ['srv/srv/service.js', 'srv/srv/server.js', 'srv/@cds-models/ReporteService/index.js'])
+        assert.ok(archivos.includes(f), `falta ${f} en el build`);
+      assert.deepEqual(archivos.filter(f => f.endsWith('.ts') && !f.endsWith('.d.ts')), []);
+    });
+
     it('no contiene ningún .csv', () => {
       assert.deepEqual(archivos.filter(f => f.toLowerCase().endsWith('.csv')), []);
     });

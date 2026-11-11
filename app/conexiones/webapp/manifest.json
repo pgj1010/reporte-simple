@@ -5,7 +5,9 @@
     "type": "application",
     "i18n": {
       "bundleUrl": "i18n/i18n.properties",
-      "supportedLocales": [""],
+      "supportedLocales": [
+        ""
+      ],
       "fallbackLocale": ""
     },
     "applicationVersion": {
@@ -26,6 +28,19 @@
         "settings": {
           "annotations": [],
           "odataVersion": "4.0"
+        }
+      }
+    },
+    "crossNavigation": {
+      "inbounds": {
+        "conexiones-display": {
+          "semanticObject": "ReporteConexiones",
+          "action": "display",
+          "title": "{{appTitle}}",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
         }
       }
     }
@@ -65,7 +80,9 @@
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
           "bundleName": "conexiones.i18n.i18n",
-          "supportedLocales": [""],
+          "supportedLocales": [
+            ""
+          ],
           "fallbackLocale": ""
         }
       },
@@ -82,7 +99,9 @@
         "type": "sap.ui.model.resource.ResourceModel",
         "uri": "i18n/i18n.properties",
         "settings": {
-          "supportedLocales": [""],
+          "supportedLocales": [
+            ""
+          ],
           "fallbackLocale": ""
         }
       }
@@ -184,5 +203,9 @@
     "app": {
       "enableLazyLoading": true
     }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "reportesimple"
   }
 }
