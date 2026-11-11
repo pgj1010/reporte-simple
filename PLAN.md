@@ -329,7 +329,7 @@ Rama: `etapa-6-limpieza`
 - [x] **Paso 2** Marcadores para datos internos (host, cliente, org, API, URL de la app) + sección "Configuración" del README (D67). Hecho: 5 documentos; valores reales en `LOCAL.md` (ignorado); `readme.md` → `README.md` con *Configuración*.
 - [x] **Paso 3** Destination genérica `S4_BACKEND` + `.mtaext` no versionado (D65). Hecho: plantilla `deploy/destination.mtaext.ejemplo`, validada con `cds env` y `mbt build -e`; 4 tests nuevos en R5.
 - [ ] **Paso 4** `README.md` para reclutadores (problema, Mermaid, stack, decisiones, métricas, "Cómo lo construí con Claude Code") + espacios de capturas en `docs/img/`
-- [ ] **Paso 5** `.github/workflows/test.yml` (solo mocks, sin backend SAP) + badge
+- [x] **Paso 5** `.github/workflows/test.yml` (solo mocks, sin backend SAP) + badge (D68). Hecho: simulado en un clon limpio, 186/186 + `tsc` + mutaciones 2/2; ningún test necesitó backend. Badge en el paso 4.
 - [ ] **Paso 6** Licencia MIT a nombre de Pablo Gallardo
 - [ ] **Paso 7** Reescritura del historial en un **clon nuevo** con `git filter-repo` (51 commits, autor noreply, datos internos reemplazados, archivos sensibles fuera) + escaneo de todas las revisiones + `origin` sin token. **Sin push.**
 - [ ] Revisar `.gitignore`
@@ -345,6 +345,7 @@ Salida: sin secretos expuestos; datos internos reemplazados por marcadores; clon
 - D65 — Destination genérica `S4_BACKEND`; el nombre real va en `deploy/destination.mtaext` (no versionado) vía `CDS_CONFIG`. Ya creado en este Dev Space con el nombre de `LOCAL.md`: **el próximo `cf deploy` va con `-e deploy/destination.mtaext`**.
 - D66 — `npm audit`: `overrides` acotados (`pacote` ^21.5.3, `sigstore` ^4.1.1, `@sigstore/core` ^3.2.1, `glob` 9–14.0.1 → ^14.0.4, `minimatch` 7–11.0.0 → ^11.0.8) en vez del "fix" de npm, que bajaba `cds-plugin-ui5` a 0.13 y `@ui5/cli` a 2. 37 → 0 vulnerabilidades; `npm test`, mutación, `cds watch` con el plugin UI5, `ui5 build` y `cds build --production` verificados.
 - D67 — Marcadores para datos internos en la documentación; valores reales en `LOCAL.md` (no versionado); `ZMAKS_*` se mantiene (namespace Z, `srv/external` no editable).
+- D68 — CI con GitHub Actions: `npm test`, `tsc` y mutaciones, 100 % con mocks (CSV + RAP simulado en `localhost`), sin secretos.
 
 ## Etapa 7 — Generalización y plantilla para nuevos reportes
 Rama: `etapa-7-plantilla`
