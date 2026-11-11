@@ -48,6 +48,8 @@ Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etap
 
 ## Sistema origen (RAP)
 
+> Los datos internos aparecen como marcadores (`<S4_HOST>`, `<S4_CLIENTE>`, `<CF_ORG>`…, D67). Los valores reales están en **`LOCAL.md`** (no versionado, solo en el Dev Space); dónde se configura cada uno: `README.md` → *Configuración*. Nunca volver a escribir los valores reales en archivos versionados.
+
 | Dato | Valor |
 |---|---|
 | Host interno | `<S4_HOST>:<S4_PUERTO>` (HTTP), cliente `<S4_CLIENTE>` |

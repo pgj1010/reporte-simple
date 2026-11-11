@@ -325,8 +325,8 @@ Rama: `etapa-6-limpieza`
 > Pedido del usuario (2026-11-11): preparar el repo para publicarlo en GitHub (`github.com/pgj1010/reporte-simple`) como portafolio público. Plan aprobado de una vez, con commit por paso; **sin push** (lo hace el usuario). El usuario confirmó que tiene permiso de la empresa para publicar.
 
 - [x] **Paso 0** Escaneo de secretos en archivos e historial (51 commits, todas las ramas): **ningún secreto**. `.cdsrc-private.json` nunca se versionó. Datos internos encontrados: host, cliente, org y API de CF, URL de la app, destination, email corporativo en los commits.
-- [ ] **Paso 1** `npm audit`: resolver al menos las 5 altas sin `--force` ni bajar versiones mayores (D66)
-- [ ] **Paso 2** Marcadores para datos internos (host, cliente, org, API, URL de la app) + sección "Configuración" del README (D67)
+- [x] **Paso 1** `npm audit`: resolver al menos las 5 altas sin `--force` ni bajar versiones mayores (D66)
+- [x] **Paso 2** Marcadores para datos internos (host, cliente, org, API, URL de la app) + sección "Configuración" del README (D67). Hecho: 5 documentos; valores reales en `LOCAL.md` (ignorado); `readme.md` → `README.md` con *Configuración*.
 - [ ] **Paso 3** Destination genérica `S4_BACKEND` + `.mtaext` no versionado (D65)
 - [ ] **Paso 4** `README.md` para reclutadores (problema, Mermaid, stack, decisiones, métricas, "Cómo lo construí con Claude Code") + espacios de capturas en `docs/img/`
 - [ ] **Paso 5** `.github/workflows/test.yml` (solo mocks, sin backend SAP) + badge
@@ -343,6 +343,7 @@ Salida: sin secretos expuestos; datos internos reemplazados por marcadores; clon
 
 ### Decisiones de la etapa
 - D66 — `npm audit`: `overrides` acotados (`pacote` ^21.5.3, `sigstore` ^4.1.1, `@sigstore/core` ^3.2.1, `glob` 9–14.0.1 → ^14.0.4, `minimatch` 7–11.0.0 → ^11.0.8) en vez del "fix" de npm, que bajaba `cds-plugin-ui5` a 0.13 y `@ui5/cli` a 2. 37 → 0 vulnerabilidades; `npm test`, mutación, `cds watch` con el plugin UI5, `ui5 build` y `cds build --production` verificados.
+- D67 — Marcadores para datos internos en la documentación; valores reales en `LOCAL.md` (no versionado); `ZMAKS_*` se mantiene (namespace Z, `srv/external` no editable).
 
 ## Etapa 7 — Generalización y plantilla para nuevos reportes
 Rama: `etapa-7-plantilla`

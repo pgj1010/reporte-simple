@@ -21,3 +21,7 @@ mta_archives/
 # Build de la app para el HTML5 repo
 app/*/dist/
 resources/
+
+# Valores reales y configuración local de despliegue (D65, D67)
+LOCAL.md
+*.mtaext
