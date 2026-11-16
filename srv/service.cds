@@ -31,3 +31,9 @@ service ReporteService {
 annotate ReporteService.Vuelos with {
   Price @odata.Type: 'Edm.Decimal' @odata.Precision: 16 @odata.Scale: 'variable';
 }
+
+// MCP Nivel 2 / D69: expone ReporteService por MCP (@cap-js/mcp) solo para pruebas locales con los CSV de
+// test/data. Mantiene @requires: 'Visualizador'; el usuario mock de la autoconexión (cds.mcp.autowire) es alice.
+// @odata explícito: con @mcp solo, CAP sirve el servicio únicamente por MCP y /odata/v4/reporte da 404
+// (Fiori y los tests se rompen). Provisional: el Nivel 3 lo reemplaza por un servicio dedicado para agentes.
+annotate ReporteService with @odata @mcp;

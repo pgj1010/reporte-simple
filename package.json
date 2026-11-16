@@ -10,6 +10,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@cap-js/mcp": "^1.5.0",
     "@sap-cloud-sdk/connectivity": "^4",
     "@sap-cloud-sdk/http-client": "^4",
     "@sap-cloud-sdk/resilience": "^4",
@@ -98,6 +99,13 @@
         },
         "[production]": {
           "kind": "xsuaa"
+        }
+      }
+    },
+    "mcp": {
+      "[development]": {
+        "autowire": {
+          "user": "alice"
         }
       }
     }

@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** MCP — Nivel 1 de `PLAN-MCP-ZERO-TO-HERO.md` (rama `feature/mcp-nivel-1`; **pendiente de revisión y merge a `main` por el usuario**). Etapa 6 ya mergeada a `main`.
+**Etapa activa:** MCP — Nivel 2 de `PLAN-MCP-ZERO-TO-HERO.md` (rama `feature/mcp-nivel-2`). Nivel 1 mergeado a `main` (`d5bfbc6`).
 
 ---
 
@@ -411,6 +411,17 @@ Sin cambios de código: `npm test` solo confirma que nada se rompió.
 ### Decisiones de la etapa
 - Ninguna propia. Por decisión del usuario, el nivel se registra en este repo (`reporte-simple-publico`) y no en el respaldo `reporte-simple`.
 
+### Nivel 2 — El servicio habla MCP (local)
+Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
+- [x] Adaptador `@cap-js/mcp` 1.5.0 instalado (`npm add @cap-js/mcp`, 0 vulnerabilidades)
+- [x] `annotate ReporteService with @odata @mcp;` en `srv/service.cds` (D69: con `@mcp` solo, OData daba 404 y `npm test` caía)
+- [x] Usuario de la autoconexión fijado en `alice` (rol `Visualizador`) en `[development]`; `@requires` sin cambios (D69)
+- [ ] `npm run watch` y ruta MCP en el log
+- [ ] Prueba del usuario: `claude "¿Qué datos expone el servicio del reporte? Muéstrame las 10 primeras conexiones."` → `describe` + `query` con datos del CSV
+
+### Decisiones de la etapa (Nivel 2)
+- D69 — `@odata @mcp` sobre `ReporteService` completo, solo local (con `@mcp` solo CAP deja de servir OData); `@requires` intacto y usuario de `cds.mcp.autowire` fijado en `alice` (rol `Visualizador`) para no recibir 403. Test de autenticación MCP diferido al Nivel 3 (usuario).
+
 ---
 
 ## Bitácora
@@ -449,3 +460,4 @@ Sin cambios de código: `npm test` solo confirma que nada se rompió.
 - 2026-11-11 — Etapa 6 (plan aprobado de una vez): `npm audit` 37 → 0 (D66), marcadores + `LOCAL.md` (D67), `S4_BACKEND` + `.mtaext` (D65), README, CI con mocks (D68), MIT. `npm test` 186/186, mutaciones 2/2. Paso 7 (historial en un clon) bloqueado: `git filter-repo` no disponible.
 - 2026-11-11 — Paso 7: el usuario instaló `git filter-repo`; clon `reporte-simple-publico` con historial reescrito y escaneo de todas las revisiones en 0. **Etapa 6 cerrada** (pendiente: push del usuario, capturas, revisión y merge a `main`, pasos de CF / Cloud Connector).
 - 2026-11-16 — MCP Nivel 1: `cds-mcp` conectado y regla en `CLAUDE.md`; las dos preguntas de prueba se respondieron con `search_model`. Se trabaja en `reporte-simple-publico` (rama `feature/mcp-nivel-1` desde `main`); en el respaldo no queda la rama. **Nivel 1 cerrado** (pendiente de revisión y merge a `main` por el usuario).
+- 2026-11-16 — MCP Nivel 2: `@cap-js/mcp` instalado y `@mcp` en `ReporteService` (D69). Hallazgo: `@mcp` solo reemplaza a OData (404 en `/odata/v4/reporte`, `npm test` en rojo) → `@odata @mcp`. La autoconexión usa `alice` (fijado en `[development]`) para no chocar con `@requires: 'Visualizador'`; `@requires` sin cambios. `cds-mcp` `search_docs` no funciona (falta el modelo de embeddings): se usó el README y el código del adaptador.
