@@ -416,8 +416,9 @@ Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
 - [x] Adaptador `@cap-js/mcp` 1.5.0 instalado (`npm add @cap-js/mcp`, 0 vulnerabilidades)
 - [x] `annotate ReporteService with @odata @mcp;` en `srv/service.cds` (D69: con `@mcp` solo, OData daba 404 y `npm test` caía)
 - [x] Usuario de la autoconexión fijado en `alice` (rol `Visualizador`) en `[development]`; `@requires` sin cambios (D69)
-- [ ] `npm run watch` y ruta MCP en el log
-- [ ] Prueba del usuario: `claude "¿Qué datos expone el servicio del reporte? Muéstrame las 10 primeras conexiones."` → `describe` + `query` con datos del CSV
+- [x] `npm run watch` y ruta MCP en el log: `serving ReporteService at: [ '/odata/v4/reporte', '/mcp/reporte' ]` → `http://localhost:4004/mcp/reporte`; autoconexión escrita en `~/.claude.json` como `cds:ReporteService`
+- [x] Prueba del usuario: `claude "¿Qué datos expone el servicio del reporte? Muéstrame las 10 primeras conexiones."` → el agente listó las 3 entidades (`Aeropuertos`, `Conexiones`, `Vuelos`) y las 5 conexiones del mock (el CSV tiene 5, no 10)
+- [ ] Prueba de ocupación: resultado no reportado todavía (el usuario dejó el marcador sin completar)
 
 ### Decisiones de la etapa (Nivel 2)
 - D69 — `@odata @mcp` sobre `ReporteService` completo, solo local (con `@mcp` solo CAP deja de servir OData); `@requires` intacto y usuario de `cds.mcp.autowire` fijado en `alice` (rol `Visualizador`) para no recibir 403. Test de autenticación MCP diferido al Nivel 3 (usuario).
@@ -461,3 +462,4 @@ Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
 - 2026-11-11 — Paso 7: el usuario instaló `git filter-repo`; clon `reporte-simple-publico` con historial reescrito y escaneo de todas las revisiones en 0. **Etapa 6 cerrada** (pendiente: push del usuario, capturas, revisión y merge a `main`, pasos de CF / Cloud Connector).
 - 2026-11-16 — MCP Nivel 1: `cds-mcp` conectado y regla en `CLAUDE.md`; las dos preguntas de prueba se respondieron con `search_model`. Se trabaja en `reporte-simple-publico` (rama `feature/mcp-nivel-1` desde `main`); en el respaldo no queda la rama. **Nivel 1 cerrado** (pendiente de revisión y merge a `main` por el usuario).
 - 2026-11-16 — MCP Nivel 2: `@cap-js/mcp` instalado y `@mcp` en `ReporteService` (D69). Hallazgo: `@mcp` solo reemplaza a OData (404 en `/odata/v4/reporte`, `npm test` en rojo) → `@odata @mcp`. La autoconexión usa `alice` (fijado en `[development]`) para no chocar con `@requires: 'Visualizador'`; `@requires` sin cambios. `cds-mcp` `search_docs` no funciona (falta el modelo de embeddings): se usó el README y el código del adaptador.
+- 2026-11-16 — MCP Nivel 2: `cds watch` sirve `/mcp/reporte`; prueba del usuario exitosa (3 entidades y las 5 conexiones del mock). Resultado de la prueba de ocupación pendiente de reportar. **Nivel 2 cerrado** (pendiente de revisión y merge a `main` por el usuario).
