@@ -82,6 +82,7 @@ reporte-simple/
 
 ## Reglas de desarrollo
 
+- Para dudas de CAP o del modelo CDS, usa primero las tools del servidor MCP cds-mcp (search_model, search_docs) antes de suponer.
 - **No editar** `srv/external/*.cds`. Para regenerar: `cds import <archivo>.edmx --as cds --force`.
 - Exponer entidades remotas como proyecciones `@readonly` en `srv/service.cds`.
 - Lecturas remotas delegadas en `service.ts` con `this.on('READ', [...], req => remote.run(req.query))`. **Excepción, totales (D43):** las lecturas con `$apply` se reenvían tal cual al backend (`remote.send({ method: 'GET', path: req.req.url })`), porque CAP no delega `$apply`; el mock las resuelve con `cds.odata.parse`. Mientras exista ese reenvío, **ninguna entidad puede tener `@restrict` con `where`** (el reenvío no lo aplicaría): lo vigila un test.

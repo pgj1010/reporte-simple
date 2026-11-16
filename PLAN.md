@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** 6 — Seguridad, limpieza y publicación como portafolio (rama `etapa-6-limpieza`; pasos 0–7 hechos, clon listo para push; **pendiente de revisión y merge a `main` por el usuario**)
+**Etapa activa:** MCP — Nivel 1 de `PLAN-MCP-ZERO-TO-HERO.md` (rama `feature/mcp-nivel-1`; **pendiente de revisión y merge a `main` por el usuario**). Etapa 6 ya mergeada a `main`.
 
 ---
 
@@ -396,6 +396,23 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 
 ---
 
+## MCP — Zero to Hero (ver `PLAN-MCP-ZERO-TO-HERO.md`)
+Un nivel = una etapa, rama `feature/mcp-nivel-N`, merge a `main` tras revisión del usuario.
+
+### Nivel 1 — Claude entiende el proyecto (cds-mcp) ✅
+Rama: `feature/mcp-nivel-1`
+- [x] Servidor MCP de desarrollo `cds-mcp` (`npx -y @cap-js/mcp-server`) registrado en Claude Code (alcance local, no se versiona)
+- [x] Regla en `CLAUDE.md` → *Reglas de desarrollo*: usar `search_model` / `search_docs` antes de suponer
+- [x] Prueba 1 — "¿Qué servicios CDS hay y dónde se sirven?": respondida con `search_model` (`ReporteService` en `odata/v4/reporte/`, más los externos `ZMAKS_SB_CONEXIONES` e `I_AIRPORT_STDVH`, servidos solo en modo mock)
+- [x] Prueba 2 — "¿Qué entidades expone el servicio del reporte y cómo se relacionan?": respondida con `search_model` (`Conexiones` → `_Flight` 1:n → `Vuelos`; `Aeropuertos` como value help de `AirportFromId` / `AirportToId`)
+
+Sin cambios de código: `npm test` solo confirma que nada se rompió.
+
+### Decisiones de la etapa
+- Ninguna propia. Por decisión del usuario, el nivel se registra en este repo (`reporte-simple-publico`) y no en el respaldo `reporte-simple`.
+
+---
+
 ## Bitácora
 - 2026-11-09 — Etapas 0 y 1 completas. `hybrid` desde BAS no llega al on‑premise (ni con túnel SSH); plan B: mock local + pruebas reales desplegando.
 - 2026-11-09 — Se adoptan las reglas del equipo. Aprobados: TypeScript (D2), mutación solo en R2/R3 (D3), clean core flexible (D1). Nueva Etapa 2 de alineación; la app Fiori pasa a Etapa 3.
@@ -431,3 +448,4 @@ Salida: el siguiente reporte arranca desde la plantilla siguiendo solo la receta
 - 2026-11-11 — Revisión del usuario: D58–D63 aprobadas; R7 ajustada a `/_Flight`, `$expand` fuera de alcance (D64, tests como regresión); URL exacta al S/4 pendiente una vez (D63, paso 7b). **Etapa 5 aprobada y mergeada a `main`** (`--no-ff`). Etapa 6 no iniciada.
 - 2026-11-11 — Etapa 6 (plan aprobado de una vez): `npm audit` 37 → 0 (D66), marcadores + `LOCAL.md` (D67), `S4_BACKEND` + `.mtaext` (D65), README, CI con mocks (D68), MIT. `npm test` 186/186, mutaciones 2/2. Paso 7 (historial en un clon) bloqueado: `git filter-repo` no disponible.
 - 2026-11-11 — Paso 7: el usuario instaló `git filter-repo`; clon `reporte-simple-publico` con historial reescrito y escaneo de todas las revisiones en 0. **Etapa 6 cerrada** (pendiente: push del usuario, capturas, revisión y merge a `main`, pasos de CF / Cloud Connector).
+- 2026-11-16 — MCP Nivel 1: `cds-mcp` conectado y regla en `CLAUDE.md`; las dos preguntas de prueba se respondieron con `search_model`. Se trabaja en `reporte-simple-publico` (rama `feature/mcp-nivel-1` desde `main`); en el respaldo no queda la rama. **Nivel 1 cerrado** (pendiente de revisión y merge a `main` por el usuario).
