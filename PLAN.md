@@ -418,13 +418,13 @@ Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
 - [x] Usuario de la autoconexión fijado en `alice` (rol `Visualizador`) en `[development]`; `@requires` sin cambios (D69)
 - [x] `npm run watch` y ruta MCP en el log: `serving ReporteService at: [ '/odata/v4/reporte', '/mcp/reporte' ]` → `http://localhost:4004/mcp/reporte`; autoconexión escrita en `~/.claude.json` como `cds:ReporteService`
 - [x] Prueba del usuario: `claude "¿Qué datos expone el servicio del reporte? Muéstrame las 10 primeras conexiones."` → el agente listó las 3 entidades (`Aeropuertos`, `Conexiones`, `Vuelos`) y las 5 conexiones del mock (el CSV tiene 5, no 10)
-- [x] Prueba de ocupación (top 3): ejecutada por el usuario. Salida pegada (cada cifra con ✔ del usuario):
-  - 573 / 770 = 74,4 % (372 + 201 ocupados, 2 × 385 de capacidad) ✔ → `AA 0017`
-  - 460 / 475 = 96,8 % ✔ → `SQ 0001`
-  - 314 / 330 = 95,2 % ✔ → `LH 0400`
-  - 188 / 260 = 72,3 % ✔ → `UA 0058`
-  - **Verificación de Claude contra `test/data/ZMAKS_SB_CONEXIONES-Vuelos.csv`:** las 4 cifras son exactas (la conexión de cada cifra se deduce del CSV; la salida no la indica). Son las 4 conexiones con vuelos; `LH 0402` no tiene vuelos (0 / 0, igual que R14). **Ojo:** la salida trae 4 filas y no está ordenada; el top 3 correcto es `SQ 0001` (96,8 %), `LH 0400` (95,2 %) y `AA 0017` (74,4 %). Los cálculos están bien, pero el ranking no salió como se pidió, otro argumento para el Nivel 4.
-  - **Falla reportada por el usuario:** la `query` con `groupBy` y alias de agregado falló (el texto exacto del error tampoco se pegó). Posible causa, **hipótesis sin verificar**: la lección aprendida de D43, según la cual en el mock `ReporteService` pierde los alias de agregado que no coinciden con un campo de la entidad (`sum as Total` → `{}`), y CAP no delega `groupby/aggregate` al remoto.
+- [x] Prueba de ocupación (top 3, por asientos ocupados, el criterio de la pregunta). Salida del agente:
+  1. `AA 0017`: 573 / 770, 74,4 %
+  2. `SQ 0001`: 460 / 475, 96,8 %
+  3. `LH 0400`: 314 / 330, 95,2 %
+  - Fuera del top, también mencionados: `UA 0058` (188 / 260, 72,3 %) y `LH 0402` sin vuelos.
+  - **Orden y cifras correctos.** Lo validó el usuario a mano (573 = 372 + 201 ocupados sobre 2 × 385 de capacidad) y Claude contra `test/data/ZMAKS_SB_CONEXIONES-Vuelos.csv`.
+  - **Agrupación sin sumas:** según el agente, la `query` agrupada con `sum(...) as Ocupados` devolvió las claves **sin las sumas** y **sin mensaje de error**. Coincide con la lección aprendida de D43: en el mock, `ReporteService` descarta los alias de agregado que no coinciden con un campo de la entidad (`sum as Total` → `{}`). La causa no se reprodujo aparte.
   - **Motivo para el Nivel 4:** las preguntas de ocupación (asientos ocupados / capacidad por conexión) deben ir como **función de negocio** con la agregación controlada en el handler (`call_action`) y no como `query` libre con `groupBy`.
 
 ### Decisiones de la etapa (Nivel 2)
@@ -469,4 +469,4 @@ Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
 - 2026-11-11 — Paso 7: el usuario instaló `git filter-repo`; clon `reporte-simple-publico` con historial reescrito y escaneo de todas las revisiones en 0. **Etapa 6 cerrada** (pendiente: push del usuario, capturas, revisión y merge a `main`, pasos de CF / Cloud Connector).
 - 2026-11-16 — MCP Nivel 1: `cds-mcp` conectado y regla en `CLAUDE.md`; las dos preguntas de prueba se respondieron con `search_model`. Se trabaja en `reporte-simple-publico` (rama `feature/mcp-nivel-1` desde `main`); en el respaldo no queda la rama. **Nivel 1 cerrado** (pendiente de revisión y merge a `main` por el usuario).
 - 2026-11-16 — MCP Nivel 2: `@cap-js/mcp` instalado y `@mcp` en `ReporteService` (D69). Hallazgo: `@mcp` solo reemplaza a OData (404 en `/odata/v4/reporte`, `npm test` en rojo) → `@odata @mcp`. La autoconexión usa `alice` (fijado en `[development]`) para no chocar con `@requires: 'Visualizador'`; `@requires` sin cambios. `cds-mcp` `search_docs` no funciona (falta el modelo de embeddings): se usó el README y el código del adaptador.
-- 2026-11-16 — MCP Nivel 2: `cds watch` sirve `/mcp/reporte`; prueba del usuario exitosa (3 entidades y las 5 conexiones del mock). Prueba de ocupación (top 3): la `query` con `groupBy` y alias falló → motivo para el Nivel 4 (función de negocio en vez de `query` libre); cifras correctas contra el CSV, pero 4 filas sin ordenar en vez de un top 3; falta el texto exacto del error de `groupBy`. **Nivel 2 cerrado** (pendiente de revisión y merge a `main` por el usuario).
+- 2026-11-16 — MCP Nivel 2: `cds watch` sirve `/mcp/reporte`; prueba del usuario exitosa (3 entidades y las 5 conexiones del mock). Prueba de ocupación (top 3 por asientos ocupados): orden y cifras correctos (`AA 0017`, `SQ 0001`, `LH 0400`). La `query` agrupada con `sum(...) as Ocupados` devolvió las claves sin las sumas y sin error (alias descartado, como en la lección de D43) → motivo para el Nivel 4 (función de negocio en vez de `query` libre). **Nivel 2 cerrado** (pendiente de revisión y merge a `main` por el usuario).
