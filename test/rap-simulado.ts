@@ -29,6 +29,9 @@ export interface Entorno {
   pedir: (ruta: string, init?: RequestInit) => Promise<Response>;
   /** POST `$batch` con una sola sub-petición GET; vacía antes `recibidas`. */
   pedirEnBatch: (ruta: string) => Promise<string>;
+  /** Llamada MCP (JSON-RPC) a `/mcp/<ruta>` como alice, p. ej. `tools/call` con la tool `query` (D70); vacía antes
+   *  `recibidas`. Devuelve el código HTTP y el `result` (o `error`) del mensaje JSON-RPC, también si llega por SSE. */
+  pedirMcp: (ruta: string, metodo: string, params?: object) => Promise<{ status: number; mensaje: any }>;
   cerrar: () => void;
 }
 
@@ -97,6 +100,16 @@ export async function iniciar(responder: Responder = respuestaVacia): Promise<En
       const cuerpo = `--b\r\nContent-Type: application/http\r\nContent-Transfer-Encoding: binary\r\n\r\nGET ${ruta} HTTP/1.1\r\nAccept: application/json\r\n\r\n\r\n--b--\r\n`;
       const r = await fetch(`${base}/odata/v4/reporte/$batch`, { method: 'POST', body: cuerpo, headers: { ...auth, 'content-type': 'multipart/mixed; boundary=b' } });
       return r.text();
+    },
+    pedirMcp: async (ruta, metodo, params = {}) => {
+      reiniciar();
+      const r = await fetch(`${base}/mcp/${ruta}`, {
+        method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: metodo, params }),
+        headers: { ...auth, accept: 'application/json, text/event-stream', 'content-type': 'application/json' },
+      });
+      const texto = await r.text();
+      const json = texto.match(/^data: (.*)$/m)?.[1] ?? texto;
+      return { status: r.status, mensaje: JSON.parse(json) };
     },
     cerrar: () => { cap.kill(); rap.close(); },
   };

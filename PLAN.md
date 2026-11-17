@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** MCP — Nivel 2 de `PLAN-MCP-ZERO-TO-HERO.md` (rama `feature/mcp-nivel-2`). Nivel 1 mergeado a `main` (`d5bfbc6`).
+**Etapa activa:** MCP — Nivel 3 de `PLAN-MCP-ZERO-TO-HERO.md` (rama `feature/mcp-nivel-3`). Niveles 1 y 2 mergeados a `main` (`c6a989d`).
 
 ---
 
@@ -429,6 +429,17 @@ Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
 
 ### Decisiones de la etapa (Nivel 2)
 - D69 — `@odata @mcp` sobre `ReporteService` completo, solo local (con `@mcp` solo CAP deja de servir OData); `@requires` intacto y usuario de `cds.mcp.autowire` fijado en `alice` (rol `Visualizador`) para no recibir 403. Test de autenticación MCP diferido al Nivel 3 (usuario).
+
+### Nivel 3 — Un servicio hecho para agentes
+Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usuario el 2026-11-17 (rol `Visualizador`, límite 50/200, plan B `external.*` si la proyección de dos niveles no resolvía).
+- [x] **Paso 1** `srv/agent-service.cds` (`ReporteAgentService`: `@mcp`, `@mcp.instructions`, `@requires: 'Visualizador'`, `@readonly`, `@cds.query.limit`) y `srv/agent-service.ts` (delegación al RAP y al F4). La proyección de dos niveles resuelve en mock y con el RAP simulado → sin plan B (D70). `pedirMcp` en `test/rap-simulado.ts`.
+- [ ] **Paso 2** Quitar `@odata @mcp` de `ReporteService`
+- [ ] **Paso 3** Tests de R15 (`test/r15-agente.test.ts`): entidades y campos, descripciones, solo MCP, 401/403/200, límite, delegación en producción simulada
+- [ ] **Paso 4** Mutaciones de R15: quitar `@requires` y `@readonly` de `ReporteAgentService`
+- [ ] **Paso 5** Cierre: `npm test`, `tsc`, `test:mutacion`; prueba del agente (la hace el usuario)
+
+### Decisiones de la etapa (Nivel 3)
+- D70 — `ReporteAgentService` solo por MCP, proyección sobre `ReporteService` con campos mínimos y `/** */` de negocio; `@requires: 'Visualizador'` (no `authenticated-user`), `@readonly`, `@cds.query.limit` 50/200; handler propio que delega al RAP (la proyección de dos niveles resuelve, sin plan B); regla nueva R15.
 
 ---
 
