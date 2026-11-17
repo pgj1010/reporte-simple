@@ -458,8 +458,8 @@ Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usu
 ### Nivel 4 — Acciones de negocio (función para agentes)
 Rama: `feature/mcp-nivel-4` (desde `main` = `a61c200`). Plan aprobado por el usuario el 2026-11-17 (dos peticiones al RAP, % `null` sin vuelos, `per_action_tool: true`, ruta con códigos IATA).
 - [x] **Paso 1** Regla R16 y decisión D72 en `SPEC.md`
-- [ ] **Paso 2** `ocupacionPorConexion` en `srv/agent-service.cds` (con `/** */`) y handler en `srv/agent-service.ts`; `cds.mcp.per_action_tool: true`
-- [ ] **Paso 3** Tests de R16 (mock y RAP simulado); test de R15 ajustado a la nueva tool en `tools/list`
+- [x] **Paso 2** `ocupacionPorConexion` en `srv/agent-service.cds` (con `/** */`) y handler en `srv/agent-service.ts` (`literal` exportado de `srv/service.ts`); `cds.mcp.per_action_tool: true`. Comprobado por MCP con el mock: tool `ocupacionPorConexion` con `readOnlyHint`, resultados iguales a la tabla del plan. Parámetro `String` sin largo y % `null` también en la descripción de la función (D72 puntos 7 y 8). El test de R15 de `tools/list` se ajustó en este paso (la config lo cambia): `describe`, `ocupacionPorConexion`, `query`, todas de solo lectura. `npm test` 219/219
+- [ ] **Paso 3** Tests de R16 (mock y RAP simulado)
 - [ ] **Paso 4** Mutaciones de R16 en `test/mutacion.ts`
 - [ ] **Paso 5a** Cierre técnico: `npm test`, `tsc`, `test:mutacion`
 - [ ] **Paso 5b** Prueba del agente (usuario): "Dame la ocupación por conexión y dime cuál es la más alta"

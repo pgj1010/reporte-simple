@@ -95,9 +95,11 @@ describe('R15 — ReporteAgentService (servicio para agentes, D70)', () => {
         [{ kind: 'odata', path: '/odata/v4/reporte' }]);
     });
 
-    it('el agente solo tiene tools de lectura: describe y query', async () => {
+    it('el agente solo tiene tools de lectura: describe, query y la función de R16 (D72: per_action_tool)', async () => {
       const { mensaje } = await mcp('alice', 'tools/list');
-      assert.deepEqual(mensaje.result.tools.map((t: { name: string }) => t.name).sort(), ['describe', 'query']);
+      const tools: { name: string; annotations?: { readOnlyHint?: boolean } }[] = mensaje.result.tools;
+      assert.deepEqual(tools.map(t => t.name).sort(), ['describe', 'ocupacionPorConexion', 'query']);
+      assert.deepEqual(tools.filter(t => !t.annotations?.readOnlyHint).map(t => t.name), []);
     });
   });
 
