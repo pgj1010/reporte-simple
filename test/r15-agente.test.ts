@@ -4,7 +4,7 @@
 import cds from '@sap/cds';
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { iniciar, alice, estado } from './helpers.ts';
+import { iniciar, alice, estado, mcpAgente } from './helpers.ts';
 
 const test = iniciar();
 const { GET, axios } = test;
@@ -17,19 +17,9 @@ export const CAMPOS_AGENTE: Record<string, string[]> = {
   Aeropuertos: ['AirportID', 'Name', 'City', 'CountryCode', 'CountryCodeText'],
 };
 
-/** Llamada MCP (JSON-RPC sobre HTTP) a /mcp/reporte-agent; `usuario` null = sin credenciales. */
-async function mcp(usuario: string | null, metodo: string, params: object = {}) {
-  const r = await fetch(`${axios.defaults.baseURL}/mcp/reporte-agent`, {
-    method: 'POST',
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: metodo, params }),
-    headers: {
-      accept: 'application/json, text/event-stream', 'content-type': 'application/json',
-      ...(usuario === null ? {} : { authorization: 'Basic ' + btoa(`${usuario}:`) }),
-    },
-  });
-  const texto = await r.text();
-  return { status: r.status, mensaje: JSON.parse(texto.match(/^data: (.*)$/m)?.[1] ?? texto) };
-}
+/** Llamada MCP a /mcp/reporte-agent; `usuario` null = sin credenciales. */
+const mcp = (usuario: string | null, metodo: string, params: object = {}) =>
+  mcpAgente(axios.defaults.baseURL!, usuario, metodo, params);
 
 /** Ejecuta la tool `query` como alice y devuelve las filas (falla si la tool responde error). */
 async function consultar(cql: string): Promise<Record<string, unknown>[]> {

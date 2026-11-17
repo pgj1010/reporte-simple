@@ -37,3 +37,18 @@ export async function rechazo(peticion: Promise<unknown>): Promise<{ status: num
   }
   throw new Error('se esperaba que la petición fuera rechazada');
 }
+
+/** Llamada MCP (JSON-RPC sobre HTTP) a /mcp/reporte-agent del servidor de `cds.test` (R15, R16);
+ *  `usuario` null = sin credenciales. Devuelve el código HTTP y el mensaje JSON-RPC (también si llega por SSE). */
+export async function mcpAgente(baseURL: string, usuario: string | null, metodo: string, params: object = {}) {
+  const r = await fetch(`${baseURL}/mcp/reporte-agent`, {
+    method: 'POST',
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: metodo, params }),
+    headers: {
+      accept: 'application/json, text/event-stream', 'content-type': 'application/json',
+      ...(usuario === null ? {} : { authorization: 'Basic ' + btoa(`${usuario}:`) }),
+    },
+  });
+  const texto = await r.text();
+  return { status: r.status, mensaje: JSON.parse(texto.match(/^data: (.*)$/m)?.[1] ?? texto) };
+}
