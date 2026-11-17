@@ -433,7 +433,7 @@ Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
 ### Nivel 3 — Un servicio hecho para agentes
 Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usuario el 2026-11-17 (rol `Visualizador`, límite 50/200, plan B `external.*` si la proyección de dos niveles no resolvía).
 - [x] **Paso 1** `srv/agent-service.cds` (`ReporteAgentService`: `@mcp`, `@mcp.instructions`, `@requires: 'Visualizador'`, `@readonly`, `@cds.query.limit`) y `srv/agent-service.ts` (delegación al RAP y al F4). La proyección de dos niveles resuelve en mock y con el RAP simulado → sin plan B (D70). `pedirMcp` en `test/rap-simulado.ts`.
-- [ ] **Paso 2** Quitar `@odata @mcp` de `ReporteService`
+- [x] **Paso 2** Quitar `@odata @mcp` de `ReporteService` (queda solo OData por defecto, `/odata/v4/reporte`)
 - [ ] **Paso 3** Tests de R15 (`test/r15-agente.test.ts`): entidades y campos, descripciones, solo MCP, 401/403/200, límite, delegación en producción simulada
 - [ ] **Paso 4** Mutaciones de R15: quitar `@requires` y `@readonly` de `ReporteAgentService`
 - [ ] **Paso 5** Cierre: `npm test`, `tsc`, `test:mutacion`; prueba del agente (la hace el usuario)
