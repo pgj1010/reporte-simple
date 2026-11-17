@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** MCP — Nivel 2 de `PLAN-MCP-ZERO-TO-HERO.md` (rama `feature/mcp-nivel-2`). Nivel 1 mergeado a `main` (`d5bfbc6`).
+**Etapa activa:** ninguna — MCP Nivel 3 cerrado y mergeado a `main`. Siguiente: Nivel 4 de `PLAN-MCP-ZERO-TO-HERO.md` (rama `feature/mcp-nivel-4`).
 
 ---
 
@@ -430,6 +430,31 @@ Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
 ### Decisiones de la etapa (Nivel 2)
 - D69 — `@odata @mcp` sobre `ReporteService` completo, solo local (con `@mcp` solo CAP deja de servir OData); `@requires` intacto y usuario de `cds.mcp.autowire` fijado en `alice` (rol `Visualizador`) para no recibir 403. Test de autenticación MCP diferido al Nivel 3 (usuario).
 
+### Nivel 3 — Un servicio hecho para agentes ✅
+Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usuario el 2026-11-17 (rol `Visualizador`, límite 50/200, plan B `external.*` si la proyección de dos niveles no resolvía).
+- [x] **Paso 1** `srv/agent-service.cds` (`ReporteAgentService`: `@mcp`, `@mcp.instructions`, `@requires: 'Visualizador'`, `@readonly`, `@cds.query.limit`) y `srv/agent-service.ts` (delegación al RAP y al F4). La proyección de dos niveles resuelve en mock y con el RAP simulado → sin plan B (D70). `pedirMcp` en `test/rap-simulado.ts`.
+- [x] **Paso 2** Quitar `@odata @mcp` de `ReporteService` (queda solo OData por defecto, `/odata/v4/reporte`)
+- [x] **Paso 3** Tests de R15: `test/r15-agente.test.ts` (mock: entidades y campos, `/** */` en todo, solo MCP y sin OData, `ReporteService` sin MCP, tools `describe`/`query`, 401/403/200 en `tools/list` y `query`, `INSERT`/`UPDATE`/`DELETE` → 405 `ENTITY_IS_READ_ONLY`, datos del CSV delegados al remoto) y `test/r15-agente-produccion.test.ts` (RAP simulado: `$top=50`, `limit 1000` → `$top=200`, `$select` con los campos de D70, `/_Flight`, F4 con su ruta, sin DDL en producción). 33 tests nuevos.
+- [x] **Paso 4** Mutaciones de R15 en `test/mutacion.ts`: quitar `@requires` de `ReporteAgentService` (5 fallos) y quitar `@readonly` de `ReporteAgentService` **y** de `ReporteService` (4 fallos, D71). `npm run test:mutacion`: 4/4 detectadas
+- [x] **Paso 5a** Cierre técnico: `npm test` 219/219, `tsc --noEmit -p tsconfig.test.json` OK, `test:mutacion` 4/4; `srv/agent-service.*` en la estructura de `CLAUDE.md`
+- [x] **Paso 5b** Prueba del agente (usuario, 2026-11-17): `npm run watch` → `/mcp/reporte-agent`, autoconexión `cds:ReporteAgentService` (la entrada vieja `cds:ReporteService` la quitó el usuario). **4 de 4 aprobadas:**
+  1. Solo ve `ReporteAgentService`; entiende el límite de 200 filas y que es de solo lectura.
+  2. Rutas de LH: cruzó `Conexiones` con `Aeropuertos` y explicó que las horas son locales.
+  3. Ocupación de `AA 0017` por MCP: 96,6 % y 52,2 % (372/385 y 201/385), con la fórmula de la descripción de `Vuelos`. En el primer intento la tool falló por el revisor de permisos y el agente leyó el CSV directamente → lección **L1** en `SPEC.md` (Nivel 7: en producción, solo tools MCP).
+  4. `UPDATE` rechazado por `query` (solo `SELECT`); el precio siguió en 849 SGD.
+
+### Decisiones de la etapa (Nivel 3)
+- D70 — `ReporteAgentService` solo por MCP, proyección sobre `ReporteService` con campos mínimos y `/** */` de negocio; `@requires: 'Visualizador'` (no `authenticated-user`), `@readonly`, `@cds.query.limit` 50/200; handler propio que delega al RAP (la proyección de dos niveles resuelve, sin plan B); regla nueva R15.
+- D71 — La mutación de solo lectura de R15 quita `@readonly` de los dos servicios: con el del agente solo, las escrituras siguen en 405 (heredan el `@readonly` de `ReporteService`) y solo falla el test del modelo. (Anotada en `SPEC.md` en el paso 4; aquí se agregó al cierre por un error al editar.)
+
+### Informe de cierre — Nivel 3 (2026-11-17)
+| Decisión | Regla que afecta | Si fuera al revés |
+|---|---|---|
+| D70 — campos mínimos (sin `CarrierId_Text` ni totales `virtual`), handler propio, regla R15 | R3, R2, R4, D69 | El agente leería `null` como total; sin R15 los tests no tendrían regla en `SPEC.md` |
+| D71 — mutación de `@readonly` sobre los dos servicios | R15, R2, D3 | La mutación se daría por detectada sin que los tests de comportamiento notaran nada |
+
+`npm test` 219/219, `tsc` OK, mutaciones 4/4, prueba del agente 4/4. Lección L1 (`SPEC.md`) para el Nivel 7.
+
 ---
 
 ## Bitácora
@@ -470,3 +495,4 @@ Rama: `feature/mcp-nivel-2` (desde `main` = `d5bfbc6`)
 - 2026-11-16 — MCP Nivel 1: `cds-mcp` conectado y regla en `CLAUDE.md`; las dos preguntas de prueba se respondieron con `search_model`. Se trabaja en `reporte-simple-publico` (rama `feature/mcp-nivel-1` desde `main`); en el respaldo no queda la rama. **Nivel 1 cerrado** (pendiente de revisión y merge a `main` por el usuario).
 - 2026-11-16 — MCP Nivel 2: `@cap-js/mcp` instalado y `@mcp` en `ReporteService` (D69). Hallazgo: `@mcp` solo reemplaza a OData (404 en `/odata/v4/reporte`, `npm test` en rojo) → `@odata @mcp`. La autoconexión usa `alice` (fijado en `[development]`) para no chocar con `@requires: 'Visualizador'`; `@requires` sin cambios. `cds-mcp` `search_docs` no funciona (falta el modelo de embeddings): se usó el README y el código del adaptador.
 - 2026-11-16 — MCP Nivel 2: `cds watch` sirve `/mcp/reporte`; prueba del usuario exitosa (3 entidades y las 5 conexiones del mock). Prueba de ocupación (top 3 por asientos ocupados): orden y cifras correctos (`AA 0017`, `SQ 0001`, `LH 0400`). La `query` agrupada con `sum(...) as Ocupados` devolvió las claves sin las sumas y sin error (alias descartado, como en la lección de D43) → motivo para el Nivel 4 (función de negocio en vez de `query` libre). **Nivel 2 cerrado** (pendiente de revisión y merge a `main` por el usuario).
+- 2026-11-17 — MCP Nivel 3: `ReporteAgentService` solo por MCP (`/mcp/reporte-agent`), rol `Visualizador`, `@readonly`, límite 50/200, campos mínimos con descripciones de negocio (D70); `@mcp` fuera de `ReporteService`; R15 con tests en mock y RAP simulado y 2 mutaciones (D71). Prueba del agente 4/4. Lección L1: con la tool MCP bloqueada, el agente leyó el CSV directamente → en producción, solo tools MCP. **Nivel 3 cerrado** y mergeado a `main`.
