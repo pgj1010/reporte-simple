@@ -4,6 +4,7 @@ using { ReporteService as src } from './service';
 // Proyecta lo mínimo de ReporteService (sin los totales `virtual` de la cabecera, sin CarrierId_Text).
 // Los comentarios /** */ llegan al agente como descripción (tool `describe`): van en lenguaje de negocio.
 // Mismo rol que ReporteService (R3 / D53). Lecturas delegadas al RAP en srv/agent-service.ts (R4).
+// MCP Nivel 4 / D72: función ocupacionPorConexion (R16), agregada por el RAP con $apply (D43/D47).
 
 /** Consulta de solo lectura del reporte de conexiones aéreas: qué rutas opera cada aerolínea, con sus horarios y distancias, y los vuelos programados de cada ruta con precio y ocupación de asientos. */
 @mcp
@@ -69,5 +70,34 @@ service ReporteAgentService {
     CountryCode,
     /** Nombre del país. */
     CountryCodeText
+  };
+
+  /**
+   * Ocupación de asientos por conexión: cuántos vuelos tiene cada ruta, cuántos asientos se vendieron, la capacidad
+   * total y el % de ocupación. Usar para preguntas como "qué conexión va más llena" o "ocupación de LH".
+   * Sin aerolinea devuelve todas las conexiones (como máximo 200), ordenadas por aerolínea y conexión.
+   * PorcentajeOcupacion = AsientosOcupados / Capacidad × 100 (1 decimal); vacío (null) si la conexión no tiene vuelos.
+   */
+  function ocupacionPorConexion(
+    /** Código de la aerolínea (2 o 3 letras, p. ej. LH). Opcional: si se omite, se devuelven todas las aerolíneas. */
+    // String sin largo (D72): la validación del formato la hace el handler, con mensaje en español para el agente.
+    aerolinea : String
+  ) returns array of {
+    /** Código de la aerolínea (p. ej. LH). */
+    CarrierId           : String(3);
+    /** Nombre de la aerolínea. */
+    CarrierName         : String;
+    /** Número de la conexión dentro de la aerolínea (p. ej. 0400). */
+    ConnectionId        : String(4);
+    /** Ruta en códigos IATA, salida → destino (p. ej. "FRA → JFK"); nombres y ciudades en Aeropuertos. */
+    Ruta                : String;
+    /** Cantidad de vuelos con fecha programados para la conexión (0 si no tiene). */
+    CantidadVuelos      : Integer;
+    /** Asientos ocupados (vendidos), sumados sobre todos los vuelos de la conexión. */
+    AsientosOcupados    : Integer;
+    /** Capacidad de asientos, sumada sobre todos los vuelos de la conexión. */
+    Capacidad           : Integer;
+    /** % de ocupación = AsientosOcupados / Capacidad × 100, con 1 decimal. Vacío (null) si la conexión no tiene vuelos: no se puede calcular. */
+    PorcentajeOcupacion : Decimal(5, 1);
   };
 }

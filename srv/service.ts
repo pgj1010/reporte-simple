@@ -47,7 +47,7 @@ function totalesPedidos(columnas: Columna[] | undefined): Total[] {
   return columnas.filter(esTotal).map(c => c.ref[0]);
 }
 
-const literal = (v: unknown) => `'${String(v).replace(/'/g, "''")}'`;
+export const literal = (v: unknown) => `'${String(v).replace(/'/g, "''")}'`;
 
 /** URL de totales que el RAP real acepta (prueba A en SPEC.md): `filter` + `groupby` + `aggregate` sin alias. */
 function urlDeTotales(filas: Fila[]): string {

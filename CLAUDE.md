@@ -69,8 +69,8 @@ reporte-simple/
 │   ├── external/<SERVICIO>.cds  # GENERADO por cds import — NO EDITAR (también el F4 de aeropuertos, D49)
 │   ├── service.cds              # proyecciones expuestas + @requires/@restrict
 │   ├── service.ts               # delegación de lecturas al servicio remoto
-│   ├── agent-service.cds        # ReporteAgentService: solo MCP, para agentes de IA (D70)
-│   └── agent-service.ts         # delegación de sus lecturas al RAP
+│   ├── agent-service.cds        # ReporteAgentService: solo MCP, para agentes de IA (D70); función ocupacionPorConexion (D72)
+│   └── agent-service.ts         # delegación de sus lecturas al RAP; ocupación con $apply sin alias (D72)
 ├── deploy/destination.mtaext.ejemplo  # plantilla del .mtaext con la destination real (D65)
 ├── scripts/limpiar-edmx-f4.ts   # copia de un .edmx F4 de RAP sin SAP__ParentService, para cds import (D49)
 ├── test/

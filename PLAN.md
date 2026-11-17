@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** ninguna — MCP Nivel 3 cerrado y mergeado a `main`. Siguiente: Nivel 4 de `PLAN-MCP-ZERO-TO-HERO.md` (rama `feature/mcp-nivel-4`).
+**Etapa activa:** ninguna — MCP Nivel 4 cerrado y mergeado a `main`. Siguiente: Nivel 5 de `PLAN-MCP-ZERO-TO-HERO.md`.
 
 ---
 
@@ -455,6 +455,34 @@ Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usu
 
 `npm test` 219/219, `tsc` OK, mutaciones 4/4, prueba del agente 4/4. Lección L1 (`SPEC.md`) para el Nivel 7.
 
+### Nivel 4 — Acciones de negocio (función para agentes) ✅
+Rama: `feature/mcp-nivel-4` (desde `main` = `a61c200`). Plan aprobado por el usuario el 2026-11-17 (dos peticiones al RAP, % `null` sin vuelos, `per_action_tool: true`, ruta con códigos IATA).
+- [x] **Paso 1** Regla R16 y decisión D72 en `SPEC.md`
+- [x] **Paso 2** `ocupacionPorConexion` en `srv/agent-service.cds` (con `/** */`) y handler en `srv/agent-service.ts` (`literal` exportado de `srv/service.ts`); `cds.mcp.per_action_tool: true`. Comprobado por MCP con el mock: tool `ocupacionPorConexion` con `readOnlyHint`, resultados iguales a la tabla del plan. Parámetro `String` sin largo y % `null` también en la descripción de la función (D72 puntos 7 y 8). El test de R15 de `tools/list` se ajustó en este paso (la config lo cambia): `describe`, `ocupacionPorConexion`, `query`, todas de solo lectura. `npm test` 219/219
+- [x] **Paso 3** Tests de R16: `test/r16-ocupacion.test.ts` (mock: es `function`, parámetro opcional `String` sin largo, campos en orden, `/** */` en todo, % `null` en la descripción, tool propia con `readOnlyHint` y sin `call`, 401/403/200, tabla completa del CSV, filtro LH, ZZ → `[]`, valores inválidos → error en español sin lecturas al RAP, 400 directo) y `test/r16-ocupacion-produccion.test.ts` (RAP simulado: 3 peticiones, `$apply` exactos con y sin `filter`, aceptados por `rechazoDelGateway` y sin alias/`$count`/`concat`/`top`, ninguna lectura de `Vuelos` sin `$apply`, unión de respuestas con % `null`). El cliente MCP de los tests pasó a `test/helpers.ts` (`mcpAgente`), usado también por R15. 24 tests nuevos, `npm test` 243/243
+- [x] **Paso 4** Mutaciones de R16 en `test/mutacion.ts` (nuevo campo opcional `poner` para reemplazar en vez de quitar): quitar `@requires` (2 fallos), `function` → `action` (2 fallos), sumas con `remote.run(SELECT … groupBy)` en vez de la URL `$apply` (5 fallos). La de D43 la detecta **solo** el test de producción (comprobado aparte: con el mock pasa 19/19, con el RAP simulado falla 5/5), que es justamente la trampa de D43. `npm run test:mutacion`: 7/7 detectadas
+- [x] **Paso 5a** Cierre técnico: `npm test` 243/243, `tsc --noEmit -p tsconfig.test.json` OK, `test:mutacion` 7/7; función en la estructura de `CLAUDE.md`
+- [x] **Paso 5b** Prueba del agente (usuario, 2026-11-17), solo con las tools MCP del reporte. **2 de 2 aprobadas:**
+  1. "Dame la ocupación por conexión y dime cuál es la más alta": salió por la tool `ocupacionPorConexion` (sin `query` ni lectura de CSV). Más alta `SQ 0001` (SFO → SIN, 460 / 475, 96,8 %), luego `LH 0400` (95,2 %), `AA 0017` (74,4 %), `UA 0058` (72,3 %); `LH 0402` "sin vuelos" (0 / 0, % `null`).
+  2. Inyección `aerolinea: "LH' or 1 eq 1"`: rechazada por el handler con el mensaje en español de D72 punto 7, sin llegar al RAP ni devolver datos.
+
+### Decisiones de la etapa (Nivel 4)
+- D72 — `ocupacionPorConexion`: sumas en el RAP con URL `$apply` sin alias (D43/D47), cantidad de vuelos con una segunda petición `groupby` por vuelo (optimización pendiente: probar `countdistinct` en `/IWFND/GW_CLIENT`), conexiones por delegación (máx. 200), % `null` sin vuelos, `per_action_tool: true`, ruta IATA, validación de `aerolinea`; regla nueva R16.
+
+### Informe de cierre — Nivel 4 (2026-11-17)
+| Decisión | Regla que afecta | Si fuera al revés |
+|---|---|---|
+| D72 (1) — sumas en el RAP con URL `$apply` sin alias, no `SELECT … groupBy` en CQN | R16, D43, D47, regla técnica 12 | En producción el agente recibiría filas sueltas o un 500 en vez de totales (la mutación lo detecta solo con el RAP simulado) |
+| D72 (2) — cantidad de vuelos con una segunda petición `groupby` por vuelo | R16, D47 | Con `$count` dentro de `$apply` el Gateway real respondería error |
+| D72 (3) — conexiones por delegación normal, máx. 200 | R4, D70 | Sin límite, una aerolínea grande podría devolver una respuesta inmanejable para el agente |
+| D72 (4) — % `null` sin vuelos (usuario) | R16 | Con 0 %, "sin vuelos" se confundiría con "vuelos vacíos" |
+| D72 (5) — `per_action_tool: true` (usuario) | R15, L1 | Con la tool genérica `call` (`destructiveHint`) el revisor de permisos podría bloquearla y el agente buscaría los datos por otro lado |
+| D72 (6) — ruta con códigos IATA (usuario) | R16 | Con nombres de ciudad haría falta una lectura extra a `Aeropuertos` en cada llamada |
+| D72 (7) — validar `aerolinea` en el handler, `String` sin largo (propia) | R16, R10 | `LH' or 1 eq 1` cambiaría el filtro enviado al RAP; con `String(3)` el agente recibiría un error sin texto |
+| D72 (8) — regla del % `null` también en la descripción de la función (propia) | R16 | El agente no la vería en `describe` (no muestra los `/** */` de los campos del resultado) |
+
+`npm test` 243/243, `tsc` OK, mutaciones 7/7, prueba del agente 2/2. Pendiente para más adelante: probar `countdistinct` en `/IWFND/GW_CLIENT` (D72 punto 2).
+
 ---
 
 ## Bitácora
@@ -496,3 +524,4 @@ Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usu
 - 2026-11-16 — MCP Nivel 2: `@cap-js/mcp` instalado y `@mcp` en `ReporteService` (D69). Hallazgo: `@mcp` solo reemplaza a OData (404 en `/odata/v4/reporte`, `npm test` en rojo) → `@odata @mcp`. La autoconexión usa `alice` (fijado en `[development]`) para no chocar con `@requires: 'Visualizador'`; `@requires` sin cambios. `cds-mcp` `search_docs` no funciona (falta el modelo de embeddings): se usó el README y el código del adaptador.
 - 2026-11-16 — MCP Nivel 2: `cds watch` sirve `/mcp/reporte`; prueba del usuario exitosa (3 entidades y las 5 conexiones del mock). Prueba de ocupación (top 3 por asientos ocupados): orden y cifras correctos (`AA 0017`, `SQ 0001`, `LH 0400`). La `query` agrupada con `sum(...) as Ocupados` devolvió las claves sin las sumas y sin error (alias descartado, como en la lección de D43) → motivo para el Nivel 4 (función de negocio en vez de `query` libre). **Nivel 2 cerrado** (pendiente de revisión y merge a `main` por el usuario).
 - 2026-11-17 — MCP Nivel 3: `ReporteAgentService` solo por MCP (`/mcp/reporte-agent`), rol `Visualizador`, `@readonly`, límite 50/200, campos mínimos con descripciones de negocio (D70); `@mcp` fuera de `ReporteService`; R15 con tests en mock y RAP simulado y 2 mutaciones (D71). Prueba del agente 4/4. Lección L1: con la tool MCP bloqueada, el agente leyó el CSV directamente → en producción, solo tools MCP. **Nivel 3 cerrado** y mergeado a `main`.
+- 2026-11-17 — MCP Nivel 4: función `ocupacionPorConexion` en `ReporteAgentService` como tool propia de solo lectura (`per_action_tool`), sumas en el RAP con `$apply` sin alias, % `null` sin vuelos, validación de `aerolinea` (D72, R16); 24 tests y 3 mutaciones nuevas (7/7). Prueba del agente 2/2: ocupación por la tool (más alta `SQ 0001`, 96,8 %) e inyección `LH' or 1 eq 1` rechazada en el handler. **Nivel 4 cerrado** y mergeado a `main`.

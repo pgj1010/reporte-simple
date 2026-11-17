@@ -103,6 +103,7 @@
       }
     },
     "mcp": {
+      "per_action_tool": true,
       "[development]": {
         "autowire": {
           "user": "alice"
