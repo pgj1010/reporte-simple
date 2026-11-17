@@ -436,7 +436,8 @@ Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usu
 - [x] **Paso 2** Quitar `@odata @mcp` de `ReporteService` (queda solo OData por defecto, `/odata/v4/reporte`)
 - [x] **Paso 3** Tests de R15: `test/r15-agente.test.ts` (mock: entidades y campos, `/** */` en todo, solo MCP y sin OData, `ReporteService` sin MCP, tools `describe`/`query`, 401/403/200 en `tools/list` y `query`, `INSERT`/`UPDATE`/`DELETE` → 405 `ENTITY_IS_READ_ONLY`, datos del CSV delegados al remoto) y `test/r15-agente-produccion.test.ts` (RAP simulado: `$top=50`, `limit 1000` → `$top=200`, `$select` con los campos de D70, `/_Flight`, F4 con su ruta, sin DDL en producción). 33 tests nuevos.
 - [x] **Paso 4** Mutaciones de R15 en `test/mutacion.ts`: quitar `@requires` de `ReporteAgentService` (5 fallos) y quitar `@readonly` de `ReporteAgentService` **y** de `ReporteService` (4 fallos, D71). `npm run test:mutacion`: 4/4 detectadas
-- [ ] **Paso 5** Cierre: `npm test`, `tsc`, `test:mutacion`; prueba del agente (la hace el usuario)
+- [x] **Paso 5a** Cierre técnico: `npm test` 219/219, `tsc --noEmit -p tsconfig.test.json` OK, `test:mutacion` 4/4; `srv/agent-service.*` en la estructura de `CLAUDE.md`
+- [ ] **Paso 5b** Prueba del agente (la hace el usuario): `npm run watch`, autoconexión `cds:ReporteAgentService`; el agente solo ve ese servicio, no puede escribir y entiende cada campo
 
 ### Decisiones de la etapa (Nivel 3)
 - D70 — `ReporteAgentService` solo por MCP, proyección sobre `ReporteService` con campos mínimos y `/** */` de negocio; `@requires: 'Visualizador'` (no `authenticated-user`), `@readonly`, `@cds.query.limit` 50/200; handler propio que delega al RAP (la proyección de dos niveles resuelve, sin plan B); regla nueva R15.
