@@ -455,6 +455,18 @@ Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usu
 
 `npm test` 219/219, `tsc` OK, mutaciones 4/4, prueba del agente 4/4. Lección L1 (`SPEC.md`) para el Nivel 7.
 
+### Nivel 4 — Acciones de negocio (función para agentes)
+Rama: `feature/mcp-nivel-4` (desde `main` = `a61c200`). Plan aprobado por el usuario el 2026-11-17 (dos peticiones al RAP, % `null` sin vuelos, `per_action_tool: true`, ruta con códigos IATA).
+- [x] **Paso 1** Regla R16 y decisión D72 en `SPEC.md`
+- [ ] **Paso 2** `ocupacionPorConexion` en `srv/agent-service.cds` (con `/** */`) y handler en `srv/agent-service.ts`; `cds.mcp.per_action_tool: true`
+- [ ] **Paso 3** Tests de R16 (mock y RAP simulado); test de R15 ajustado a la nueva tool en `tools/list`
+- [ ] **Paso 4** Mutaciones de R16 en `test/mutacion.ts`
+- [ ] **Paso 5a** Cierre técnico: `npm test`, `tsc`, `test:mutacion`
+- [ ] **Paso 5b** Prueba del agente (usuario): "Dame la ocupación por conexión y dime cuál es la más alta"
+
+### Decisiones de la etapa (Nivel 4)
+- D72 — `ocupacionPorConexion`: sumas en el RAP con URL `$apply` sin alias (D43/D47), cantidad de vuelos con una segunda petición `groupby` por vuelo (optimización pendiente: probar `countdistinct` en `/IWFND/GW_CLIENT`), conexiones por delegación (máx. 200), % `null` sin vuelos, `per_action_tool: true`, ruta IATA, validación de `aerolinea`; regla nueva R16.
+
 ---
 
 ## Bitácora
