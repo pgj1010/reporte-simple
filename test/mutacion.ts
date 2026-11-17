@@ -17,7 +17,7 @@ const raiz = path.resolve(import.meta.dirname, '..');
 interface Mutacion {
   regla: string;
   descripcion: string;
-  archivo: string;   // relativo a la raíz del proyecto
+  archivo: string | string[];   // relativo a la raíz del proyecto; con varios, se muta cada uno (D71)
   quitar: RegExp;    // texto que se elimina (todas las apariciones)
   tests: string[];   // tests de la regla, relativos a la raíz
 }
@@ -36,6 +36,23 @@ const mutaciones: Mutacion[] = [
     archivo: 'srv/service.cds',
     quitar: /^\s*@readonly\s*\n/gm,
     tests: ['test/r2-solo-lectura.test.ts'],
+  },
+  {
+    regla: 'R15 (R3)',
+    descripcion: "quitar @requires: 'Visualizador' de ReporteAgentService (D70)",
+    archivo: 'srv/agent-service.cds',
+    quitar: /^\s*@requires\s*:\s*'Visualizador'.*\n/gm,
+    tests: ['test/r15-agente.test.ts'],
+  },
+  {
+    // D71: también de ReporteService, porque las proyecciones de ReporteAgentService heredan el @readonly de
+    // sus entidades; quitándolo solo del servicio agente, las escrituras siguen en 405 y solo lo nota el test
+    // del modelo. Así la mutación prueba el comportamiento (INSERT/UPDATE/DELETE → 405).
+    regla: 'R15 (R2)',
+    descripcion: 'quitar @readonly de ReporteAgentService y de las entidades de ReporteService que proyecta (D70, D71)',
+    archivo: ['srv/agent-service.cds', 'srv/service.cds'],
+    quitar: /^\s*@readonly\s*\n/gm,
+    tests: ['test/r15-agente.test.ts'],
   },
 ];
 
@@ -68,8 +85,8 @@ function correrTests(cwd: string, tests: string[]): { ok: boolean; resumen: stri
 let sobrevivientes = 0;
 
 for (const m of mutaciones) {
-  const real = path.join(raiz, m.archivo);
-  const hashAntes = hash(real);
+  const archivos = ([] as string[]).concat(m.archivo);
+  const hashesAntes = archivos.map(a => hash(path.join(raiz, a)));
   const copia = copiarProyecto();
   console.log(`\n=== Mutación ${m.regla}: ${m.descripcion}`);
   console.log(`    copia temporal: ${copia}`);
@@ -78,12 +95,16 @@ for (const m of mutaciones) {
     console.log(`    1) control sin mutar: ${control.ok ? 'pasa ✔' : 'FALLA ✖'} (${control.resumen})`);
     if (!control.ok) throw new Error('los tests de la regla fallan sin mutación; la prueba no es válida');
 
-    const archivoCopia = path.join(copia, m.archivo);
-    const original = readFileSync(archivoCopia, 'utf8');
-    const mutado = original.replace(m.quitar, '');
-    if (mutado === original) throw new Error(`la mutación no cambió ${m.archivo} (¿cambió el texto?)`);
-    writeFileSync(archivoCopia, mutado);
-    console.log(`    2) mutación aplicada en la copia (${original.length - mutado.length} caracteres quitados)`);
+    let quitados = 0;
+    for (const a of archivos) {
+      const archivoCopia = path.join(copia, a);
+      const original = readFileSync(archivoCopia, 'utf8');
+      const mutado = original.replace(m.quitar, '');
+      if (mutado === original) throw new Error(`la mutación no cambió ${a} (¿cambió el texto?)`);
+      writeFileSync(archivoCopia, mutado);
+      quitados += original.length - mutado.length;
+    }
+    console.log(`    2) mutación aplicada en la copia (${quitados} caracteres quitados${archivos.length > 1 ? ` en ${archivos.length} archivos` : ''})`);
 
     const mutante = correrTests(copia, m.tests);
     if (mutante.ok) {
@@ -97,9 +118,11 @@ for (const m of mutaciones) {
     console.log(`    ✖ error: ${(e as Error).message}`);
   } finally {
     rmSync(copia, { recursive: true, force: true });
-    const intacto = hash(real) === hashAntes;
-    console.log(`    archivo real ${m.archivo}: ${intacto ? 'sin cambios ✔' : 'MODIFICADO ✖'}`);
-    if (!intacto) sobrevivientes++;
+    archivos.forEach((a, i) => {
+      const intacto = hash(path.join(raiz, a)) === hashesAntes[i];
+      console.log(`    archivo real ${a}: ${intacto ? 'sin cambios ✔' : 'MODIFICADO ✖'}`);
+      if (!intacto) sobrevivientes++;
+    });
   }
 }
 

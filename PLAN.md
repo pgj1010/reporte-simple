@@ -435,7 +435,7 @@ Rama: `feature/mcp-nivel-3` (desde `main` = `c6a989d`). Plan aprobado por el usu
 - [x] **Paso 1** `srv/agent-service.cds` (`ReporteAgentService`: `@mcp`, `@mcp.instructions`, `@requires: 'Visualizador'`, `@readonly`, `@cds.query.limit`) y `srv/agent-service.ts` (delegación al RAP y al F4). La proyección de dos niveles resuelve en mock y con el RAP simulado → sin plan B (D70). `pedirMcp` en `test/rap-simulado.ts`.
 - [x] **Paso 2** Quitar `@odata @mcp` de `ReporteService` (queda solo OData por defecto, `/odata/v4/reporte`)
 - [x] **Paso 3** Tests de R15: `test/r15-agente.test.ts` (mock: entidades y campos, `/** */` en todo, solo MCP y sin OData, `ReporteService` sin MCP, tools `describe`/`query`, 401/403/200 en `tools/list` y `query`, `INSERT`/`UPDATE`/`DELETE` → 405 `ENTITY_IS_READ_ONLY`, datos del CSV delegados al remoto) y `test/r15-agente-produccion.test.ts` (RAP simulado: `$top=50`, `limit 1000` → `$top=200`, `$select` con los campos de D70, `/_Flight`, F4 con su ruta, sin DDL en producción). 33 tests nuevos.
-- [ ] **Paso 4** Mutaciones de R15: quitar `@requires` y `@readonly` de `ReporteAgentService`
+- [x] **Paso 4** Mutaciones de R15 en `test/mutacion.ts`: quitar `@requires` de `ReporteAgentService` (5 fallos) y quitar `@readonly` de `ReporteAgentService` **y** de `ReporteService` (4 fallos, D71). `npm run test:mutacion`: 4/4 detectadas
 - [ ] **Paso 5** Cierre: `npm test`, `tsc`, `test:mutacion`; prueba del agente (la hace el usuario)
 
 ### Decisiones de la etapa (Nivel 3)
