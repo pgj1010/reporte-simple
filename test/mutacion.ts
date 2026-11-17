@@ -19,6 +19,7 @@ interface Mutacion {
   descripcion: string;
   archivo: string | string[];   // relativo a la raíz del proyecto; con varios, se muta cada uno (D71)
   quitar: RegExp;    // texto que se elimina (todas las apariciones)
+  poner?: string;    // texto que lo reemplaza (por defecto nada); admite $1, $2… de `quitar` (D72)
   tests: string[];   // tests de la regla, relativos a la raíz
 }
 
@@ -53,6 +54,33 @@ const mutaciones: Mutacion[] = [
     archivo: ['srv/agent-service.cds', 'srv/service.cds'],
     quitar: /^\s*@readonly\s*\n/gm,
     tests: ['test/r15-agente.test.ts'],
+  },
+  {
+    regla: 'R16 (R3)',
+    descripcion: "quitar @requires: 'Visualizador' de ReporteAgentService: ocupacionPorConexion queda abierta a sinrol (D72)",
+    archivo: 'srv/agent-service.cds',
+    quitar: /^\s*@requires\s*:\s*'Visualizador'.*\n/gm,
+    tests: ['test/r16-ocupacion.test.ts'],
+  },
+  {
+    regla: 'R16 (solo lectura)',
+    descripcion: 'declarar ocupacionPorConexion como action en vez de function (la tool dejaría de ser de solo lectura, D72)',
+    archivo: 'srv/agent-service.cds',
+    quitar: /^(\s*)function(\s+ocupacionPorConexion\b)/m,
+    poner: '$1action$2',
+    tests: ['test/r16-ocupacion.test.ts'],
+  },
+  {
+    // D43: con `remote.run` y un groupBy en CQN, el mock (SQLite) sí suma, pero en producción CAP no delega el
+    // `aggregate` al RAP. Esta mutación solo la puede detectar el test de producción (RAP simulado).
+    regla: 'R16 (D43)',
+    descripcion: 'sumar con remote.run(SELECT … groupBy) en CQN en vez de la URL $apply al RAP (D43, D72)',
+    archivo: 'srv/agent-service.ts',
+    quitar: /remote\.send\(\{ method: 'GET', path: urls\.sumas \}\)/,
+    poner: "remote.run(SELECT.from('ZMAKS_SB_CONEXIONES.Vuelos')"
+      + ".columns('CarrierId', 'ConnectionId', 'sum(SeatsOccupied) as SeatsOccupied', 'sum(SeatsMax) as SeatsMax')"
+      + ".where(aerolinea ? { CarrierId: aerolinea } : {}).groupBy('CarrierId', 'ConnectionId'))",
+    tests: ['test/r16-ocupacion.test.ts', 'test/r16-ocupacion-produccion.test.ts'],
   },
 ];
 
@@ -99,12 +127,12 @@ for (const m of mutaciones) {
     for (const a of archivos) {
       const archivoCopia = path.join(copia, a);
       const original = readFileSync(archivoCopia, 'utf8');
-      const mutado = original.replace(m.quitar, '');
+      const mutado = original.replace(m.quitar, m.poner ?? '');
       if (mutado === original) throw new Error(`la mutación no cambió ${a} (¿cambió el texto?)`);
       writeFileSync(archivoCopia, mutado);
       quitados += original.length - mutado.length;
     }
-    console.log(`    2) mutación aplicada en la copia (${quitados} caracteres quitados${archivos.length > 1 ? ` en ${archivos.length} archivos` : ''})`);
+    console.log(`    2) mutación aplicada en la copia (${m.poner === undefined ? `${quitados} caracteres quitados` : 'texto reemplazado'}${archivos.length > 1 ? ` en ${archivos.length} archivos` : ''})`);
 
     const mutante = correrTests(copia, m.tests);
     if (mutante.ok) {
