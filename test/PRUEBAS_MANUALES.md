@@ -7,6 +7,7 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 > - R9 y R14 se ejecutan al cerrar la **Etapa 4** (pasos actualizados el 2026-11-10). El drilldown a Vuelos ya funciona con el mock (R7, D25); desplegado se verifica en la Etapa 5.
 > - **Cierre de la Etapa 4 (2026-11-10):** R8 (pasos 6, 6c, 6d), R9 (pasos 1, 3, 8, 10b) y R14 (pasos 1, 4, 5) ejecutados por el usuario, todos ✔; R13 paso 5 verificado por Claude en la configuración servida. Los pasos que el usuario no reportó quedan marcados como **no reportados** en cada registro.
 > - **Cierre de la Etapa 5 (2026-11-11):** pruebas en el despliegue con datos reales de `<S4_SISTEMA>` (sección "Despliegue" al final), todas ✔; R8 6b y R14 repetidos contra el RAP real. Cloud Connector Monitor no revisado: las llamadas al RAP se confirmaron en los logs (D63). R13 en Work Zone, postergado por el usuario.
+> - **MCP Nivel 5 (2026-11-18):** inspección manual del servidor MCP `/mcp/reporte-agent` con el MCP Inspector en modo CLI (sección "MCP — Inspector" al final, D73).
 > - Si cambia la tabla de semántica en `SPEC.md`, actualizar aquí los resultados esperados.
 
 ## Preparación (común)
@@ -159,3 +160,35 @@ Reglas de `SPEC.md` marcadas `[manual]`. Se ejecutan en la app Fiori con datos m
 | 2026-11-11 | 5 | Usuario | ✔ pasos 1–6 | 403 sin rol; datos reales de `<S4_SISTEMA>`; `AA 0015` con 2 vuelos (260 / 260; 213 / 137) y cabecera 520 · 350; F4 `Frankfurt` encuentra; precio con decimales. Paso 7 no revisado por el usuario. **7b pendiente** (URL exacta al S/4, una vez). |
 | 2026-11-11 | 5 | Claude | ✔ 401 / `/health` · paso 7 por logs | `/health` UP; sin token 401 `Unauthorized` (excepción de R10, D62). Logs 15:05–15:09: 8 `$batch` de Fiori → 200; 4 lecturas de cabecera (`AA 15` ×3, `AA 17`) y 4 de `_Flight`, y **12** resoluciones de la destination OnPremise del Cloud SDK = 4 × (conexión + totales de R14) + 4 `_Flight`: una por llamada al RAP. Sin errores; único aviso, "basic authentication… Principal propagation is recommended" (pendiente para la Etapa 6). |
 
+---
+
+## MCP — Inspector: las tools de `ReporteAgentService` a mano (Nivel 5, D73)
+
+**Cubre:** R15 (servicio para agentes, solo lectura, rol `Visualizador`: 401/403) y R16 (`ocupacionPorConexion`, validación de `aerolinea`), vistos con el JSON que recibe y devuelve cada tool. Lo automático ya lo cubren `test/r15-agente*.test.ts` y `test/r16-ocupacion*.test.ts`; aquí se aprende el formato y se deja la evidencia.
+
+**Preparación:** terminal 1 con `npm run watch` (el log muestra `/mcp/reporte-agent`). Terminal 2:
+
+```bash
+URL=http://localhost:4004/mcp/reporte-agent
+I="npx -y @modelcontextprotocol/inspector --cli $URL --transport http"
+ALICE='Authorization: Basic YWxpY2U6'      # alice: (contraseña vacía), rol Visualizador
+SINROL='Authorization: Basic c2lucm9sOg==' # sinrol: (sin roles)
+```
+
+| # | Paso | Resultado esperado |
+|---|---|---|
+| 1 | `$I --header "$ALICE" --method tools/list` | 3 tools: `describe`, `ocupacionPorConexion`, `query`, todas con `readOnlyHint: true`; sin `call` (D72 punto 5). Cada una con su `inputSchema`. |
+| 2 | `describe` (`tools/call --tool-name describe`) | Entidades `Conexiones`, `Vuelos`, `Aeropuertos` y la función, con las descripciones de negocio (`/** */`). |
+| 3 | `query` sobre `Conexiones` (argumentos según el `inputSchema` del paso 1) | Filas del mock (`test/data`), solo los campos de la proyección (D70). |
+| 4 | `ocupacionPorConexion` con `aerolinea=LH` | 2 filas: `LH 0400` (314 / 330, **95,2 %**) y `LH 0402` (0 vuelos, 0 / 0, % `null`). |
+| 5 | `ocupacionPorConexion` con `aerolinea=LH' or 1 eq 1` | Error con el mensaje en español de D72 punto 7 ("El código de aerolínea … no es válido…"), sin datos. |
+| 6 | `tools/list` con `$SINROL`, y sin cabecera; `curl -i` equivalente | Inspector: no conecta. `curl`: **403** con `sinrol`, **401** sin credenciales. |
+
+**Registro de ejecución**
+
+| Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
+|---|---|---|---|---|
+
+**Evidencia (salidas del Inspector)**
+
+_Se completa con las salidas que pega el usuario._

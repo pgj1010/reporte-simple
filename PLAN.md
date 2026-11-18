@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** ninguna — MCP Nivel 4 cerrado y mergeado a `main`. Siguiente: Nivel 5 de `PLAN-MCP-ZERO-TO-HERO.md`.
+**Etapa activa:** MCP Nivel 5 — Inspeccionar como profesional (rama `feature/mcp-nivel-5`).
 
 ---
 
@@ -482,6 +482,15 @@ Rama: `feature/mcp-nivel-4` (desde `main` = `a61c200`). Plan aprobado por el usu
 | D72 (8) — regla del % `null` también en la descripción de la función (propia) | R16 | El agente no la vería en `describe` (no muestra los `/** */` de los campos del resultado) |
 
 `npm test` 243/243, `tsc` OK, mutaciones 7/7, prueba del agente 2/2. Pendiente para más adelante: probar `countdistinct` en `/IWFND/GW_CLIENT` (D72 punto 2).
+
+### Nivel 5 — Inspeccionar con el MCP Inspector
+Rama: `feature/mcp-nivel-5` (desde `main` = `ffe5efb`). Plan aprobado por el usuario el 2026-11-18: modo CLI del Inspector con `npx`; el usuario ejecuta los comandos y Claude registra las salidas como evidencia.
+- [x] **Paso 1** Decisión D73 en `SPEC.md`; sección "MCP — Inspector" en `test/PRUEBAS_MANUALES.md` con los pasos
+- [ ] **Paso 2** Ejecución por el usuario (con `npm run watch` arrancado): `tools/list`, `describe`, `query`, `ocupacionPorConexion`, inyección, 403/401; salidas en el registro de `test/PRUEBAS_MANUALES.md`
+- [ ] **Paso 3** Cierre: `npm test`, `tsc`, informe de cierre
+
+### Decisiones de la etapa (Nivel 5)
+- D73 — MCP Inspector con `npx` sin devDependency; modo CLI como camino principal en BAS (autenticación por cabecera Basic con el usuario mock); la interfaz web queda para las capturas del Nivel 6. Decisión del usuario.
 
 ---
 
