@@ -511,7 +511,7 @@ Rama: `feature/mcp-nivel-5` (desde `main` = `ffe5efb`). Plan aprobado por el usu
 ### Nivel 6 — Demo para portafolio
 Rama: `feature/mcp-nivel-6` (desde `main` = `9c931cb`). Estructura aprobada por el usuario el 2026-11-18 (README en inglés, `README.es.md`, servicio como "custom RAP service (Z)", video con el Inspector CLI, `npx cds watch`, prueba cronometrada).
 - [x] **Paso 1** Decisión D75 en `SPEC.md`
-- [ ] **Paso 2** `README.md` → `README.es.md`, con las métricas actualizadas y enlace a la versión en inglés
+- [x] **Paso 2** `README.md` → `README.es.md` (`git mv`, conserva el historial), con las métricas actualizadas (16 reglas, 243 tests en 26 archivos, 7/7 mutaciones, 75 decisiones, niveles MCP) y enlace "English version". El enlace queda roto hasta el paso 4. `npm test` 243/243
 - [ ] **Paso 3** Prueba "clonar y correr", cronometrada, en un clon limpio (con y sin `cds-dk` global)
 - [ ] **Paso 4** `README.md` en inglés (problema, solución, diagrama, preguntas reales, seguridad con evidencia de los Niveles 3–5, cómo correrlo, capturas marcadas para el usuario) → **revisión del usuario**
 - [ ] **Paso 5** Guion del video y capturas (después de la revisión del README)

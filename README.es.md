@@ -6,6 +6,8 @@
 ![Node](https://img.shields.io/badge/Node-24-339933)
 ![Licencia MIT](https://img.shields.io/badge/licencia-MIT-green)
 
+**[English version](README.md)**
+
 Reporte **Fiori Elements** de solo lectura sobre **SAP BTP** que lee en vivo un servicio **RAP (OData V4)** de un **S/4HANA on‑premise**, construido con **SAP CAP en TypeScript**. Además de ser un reporte, sirve como **base reutilizable** para los siguientes: reglas verificadas por tests, decisiones documentadas y lecciones aprendidas.
 
 > Todo el proyecto, desde el análisis del servicio hasta el despliegue en Cloud Foundry, se construyó junto a **Claude Code**, con un proceso explícito de reglas, planes por etapa y aprobaciones. Ver [Cómo lo construí con Claude Code](#cómo-lo-construí-con-claude-code).
@@ -73,7 +75,7 @@ flowchart LR
 
 ## Decisiones clave
 
-Las 68 decisiones (`D1`–`D68`) están en [`SPEC.md` → Decisiones](SPEC.md#decisiones). Cada una indica **qué regla afecta** y **qué pasaría si fuera al revés**. Algunas:
+Las 75 decisiones (`D1`–`D75`) están en [`SPEC.md` → Decisiones](SPEC.md#decisiones). Cada una indica **qué regla afecta** y **qué pasaría si fuera al revés**. Algunas:
 
 | | Decisión | Por qué importa |
 |---|---|---|
@@ -93,11 +95,11 @@ El avance por etapas, con su bitácora y las decisiones de cada una, está en [`
 
 | | |
 |---|---|
-| Reglas de negocio | **14** (R1–R14) en [`SPEC.md`](SPEC.md#reglas), cada una con test automático o pasos manuales en [`test/PRUEBAS_MANUALES.md`](test/PRUEBAS_MANUALES.md) |
-| Tests automáticos | **186** en 22 archivos (`npm test`, ~10 s), entre ellos un RAP simulado para probar el camino de producción sin S/4 |
-| Pruebas de mutación | **2/2** detectadas en CI (`npm run test:mutacion`: quitar `@readonly` y `@requires`, D3), más mutaciones manuales por etapa documentadas en `PLAN.md` |
-| Decisiones documentadas | **68**, con regla afectada y alternativa |
-| Etapas | 7 planificadas, cada una en su rama con revisión antes del merge |
+| Reglas de negocio | **16** (R1–R16, incluidas las del servidor MCP para agentes: R15 y R16) en [`SPEC.md`](SPEC.md#reglas), cada una con test automático o pasos manuales en [`test/PRUEBAS_MANUALES.md`](test/PRUEBAS_MANUALES.md) |
+| Tests automáticos | **243** en 26 archivos (`npm test`), entre ellos un RAP simulado para probar el camino de producción sin S/4 |
+| Pruebas de mutación | **7/7** detectadas (`npm run test:mutacion`: quitar `@readonly` y `@requires` del reporte y del servicio MCP, `function` → `action` y totales sin `$apply`; D3, D71, D72), más mutaciones manuales por etapa documentadas en `PLAN.md` |
+| Decisiones documentadas | **75**, con regla afectada y alternativa |
+| Etapas | 7 del reporte más los niveles del plan MCP (`PLAN-MCP-ZERO-TO-HERO.md`), cada uno en su rama con revisión antes del merge |
 | Dependencias | `npm audit`: 0 vulnerabilidades (D66) |
 
 ## Cómo correrlo
@@ -107,8 +109,8 @@ Requisitos: Node 24 y `npm i -g @sap/cds-dk@^10`.
 ```bash
 npm ci
 npm run watch          # http://localhost:4004 con datos simulados; usuario "alice", sin contraseña
-npm test               # lint + 186 tests, 100 % con mocks
-npm run test:mutacion  # R2 (solo lectura) y R3 (autorización)
+npm test               # lint + 243 tests, 100 % con mocks
+npm run test:mutacion  # 7 mutaciones: solo lectura, autorización y totales (R2, R3, R15, R16)
 ```
 
 - App: `http://localhost:4004/conexiones/webapp/index.html`
@@ -147,7 +149,7 @@ CLAUDE.md · SPEC.md · PLAN.md · ESTADO.md   Reglas, especificación, plan y e
 Construí el proyecto en pareja con [Claude Code](https://claude.com/claude-code). Yo actué como responsable funcional y técnico, y Claude como desarrollador, siguiendo un proceso escrito, no solo prompts sueltos:
 
 1. **Reglas del equipo en [`CLAUDE.md`](CLAUDE.md).** Claude las lee al empezar cada sesión: proponer un plan y esperar aprobación antes de tocar archivos, una rama por etapa, `npm test` en verde y un commit por paso, nunca `cf deploy` sin aprobación, y preguntar si una regla admite dos interpretaciones que dan datos distintos.
-2. **Especificación primero ([`SPEC.md`](SPEC.md)).** Reglas numeradas (R1–R14), análisis del servicio de origen y una tabla de **semántica del reporte**. Las anotaciones de Fiori se generan desde esa tabla, y un test (R11) verifica que coincidan.
+2. **Especificación primero ([`SPEC.md`](SPEC.md)).** Reglas numeradas (R1–R16), análisis del servicio de origen y una tabla de **semántica del reporte**. Las anotaciones de Fiori se generan desde esa tabla, y un test (R11) verifica que coincidan.
 3. **Plan por etapas ([`PLAN.md`](PLAN.md)).** Proyecto base → servicio remoto → alineación (tests, TypeScript) → Fiori → presentación y totales → despliegue → limpieza y publicación. Cada etapa cierra con un informe y mi revisión antes del merge a `main`.
 4. **Decisiones registradas al tomarlas.** Cada decisión de Claude queda en `SPEC.md` con la regla que afecta y *qué pasaría si fuera al revés*. Así puedo revisar y revertir cualquiera, y el historial explica el porqué de cada cambio.
 5. **Tests que vigilan a los tests.** Las pruebas de mutación quitan `@readonly` o `@requires` en una copia del código y exigen que la suite falle. Un test verde no basta si no detecta el error.
