@@ -6,7 +6,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { readFileSync } from 'node:fs';
-import { raiz } from './helpers.ts';
+import { raiz, SIN_COLOR, sinAnsi } from './helpers.ts';
 
 const RUTA_RAP = '/rap';
 /** F4 de aeropuertos (D50): mismo servidor, con la ruta de producción tal cual (D51, `;ps=…;va=…`). */
@@ -72,13 +72,13 @@ export async function iniciar(responder: Responder = respuestaVacia): Promise<En
     cwd: raiz,
     env: {
       ...process.env, NODE_ENV: 'production', CDS_TYPESCRIPT: 'false',
-      CDS_PLUGIN_UI5_ACTIVE: 'false', CDS_CONFIG: JSON.stringify(config),
+      CDS_PLUGIN_UI5_ACTIVE: 'false', CDS_CONFIG: JSON.stringify(config), ...SIN_COLOR,
     },
   });
   let salida = '';
   const base = await new Promise<string>((ok, falla) => {
     const leer = (d: Buffer) => {
-      salida += d;
+      salida += sinAnsi(String(d)); // sin colores: los tests buscan texto del log con regex
       const m = salida.match(/server listening on \{ url: '([^']+)'/);
       if (m) ok(m[1]);
     };

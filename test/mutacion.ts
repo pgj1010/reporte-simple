@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { stripVTControlCharacters } from 'node:util';
 
 const raiz = path.resolve(import.meta.dirname, '..');
 
@@ -103,9 +104,10 @@ function correrTests(cwd: string, tests: string[]): { ok: boolean; resumen: stri
   const r = spawnSync(process.execPath, ['--test', ...tests], {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, CDS_PLUGIN_UI5_ACTIVE: 'false', CDS_TYPESCRIPT: 'false' },
+    // Sin colores (igual que SIN_COLOR de test/helpers.ts): el resumen se lee con regex.
+    env: { ...process.env, CDS_PLUGIN_UI5_ACTIVE: 'false', CDS_TYPESCRIPT: 'false', NO_COLOR: '1', FORCE_COLOR: '0' },
   });
-  const salida = `${r.stdout}\n${r.stderr}`;
+  const salida = stripVTControlCharacters(`${r.stdout}\n${r.stderr}`);
   const resumen = (salida.match(/^ℹ (pass|fail) \d+$/gm) ?? []).join(' · ');
   return { ok: r.status === 0, resumen };
 }
