@@ -512,7 +512,11 @@ Rama: `feature/mcp-nivel-5` (desde `main` = `ffe5efb`). Plan aprobado por el usu
 Rama: `feature/mcp-nivel-6` (desde `main` = `9c931cb`). Estructura aprobada por el usuario el 2026-11-18 (README en inglés, `README.es.md`, servicio como "custom RAP service (Z)", video con el Inspector CLI, `npx cds watch`, prueba cronometrada).
 - [x] **Paso 1** Decisión D75 en `SPEC.md`
 - [x] **Paso 2** `README.md` → `README.es.md` (`git mv`, conserva el historial), con las métricas actualizadas (16 reglas, 243 tests en 26 archivos, 7/7 mutaciones, 75 decisiones, niveles MCP) y enlace "English version". El enlace queda roto hasta el paso 4. `npm test` 243/243
-- [ ] **Paso 3** Prueba "clonar y correr", cronometrada, en un clon limpio (con y sin `cds-dk` global)
+- [x] **Paso 3** Prueba "clonar y correr", cronometrada (Claude, 2026-11-18, en BAS), sobre un `git clone` limpio de la rama en el scratchpad (sin `LOCAL.md` ni archivos ignorados):
+  - `npm i -g @sap/cds-dk@^10` (en un prefijo aparte, caché vacía): **2 s**. `npm ci` (caché vacía): **4 s**, 744 paquetes. `npm test` con `cds-dk` global: **12 s**, 243/243.
+  - **Sin `cds-dk` global, `npm test` no sirve:** los tests de producción simulada (D43, R4, R5…) arrancan un proceso aparte con el `cds` global (D68) y esperan 60 s cada uno antes de fallar; se cortó la corrida. → El README pide `cds-dk` global para los tests.
+  - **`CDS_TYPESCRIPT=false npx -y -p @sap/cds-dk@^10 cds watch`** sin `cds-dk` global: listo en **5 s**; `/mcp/reporte-agent` responde `tools/list` con `describe`, `query` y `ocupacionPorConexion` (alice) y `/odata/v4/reporte/Conexiones` devuelve las 5 conexiones del mock. → Alternativa válida para **correr** la app, no para los tests.
+  - Total de máquina < 30 s en BAS. La red de BAS es rápida: en un equipo con conexión doméstica las descargas tardarán más, pero quedan lejos de los 5 minutos del criterio.
 - [ ] **Paso 4** `README.md` en inglés (problema, solución, diagrama, preguntas reales, seguridad con evidencia de los Niveles 3–5, cómo correrlo, capturas marcadas para el usuario) → **revisión del usuario**
 - [ ] **Paso 5** Guion del video y capturas (después de la revisión del README)
 
