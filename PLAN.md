@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** MCP Nivel 5 — Inspeccionar como profesional (rama `feature/mcp-nivel-5`).
+**Etapa activa:** ninguna — MCP Nivel 5 cerrado y mergeado a `main`. Siguiente: Nivel 6 de `PLAN-MCP-ZERO-TO-HERO.md`.
 
 ---
 
@@ -483,14 +483,30 @@ Rama: `feature/mcp-nivel-4` (desde `main` = `a61c200`). Plan aprobado por el usu
 
 `npm test` 243/243, `tsc` OK, mutaciones 7/7, prueba del agente 2/2. Pendiente para más adelante: probar `countdistinct` en `/IWFND/GW_CLIENT` (D72 punto 2).
 
-### Nivel 5 — Inspeccionar con el MCP Inspector
+### Nivel 5 — Inspeccionar con el MCP Inspector ✅
 Rama: `feature/mcp-nivel-5` (desde `main` = `ffe5efb`). Plan aprobado por el usuario el 2026-11-18: modo CLI del Inspector con `npx`; el usuario ejecuta los comandos y Claude registra las salidas como evidencia.
 - [x] **Paso 1** Decisión D73 en `SPEC.md`; sección "MCP — Inspector" en `test/PRUEBAS_MANUALES.md` con los pasos
-- [ ] **Paso 2** Ejecución por el usuario (con `npm run watch` arrancado): `tools/list`, `describe`, `query`, `ocupacionPorConexion`, inyección, 403/401; salidas en el registro de `test/PRUEBAS_MANUALES.md`
-- [ ] **Paso 3** Cierre: `npm test`, `tsc`, informe de cierre
+- [x] **Paso 2** Ejecución por el usuario (con `npm run watch` arrancado), salidas literales en `test/PRUEBAS_MANUALES.md`: `tools/list` (3 tools de solo lectura; **`query` recibe un solo argumento `cql`**, no `entity`/`where` como dice el Nivel 0), `describe` general y con `entities` (`queryLimits` 50/200, sin `CarrierId_Text`), `query` (5 conexiones iguales al CSV), `ocupacionPorConexion` LH (95.2 y `null`), inyección rechazada con `isError: true` y el mensaje en español (log: `code: 400`), `sinrol` → 403 `-32003`, sin cabecera → el Inspector intenta OAuth (`POST /register` 404). Los `curl -i` de 403 y 401 los corrió Claude (salida en crudo): el 401 (`-32001`) **no trae `WWW-Authenticate`**
+- [x] **Paso 3** Cierre: `npm test` 243/243, `tsc --noEmit -p tsconfig.test.json` OK, `test:mutacion` 7/7 (sin cambios de código en el nivel); informe de cierre
 
 ### Decisiones de la etapa (Nivel 5)
 - D73 — MCP Inspector con `npx` sin devDependency; modo CLI como camino principal en BAS (autenticación por cabecera Basic con el usuario mock); la interfaz web queda para las capturas del Nivel 6. Decisión del usuario.
+- D73 (4) — Evidencia literal; con el `text` cortado por la copia, solo `structuredContent`. Propuesta propia.
+
+### Informe de cierre — Nivel 5 (2026-11-18)
+| Decisión | Regla que afecta | Si fuera al revés |
+|---|---|---|
+| D73 (1) — Inspector con `npx`, sin devDependency (usuario) | D68 (CI), proceso | El Inspector entraría en `npm ci` del CI y en `npm audit` sin que ningún test lo use |
+| D73 (2) — modo CLI como camino principal en BAS, usuario mock por cabecera Basic (usuario) | R15, R16 (verificación manual) | Con la interfaz web, la prueba dependería de los puertos y la autenticación del preview de BAS, no del servidor MCP |
+| D73 (3) — interfaz web para las capturas del Nivel 6 (usuario) | — | Habría que configurar puertos, orígenes y token del Inspector en BAS ahora, sin necesidad para el criterio del nivel |
+| D73 (4) — evidencia literal; solo `structuredContent` si el `text` llega cortado (propia) | Técnica 13 (evidencia de pruebas manuales) | Con el `text` cortado, la evidencia mostraría defectos (`dela`, sangrías) que no son del servidor |
+
+**Pendientes (preguntas abiertas):**
+- Los 401/403 por MCP llegan en inglés (texto del adaptador `@cap-js/mcp`): ¿excepción de R10 como D17/D62, o se corrige? Decisión del usuario.
+- El 401 no trae `WWW-Authenticate`: un cliente MCP no puede descubrir OAuth. Para el Nivel 7 (XSUAA/IAS).
+- Sigue pendiente de antes: probar `countdistinct` en `/IWFND/GW_CLIENT` (D72 punto 2).
+
+**Aprendido (criterio del nivel):** cada tool devuelve `content` (texto compacto para el modelo) + `structuredContent` (JSON): `describe` → `service`/`entities`/`actions`; `query` → `{ count, data }`; función → `{ action, kind, result }`. Un error de negocio es un resultado con `isError: true` (el agente lo lee y corrige); un rechazo de autorización es un error JSON-RPC (`-32001` = 401, `-32003` = 403, `id: null`) con su código HTTP.
 
 ---
 
@@ -534,3 +550,4 @@ Rama: `feature/mcp-nivel-5` (desde `main` = `ffe5efb`). Plan aprobado por el usu
 - 2026-11-16 — MCP Nivel 2: `cds watch` sirve `/mcp/reporte`; prueba del usuario exitosa (3 entidades y las 5 conexiones del mock). Prueba de ocupación (top 3 por asientos ocupados): orden y cifras correctos (`AA 0017`, `SQ 0001`, `LH 0400`). La `query` agrupada con `sum(...) as Ocupados` devolvió las claves sin las sumas y sin error (alias descartado, como en la lección de D43) → motivo para el Nivel 4 (función de negocio en vez de `query` libre). **Nivel 2 cerrado** (pendiente de revisión y merge a `main` por el usuario).
 - 2026-11-17 — MCP Nivel 3: `ReporteAgentService` solo por MCP (`/mcp/reporte-agent`), rol `Visualizador`, `@readonly`, límite 50/200, campos mínimos con descripciones de negocio (D70); `@mcp` fuera de `ReporteService`; R15 con tests en mock y RAP simulado y 2 mutaciones (D71). Prueba del agente 4/4. Lección L1: con la tool MCP bloqueada, el agente leyó el CSV directamente → en producción, solo tools MCP. **Nivel 3 cerrado** y mergeado a `main`.
 - 2026-11-17 — MCP Nivel 4: función `ocupacionPorConexion` en `ReporteAgentService` como tool propia de solo lectura (`per_action_tool`), sumas en el RAP con `$apply` sin alias, % `null` sin vuelos, validación de `aerolinea` (D72, R16); 24 tests y 3 mutaciones nuevas (7/7). Prueba del agente 2/2: ocupación por la tool (más alta `SQ 0001`, 96,8 %) e inyección `LH' or 1 eq 1` rechazada en el handler. **Nivel 4 cerrado** y mergeado a `main`.
+- 2026-11-18 — MCP Nivel 5: MCP Inspector por `npx` en modo CLI contra `/mcp/reporte-agent` (D73). Las 3 tools, la inyección (`isError`) y el 403/401 vistos a mano y registrados en `test/PRUEBAS_MANUALES.md`. Hallazgos: `query` recibe solo `cql`; los 401/403 por MCP en inglés (pendiente de decisión); el 401 sin `WWW-Authenticate` hace que el Inspector intente OAuth y falle en `/register` (Nivel 7).
