@@ -181,14 +181,14 @@ SINROL='Authorization: Basic c2lucm9sOg==' # sinrol: (sin roles)
 | 2 | `describe` (`tools/call --tool-name describe`) | Entidades `Conexiones`, `Vuelos`, `Aeropuertos` y la función, con las descripciones de negocio (`/** */`). |
 | 3 | `query` sobre `Conexiones` con el único argumento `cql` (sentencia `SELECT` en CQL, paso 1) | Filas del mock (`test/data`), solo los campos de la proyección (D70). |
 | 4 | `ocupacionPorConexion` con `aerolinea=LH` | 2 filas: `LH 0400` (314 / 330, **95,2 %**) y `LH 0402` (0 vuelos, 0 / 0, % `null`). |
-| 5 | `ocupacionPorConexion` con `aerolinea=LH' or 1 eq 1` | Error con el mensaje en español de D72 punto 7 ("El código de aerolínea … no es válido…"), sin datos. `sinrol`: 403 (JSON-RPC `-32003`). Sin cabecera: el Inspector intenta OAuth (`/register` 404); `curl`: 401 `-32001` **sin `WWW-Authenticate`** (Nivel 7). Pendiente: idioma del 403/401 por MCP. |
+| 5 | `ocupacionPorConexion` con `aerolinea=LH' or 1 eq 1` | Error con el mensaje en español de D72 punto 7 ("El código de aerolínea … no es válido…"), sin datos. `sinrol`: 403 (JSON-RPC `-32003`). Sin cabecera: el Inspector intenta OAuth (`/register` 404); `curl`: 401 `-32001` **sin `WWW-Authenticate`** (Nivel 7). Idioma del 403/401 por MCP: excepción de R10 (D74). |
 | 6 | `tools/list` con `$SINROL` (6a) y sin cabecera (6c); `curl -i` equivalentes (6b, 6d) | Inspector: no conecta (sin cabecera intenta OAuth). `curl`: **403** `-32003` con `sinrol`, **401** `-32001` sin credenciales. |
 
 **Registro de ejecución**
 
 | Fecha | Etapa | Ejecutó | Resultado (✔ / ✖ + paso) | Observaciones |
 |---|---|---|---|---|
-| 2026-11-18 | MCP 5 | Usuario (1–6a, 6c) · Claude (6b, 6d) | ✔ pasos 1–6d | `tools/list` con alice: 3 tools de solo lectura; `query` recibe `cql`. `describe` devuelve `content` (texto) + `structuredContent` (JSON); con `entities`, campos, claves y `queryLimits` 50/200. `query` con CQL: las 5 conexiones, iguales al CSV. `ocupacionPorConexion` LH: 95.2 y `null`. Inyección: `isError: true` con el mensaje en español, sin datos. `sinrol`: 403 (JSON-RPC `-32003`). Sin cabecera: el Inspector intenta OAuth (`/register` 404); `curl`: 401 `-32001` **sin `WWW-Authenticate`** (Nivel 7). Pendiente: idioma del 403/401 por MCP. |
+| 2026-11-18 | MCP 5 | Usuario (1–6a, 6c) · Claude (6b, 6d) | ✔ pasos 1–6d | `tools/list` con alice: 3 tools de solo lectura; `query` recibe `cql`. `describe` devuelve `content` (texto) + `structuredContent` (JSON); con `entities`, campos, claves y `queryLimits` 50/200. `query` con CQL: las 5 conexiones, iguales al CSV. `ocupacionPorConexion` LH: 95.2 y `null`. Inyección: `isError: true` con el mensaje en español, sin datos. `sinrol`: 403 (JSON-RPC `-32003`). Sin cabecera: el Inspector intenta OAuth (`/register` 404); `curl`: 401 `-32001` **sin `WWW-Authenticate`** (Nivel 7). Idioma del 403/401 por MCP: excepción de R10 (D74). |
 
 **Evidencia (salidas del Inspector)**
 
@@ -404,7 +404,7 @@ Observaciones:
 Observaciones:
 - No conecta: el CLI informa `code: auth_required`, `status: 403` ✔.
 - Dentro viene la respuesta del servidor, que es un **error JSON-RPC** (no un resultado con `isError`, como en el paso 5): `code: -32003`, `"Authorization error (403): Not authorized to access ReporteAgentService."`, `id: null`. El rechazo es de CAP (`@requires: 'Visualizador'`, R15) antes de llegar a MCP, por eso el `id` de la petición no se conoce.
-- **Hallazgo (pendiente de decisión del usuario):** el mensaje llega **en inglés**. Por OData el 403 se traduce con `_i18n/messages_es.properties` (`403=Acceso denegado`), pero el adaptador `@cap-js/mcp` arma su propio texto. Ningún test ni decisión cubre hoy el idioma del 403 por MCP (¿excepción de R10 como D17/D62, o se corrige?).
+- **Hallazgo, resuelto en D74 (excepción de R10, decisión del usuario):** el mensaje llega **en inglés**. Por OData el 403 se traduce con `_i18n/messages_es.properties` (`403=Acceso denegado`), pero el adaptador `@cap-js/mcp` arma su propio texto. Lo consume el agente, no el usuario final.
 
 ```json
 {"error":{"code":"auth_required","message":"Error POSTing to endpoint: {\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32003,\"message\":\"Authorization error (403): Not authorized to access ReporteAgentService.\"},\"id\":null}","status":403}}
@@ -442,7 +442,7 @@ Observaciones:
 - `sinrol` → **HTTP 403**, JSON-RPC `-32003` (igual al paso 6a). Sin credenciales → **HTTP 401**, JSON-RPC `-32001` ✔ (R15).
 - **El 401 no trae cabecera `WWW-Authenticate`** (comprobado: 0 coincidencias). La autorización de MCP espera `WWW-Authenticate` con `resource_metadata` para que el cliente descubra el servidor OAuth; sin ella el Inspector prueba rutas por defecto y termina en `POST /register` → 404 (paso 6c). **Pendiente para el Nivel 7** (autenticación real con XSUAA/IAS).
 - En ambos casos `id: null`, aunque la petición lleva `id: 1`: el rechazo ocurre antes de leer el cuerpo JSON-RPC.
-- Mensajes en inglés (hallazgo del paso 6a, pendiente de decisión del usuario).
+- Mensajes en inglés: excepción de R10 (D74).
 
 6b — `sinrol`:
 

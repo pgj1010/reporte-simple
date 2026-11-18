@@ -22,8 +22,10 @@ Paquete	Para qué sirve	Quién lo usa
 Las 3 tools que crea el adaptador:
 
 describe: metadatos de entidades, acciones y funciones.
-query: lectura de datos (entity, select, where, limit, orderBy, groupBy…). Se traduce a CQN y pasa por service.run(...), así que respeta tus handlers y autorizaciones.
-call_action: llama acciones o funciones unbound.
+query: lectura de datos con un solo argumento, cql: una sentencia SELECT en CQL (p. ej. SELECT CarrierId, ConnectionId FROM Conexiones ORDER BY CarrierId). Se traduce a CQN y pasa por service.run(...), así que respeta tus handlers y autorizaciones. El LIMIT lo pone el servidor según @cds.query.limit.
+call: llama acciones o funciones unbound (tool genérica). Con cds.mcp.per_action_tool: true, cada acción o función es una tool propia con su nombre (p. ej. ocupacionPorConexion) y su descripción.
+
+Nota (corregido el 2026-11-18 con la evidencia del Nivel 5, test/PRUEBAS_MANUALES.md → "MCP — Inspector"): la versión original decía que query recibía entity, select, where, limit, orderBy, groupBy… y que la tool de funciones se llamaba call_action. El tools/list de @cap-js/mcp 1.5.0 muestra que query recibe solo cql y que la tool genérica se llama call. Las menciones a call_action de los Niveles 4 y 5 quedan como en el original.
 
 Límites que debes conocer (según la doc oficial):
 
