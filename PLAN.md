@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** ninguna — MCP Nivel 5 cerrado y mergeado a `main`. Siguiente: Nivel 6 de `PLAN-MCP-ZERO-TO-HERO.md`.
+**Etapa activa:** MCP Nivel 6 — Demo para portafolio (rama `feature/mcp-nivel-6`).
 
 ---
 
@@ -507,6 +507,17 @@ Rama: `feature/mcp-nivel-5` (desde `main` = `ffe5efb`). Plan aprobado por el usu
 - Sigue pendiente de antes: probar `countdistinct` en `/IWFND/GW_CLIENT` (D72 punto 2).
 
 **Aprendido (criterio del nivel):** cada tool devuelve `content` (texto compacto para el modelo) + `structuredContent` (JSON): `describe` → `service`/`entities`/`actions`; `query` → `{ count, data }`; función → `{ action, kind, result }`. Un error de negocio es un resultado con `isError: true` (el agente lo lee y corrige); un rechazo de autorización es un error JSON-RPC (`-32001` = 401, `-32003` = 403, `id: null`) con su código HTTP.
+
+### Nivel 6 — Demo para portafolio
+Rama: `feature/mcp-nivel-6` (desde `main` = `9c931cb`). Estructura aprobada por el usuario el 2026-11-18 (README en inglés, `README.es.md`, servicio como "custom RAP service (Z)", video con el Inspector CLI, `npx cds watch`, prueba cronometrada).
+- [x] **Paso 1** Decisión D75 en `SPEC.md`
+- [ ] **Paso 2** `README.md` → `README.es.md`, con las métricas actualizadas y enlace a la versión en inglés
+- [ ] **Paso 3** Prueba "clonar y correr", cronometrada, en un clon limpio (con y sin `cds-dk` global)
+- [ ] **Paso 4** `README.md` en inglés (problema, solución, diagrama, preguntas reales, seguridad con evidencia de los Niveles 3–5, cómo correrlo, capturas marcadas para el usuario) → **revisión del usuario**
+- [ ] **Paso 5** Guion del video y capturas (después de la revisión del README)
+
+### Decisiones de la etapa (Nivel 6)
+- D75 — README en inglés + `README.es.md`; servicio de origen como "a custom RAP service (Z)"; video con el Inspector CLI (reemplaza D73 punto 3); `npx -p @sap/cds-dk@^10 cds watch` como alternativa; prueba cronometrada de "clonar y correr"; capturas marcadas para el usuario. Decisiones del usuario.
 
 ---
 
