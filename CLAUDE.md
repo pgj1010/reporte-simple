@@ -48,7 +48,7 @@ Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etap
 
 ## Sistema origen (RAP)
 
-> Los datos internos aparecen como marcadores (`<S4_HOST>`, `<S4_CLIENTE>`, `<CF_ORG>`…, D67). Los valores reales están en **`LOCAL.md`** (no versionado, solo en el Dev Space); dónde se configura cada uno: `README.md` → *Configuración*. Nunca volver a escribir los valores reales en archivos versionados.
+> Los datos internos aparecen como marcadores (`<S4_HOST>`, `<S4_CLIENTE>`, `<CF_ORG>`…, D67). Los valores reales están en **`LOCAL.md`** (no versionado, solo en el Dev Space); dónde se configura cada uno: `README.md` → *Configuration (deployment)* (en español: `README.es.md` → *Configuración (despliegue)*). Nunca volver a escribir los valores reales en archivos versionados.
 
 | Dato | Valor |
 |---|---|
@@ -85,6 +85,7 @@ reporte-simple/
 ## Reglas de desarrollo
 
 - Para dudas de CAP o del modelo CDS, usa primero las tools del servidor MCP cds-mcp (search_model, search_docs) antes de suponer.
+- **README.md (inglés) es la fuente; cada cambio se replica en README.es.md en el mismo commit** (D76). Traducción fiel: misma estructura, diagrama, tablas y métricas; los términos técnicos (MCP, CAP, RAP, OData, tools) quedan en inglés.
 - **No editar** `srv/external/*.cds`. Para regenerar: `cds import <archivo>.edmx --as cds --force`.
 - Exponer entidades remotas como proyecciones `@readonly` en `srv/service.cds`.
 - Lecturas remotas delegadas en `service.ts` con `this.on('READ', [...], req => remote.run(req.query))`. **Excepción, totales (D43):** las lecturas con `$apply` se reenvían tal cual al backend (`remote.send({ method: 'GET', path: req.req.url })`), porque CAP no delega `$apply`; el mock las resuelve con `cds.odata.parse`. Mientras exista ese reenvío, **ninguna entidad puede tener `@restrict` con `where`** (el reenvío no lo aplicaría): lo vigila un test.
@@ -126,6 +127,7 @@ reporte-simple/
 - **La tabla analítica de Fiori V4 (`AnalyticalTable`) necesita `concat`, `top` y `$count` en `$apply`** (pide `concat` anidado con `groupby(...)/aggregate($count as UI5__count)` y `.../top(n)`), no solo `aggregate`/`groupby`/`filter`. El Gateway de este S/4 rechaza los tres (2026-11-10, D46/D47). Preguntar al inicio de cada reporte si el Gateway los soporta; si no, **totales en la cabecera del detalle o en indicadores** (una petición `groupby/aggregate` desde el handler, D47) y tabla responsive.
 - En un handler, **dentro de `$batch`** (como pide Fiori) `req.http.req` es el **sobre** (`/$batch`), no la sub-petición: para la URL de la lectura usar `req.req.url`. Probar siempre también con `$batch`.
 - Con `$apply=concat(A,B)`, el adaptador OData de CAP **ya separa** el `concat` y llama al handler **una vez por rama** (con la CQN de esa rama), pero `req.req.url` trae la URL completa: reenviarla tal cual duplica el resultado (D46).
+- **En GitHub Actions `cds` colorea su salida aunque no escriba en una terminal** (2026-11-18, CI rojo en `bcb11e1`): `cds env get features.test_mocks` devolvió `\x1B[33mfalse\x1B[39m` y el test comparaba con `'false'` (en local salía en verde). Se reproduce con `FORCE_COLOR=1`. Todo proceso hijo cuya salida se compara se lanza con `SIN_COLOR` (`NO_COLOR=1`, `FORCE_COLOR=0`) y su salida pasa por `sinAnsi` (`test/helpers.ts`): `cdsCli`, `test/rap-simulado.ts` y `test/mutacion.ts`. Los tests nuevos que lean salida de un proceso usan esos helpers; nunca comparar texto de consola sin limpiarlo.
 - Con el plugin UI5 activo, `node --test` no termina (el livereload deja el proceso abierto): `npm test` corre con `CDS_PLUGIN_UI5_ACTIVE=false` (D12).
 - `cds.test` necesita `@cap-js/cds-test` y, para simular el servicio remoto, los argumentos `--with-mocks --in-memory`.
 - TypeScript 6+ ya no carga `@types/*` automáticamente: `tsconfig.json` declara `"types": ["node", "@cap-js/cds-types"]`. No mapear `@sap/cds` en `paths`: el runtime lo resolvería al `.d.ts`.

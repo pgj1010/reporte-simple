@@ -25,7 +25,7 @@ describe: metadatos de entidades, acciones y funciones.
 query: lectura de datos con un solo argumento, cql: una sentencia SELECT en CQL (p. ej. SELECT CarrierId, ConnectionId FROM Conexiones ORDER BY CarrierId). Se traduce a CQN y pasa por service.run(...), así que respeta tus handlers y autorizaciones. El LIMIT lo pone el servidor según @cds.query.limit.
 call: llama acciones o funciones unbound (tool genérica). Con cds.mcp.per_action_tool: true, cada acción o función es una tool propia con su nombre (p. ej. ocupacionPorConexion) y su descripción.
 
-Nota (corregido el 2026-11-18 con la evidencia del Nivel 5, test/PRUEBAS_MANUALES.md → "MCP — Inspector"): la versión original decía que query recibía entity, select, where, limit, orderBy, groupBy… y que la tool de funciones se llamaba call_action. El tools/list de @cap-js/mcp 1.5.0 muestra que query recibe solo cql y que la tool genérica se llama call. Las menciones a call_action de los Niveles 4 y 5 quedan como en el original.
+Nota (corregido el 2026-11-18 con la evidencia del Nivel 5, test/PRUEBAS_MANUALES.md → "MCP — Inspector"): la versión original decía que query recibía entity, select, where, limit, orderBy, groupBy… y que la tool de funciones se llamaba call_action. El tools/list de @cap-js/mcp 1.5.0 muestra que query recibe solo cql y que la tool genérica se llama call. Las menciones a call_action de los Niveles 4 y 5 también se corrigieron, con su nota.
 
 Límites que debes conocer (según la doc oficial):
 
@@ -106,7 +106,7 @@ Luego quita @mcp del servicio original (Nivel 2). Los comentarios /** ... */ le 
 
 ✅ Criterio: el agente solo ve ReporteAgentService, no puede escribir y entiende para qué sirve cada campo.
 
-Nivel 4 — Acciones de negocio (call_action)
+Nivel 4 — Acciones de negocio (call o tool propia con per_action_tool)
 
 Las preguntas frecuentes van mejor como funciones con lógica controlada, no como queries libres.
 
@@ -125,13 +125,17 @@ Implementa el handler en TypeScript (srv/agent-service.ts) con un SELECT ... GRO
 
 Prueba: claude "Dame el resumen por <criterio> y dime cuál es el más alto".
 
-✅ Criterio: Claude llama call_action y razona sobre el resultado.
+✅ Criterio: Claude llama la función (por la tool genérica call, o por su tool propia si per_action_tool: true) y razona sobre el resultado.
+
+Nota (corregido el 2026-11-18 con la evidencia del Nivel 5, test/PRUEBAS_MANUALES.md → "MCP — Inspector"): el original decía call_action; la tool genérica de @cap-js/mcp 1.5.0 se llama call.
 
 Nivel 5 — Inspeccionar como profesional
 bash
 npx @modelcontextprotocol/inspector
 
-Elige Streamable HTTP, conéctate a tu endpoint y prueba cada tool a mano (describe, query, call_action).
+Elige Streamable HTTP, conéctate a tu endpoint y prueba cada tool a mano (describe, query y call, o la tool propia de cada función con per_action_tool: true; en este proyecto, ocupacionPorConexion).
+
+Nota (corregido el 2026-11-18 con la evidencia del Nivel 5, test/PRUEBAS_MANUALES.md → "MCP — Inspector"): el original decía call_action; el tools/list de @cap-js/mcp 1.5.0 muestra describe, query y ocupacionPorConexion (con per_action_tool: true).
 
 ✅ Criterio: sabes qué JSON recibe y devuelve cada tool. Esto te sirve para depurar y para entrevistas.
 

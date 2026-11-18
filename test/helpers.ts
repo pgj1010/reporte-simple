@@ -1,7 +1,7 @@
 // Utilidades comunes de los tests (no es un archivo de test: no termina en .test.ts).
 import cds from '@sap/cds';
 import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { promisify, stripVTControlCharacters } from 'node:util';
 
 export const raiz = import.meta.dirname + '/..';
 
@@ -22,9 +22,22 @@ export async function estado(peticion: Promise<{ status: number }>): Promise<num
   }
 }
 
-/** Ejecuta el CLI `cds` (cds-dk global) en la raíz del proyecto, sin tsx (D13). */
-export const cdsCli = (args: string[], env: Record<string, string> = {}) =>
-  promisify(execFile)('cds', args, { cwd: raiz, env: { ...process.env, CDS_TYPESCRIPT: 'false', ...env } });
+/** Env para procesos hijo cuya salida se compara: sin colores ANSI. En GitHub Actions `cds` colorea
+ *  aunque la salida no sea una terminal (`false` → `\x1B[33mfalse\x1B[39m`); FORCE_COLOR=0 gana a un
+ *  FORCE_COLOR del entorno y NO_COLOR cubre a las librerías que solo miran esa variable. */
+export const SIN_COLOR = { NO_COLOR: '1', FORCE_COLOR: '0' } as const;
+
+/** Quita los códigos ANSI (colores, estilos) de una salida de consola, por si algún proceso los ignora. */
+export const sinAnsi = (texto: string) => stripVTControlCharacters(texto);
+
+/** Ejecuta el CLI `cds` (cds-dk global) en la raíz del proyecto, sin tsx (D13) y sin colores
+ *  (`SIN_COLOR` en el env y `sinAnsi` sobre stdout/stderr), para comparar su salida tal cual. */
+export const cdsCli = async (args: string[], env: Record<string, string> = {}) => {
+  const r = await promisify(execFile)('cds', args, {
+    cwd: raiz, env: { ...process.env, CDS_TYPESCRIPT: 'false', ...SIN_COLOR, ...env },
+  });
+  return { stdout: sinAnsi(r.stdout), stderr: sinAnsi(r.stderr) };
+};
 
 /** Ejecuta una petición que debe fallar y devuelve el código HTTP y el código de error OData. */
 export async function rechazo(peticion: Promise<unknown>): Promise<{ status: number; code?: string }> {

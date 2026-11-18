@@ -9,7 +9,7 @@ Reglas del plan (ver `CLAUDE.md`):
 - Cada decisión propia se anota en **"Decisiones de la etapa"** en el momento de tomarla (y en `SPEC.md`).
 - Al cerrar la etapa: marcar `[x]`, listar decisiones (regla afectada + qué pasaría si fueran al revés), actualizar "Etapa activa" y la Bitácora.
 
-**Etapa activa:** ninguna — MCP Nivel 5 cerrado y mergeado a `main`. Siguiente: Nivel 6 de `PLAN-MCP-ZERO-TO-HERO.md`.
+**Etapa activa:** MCP Nivel 6 cerrado en `feature/mcp-nivel-6`, **pendiente de merge por Pull Request en GitHub** (decisión del usuario). Siguiente: Nivel 7 de `PLAN-MCP-ZERO-TO-HERO.md`.
 
 ---
 
@@ -508,6 +508,44 @@ Rama: `feature/mcp-nivel-5` (desde `main` = `ffe5efb`). Plan aprobado por el usu
 
 **Aprendido (criterio del nivel):** cada tool devuelve `content` (texto compacto para el modelo) + `structuredContent` (JSON): `describe` → `service`/`entities`/`actions`; `query` → `{ count, data }`; función → `{ action, kind, result }`. Un error de negocio es un resultado con `isError: true` (el agente lo lee y corrige); un rechazo de autorización es un error JSON-RPC (`-32001` = 401, `-32003` = 403, `id: null`) con su código HTTP.
 
+### Nivel 6 — Demo para portafolio ✅
+Rama: `feature/mcp-nivel-6` (desde `main` = `9c931cb`). Estructura aprobada por el usuario el 2026-11-18 (README en inglés, `README.es.md`, servicio como "custom RAP service (Z)", video con el Inspector CLI, `npx cds watch`, prueba cronometrada).
+- [x] **Paso 1** Decisión D75 en `SPEC.md`
+- [x] **Paso 2** `README.md` → `README.es.md` (`git mv`, conserva el historial), con las métricas actualizadas (16 reglas, 243 tests en 26 archivos, 7/7 mutaciones, 75 decisiones, niveles MCP) y enlace "English version". El enlace queda roto hasta el paso 4. `npm test` 243/243
+- [x] **Paso 3** Prueba "clonar y correr", cronometrada (Claude, 2026-11-18, en BAS), sobre un `git clone` limpio de la rama en el scratchpad (sin `LOCAL.md` ni archivos ignorados):
+  - `npm i -g @sap/cds-dk@^10` (en un prefijo aparte, caché vacía): **2 s**. `npm ci` (caché vacía): **4 s**, 744 paquetes. `npm test` con `cds-dk` global: **12 s**, 243/243.
+  - **Sin `cds-dk` global, `npm test` no sirve:** los tests de producción simulada (D43, R4, R5…) arrancan un proceso aparte con el `cds` global (D68) y esperan 60 s cada uno antes de fallar; se cortó la corrida. → El README pide `cds-dk` global para los tests.
+  - **`CDS_TYPESCRIPT=false npx -y -p @sap/cds-dk@^10 cds watch`** sin `cds-dk` global: listo en **5 s**; `/mcp/reporte-agent` responde `tools/list` con `describe`, `query` y `ocupacionPorConexion` (alice) y `/odata/v4/reporte/Conexiones` devuelve las 5 conexiones del mock. → Alternativa válida para **correr** la app, no para los tests.
+  - Total de máquina < 30 s en BAS. La red de BAS es rápida: en un equipo con conexión doméstica las descargas tardarán más, pero quedan lejos de los 5 minutos del criterio.
+- [x] **Paso 4** `README.md` en inglés (problema, solución con las dos puertas OData/MCP, diagrama Mermaid, 3 preguntas reales + 2 rechazos, seguridad con evidencia de los Niveles 3–5 y lo no resuelto, capturas ⏳ del usuario, cómo correrlo con los tiempos medidos, `npx cds watch`, Inspector CLI, stack, decisiones, métricas, configuración, cómo se construyó, roadmap). Servicio de origen como "a custom RAP service (Z)": sin `ZMAKS` ni datos internos (revisado con `grep`); `npm audit` 0. → **En revisión del usuario**. Tras la primera revisión: `README.es.md` reemplazado por la traducción fiel del README en inglés y regla de sincronización en `CLAUDE.md` (D76). Segunda revisión: sección "Highlights" / "Puntos destacados" (4 viñetas del usuario) tras la línea principal y "with Claude Code as my pair programmer"; sin sección de autor
+- [x] **Paso 4b** README aprobado por el usuario (2026-11-18)
+- [x] **Paso 5** Guion del video en `docs/VIDEO.md` (~2:40, narración en inglés, Inspector CLI, 3 preguntas + rechazo de la inyección + 403, listas de antes y después de grabar) y dos capturas nuevas en `docs/img/CAPTURAS.md` (`agente-claude-code.png`, `inspector-cli.png`, con revisión de terminal). Las 5 capturas y el video los hace el usuario
+- [x] **Paso 6** Cierre: `npm test` 243/243, `tsc --noEmit -p tsconfig.test.json` OK, `test:mutacion` 7/7, `npm audit` 0; informe de cierre. **Sin merge:** el usuario lo hará con un Pull Request en GitHub
+
+### Decisiones de la etapa (Nivel 6)
+- D75 — README en inglés + `README.es.md`; servicio de origen como "a custom RAP service (Z)"; video con el Inspector CLI (reemplaza D73 punto 3); `npx -p @sap/cds-dk@^10 cds watch` como alternativa; prueba cronometrada de "clonar y correr"; capturas marcadas para el usuario. Decisiones del usuario.
+- D75 (6)–(9) — Propuestas propias al escribir el README: capturas pendientes sin imágenes rotas (+2 nuevas), ejemplos traducidos y resumidos con datos del mock, aviso de que MCP solo se probó en local, configuración en inglés. Pendientes de la revisión del usuario.
+- D76 — `README.md` (inglés) es la fuente; `README.es.md` pasa a ser su traducción fiel y completa (reemplaza el README anterior). Regla nueva en `CLAUDE.md`: cada cambio se replica en el mismo commit. Decisión del usuario; adaptaciones propias en los ejemplos (pregunta 3 con el texto original).
+
+### Informe de cierre — Nivel 6 (2026-11-18)
+| Decisión | Regla que afecta | Si fuera al revés |
+|---|---|---|
+| D75 (1)/D76 — `README.md` en inglés como fuente y `README.es.md` como traducción fiel, sincronizados en el mismo commit (usuario) | Proceso (portafolio), regla nueva de `CLAUDE.md` | Con un solo idioma se pierde una audiencia; con dos README independientes, las métricas y la seguridad se desfasarían |
+| D75 (2) — servicio de origen como "a custom RAP service (Z)" en el README, sin tocar el código (usuario) | D67 | El prefijo Z del nombre técnico podría identificar a una empresa o consultor |
+| D75 (3) — video con el Inspector CLI (usuario; reemplaza D73 punto 3) | D73 | La grabación dependería de la configuración de puertos de BAS, sin verificar |
+| D75 (4) — `npx cds watch` documentado solo para correr; `cds-dk` global para los tests; tiempos medidos (usuario + resultado de la prueba) | Criterio del nivel ("5 minutos") | Sin la prueba, el README prometería que `npx` basta y `npm test` fallaría tras minutos de esperas |
+| D75 (5)/(6) — capturas marcadas ⏳ para el usuario y enlaces en comentario HTML (usuario + propia) | Proceso (portafolio) | El repo público mostraría imágenes rotas |
+| D75 (7) — ejemplos = pruebas reales del agente, resumidas, con datos del mock; pregunta 3 con el texto original (propia, D76) | Técnica 13 (evidencia) | Con texto inventado, el README atribuiría al agente respuestas que no dio |
+| D75 (8) — el README dice que MCP solo se probó en local y lista lo no resuelto (propia) | Nivel 7, L1 | Un cliente podría creer que el servidor MCP ya funciona en producción contra S/4 |
+| D75 (9) — sección de configuración en inglés, con la referencia de `CLAUDE.md` corregida (propia) | D67 | `CLAUDE.md` remitiría a una sección que ya no existe |
+
+**Pendientes:**
+- **Del usuario:** tomar las 5 capturas (`docs/img/CAPTURAS.md`) y descomentar el bloque de imágenes en **los dos** README; grabar el video (`docs/VIDEO.md`) y enlazarlo en los dos README; abrir el Pull Request de `feature/mcp-nivel-6` → `main`.
+- **Abierto (decidir antes de grabar):** `@mcp.instructions` pide *"Responde en español"*, así que el agente contestará en español en un video narrado en inglés. Opciones: subtítulos, preguntar en español, o cambiar la instrucción (cambio de código y de R15).
+- Siguen: 401 sin `WWW-Authenticate` (Nivel 7) y `countdistinct` en `/IWFND/GW_CLIENT` (D72).
+
+`npm test` 243/243, `tsc` OK, mutaciones 7/7, `npm audit` 0. Prueba de clonar y correr: < 30 s de máquina en BAS.
+
 ---
 
 ## Bitácora
@@ -551,4 +589,6 @@ Rama: `feature/mcp-nivel-5` (desde `main` = `ffe5efb`). Plan aprobado por el usu
 - 2026-11-17 — MCP Nivel 3: `ReporteAgentService` solo por MCP (`/mcp/reporte-agent`), rol `Visualizador`, `@readonly`, límite 50/200, campos mínimos con descripciones de negocio (D70); `@mcp` fuera de `ReporteService`; R15 con tests en mock y RAP simulado y 2 mutaciones (D71). Prueba del agente 4/4. Lección L1: con la tool MCP bloqueada, el agente leyó el CSV directamente → en producción, solo tools MCP. **Nivel 3 cerrado** y mergeado a `main`.
 - 2026-11-17 — MCP Nivel 4: función `ocupacionPorConexion` en `ReporteAgentService` como tool propia de solo lectura (`per_action_tool`), sumas en el RAP con `$apply` sin alias, % `null` sin vuelos, validación de `aerolinea` (D72, R16); 24 tests y 3 mutaciones nuevas (7/7). Prueba del agente 2/2: ocupación por la tool (más alta `SQ 0001`, 96,8 %) e inyección `LH' or 1 eq 1` rechazada en el handler. **Nivel 4 cerrado** y mergeado a `main`.
 - 2026-11-18 — MCP Nivel 5: MCP Inspector por `npx` en modo CLI contra `/mcp/reporte-agent` (D73). Las 3 tools, la inyección (`isError`) y el 403/401 vistos a mano y registrados en `test/PRUEBAS_MANUALES.md`. Hallazgos: `query` recibe solo `cql`; los 401/403 por MCP en inglés (pendiente de decisión); el 401 sin `WWW-Authenticate` hace que el Inspector intente OAuth y falle en `/register` (Nivel 7).
-- 2026-11-18 — Después del cierre del Nivel 5 (en `main`, a pedido del usuario): D74, los 401/403 del servidor MCP en inglés son excepción de R10 (como D17/D62). `PLAN-MCP-ZERO-TO-HERO.md` Nivel 0 corregido con la evidencia del Nivel 5: `query` recibe solo `cql`; las funciones van por `call` o por una tool propia con `per_action_tool`, no `call_action`.
+- 2026-11-18 — Después del cierre del Nivel 5 (en `main`, a pedido del usuario): D74, los 401/403 del servidor MCP en inglés son excepción de R10 (como D17/D62). `PLAN-MCP-ZERO-TO-HERO.md` Niveles 0, 4 y 5 corregidos con la evidencia del Nivel 5: `query` recibe solo `cql`; las funciones van por `call` o por una tool propia con `per_action_tool`, no `call_action`.
+- 2026-11-18 — MCP Nivel 6: README en inglés para portafolio (Highlights, dos puertas OData/MCP, Mermaid, preguntas reales, seguridad con evidencia y límites, cómo correrlo con tiempos medidos) y `README.es.md` como traducción fiel (D75, D76; regla de sincronización en `CLAUDE.md`). Guion del video (`docs/VIDEO.md`) y capturas de MCP en `docs/img/CAPTURAS.md`. Hallazgo: sin `cds-dk` global `npm test` falla (los tests de producción simulada usan el `cds` global). Merge pendiente por Pull Request.
+- 2026-11-18 — CI rojo en `bcb11e1` (en local verde): en GitHub Actions `cds env get` devolvía `false` con códigos ANSI de color y `test/r7-produccion.test.ts` comparaba con `'false'`. Corrección en `feature/mcp-nivel-6`: `SIN_COLOR` (`NO_COLOR=1`, `FORCE_COLOR=0`) y `sinAnsi` en `test/helpers.ts`, aplicados a `cdsCli` (R4, R5, R7), `test/rap-simulado.ts` (sus regex sobre el log) y `test/mutacion.ts`. Lección en `CLAUDE.md`.

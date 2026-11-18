@@ -4,158 +4,269 @@
 ![SAP CAP](https://img.shields.io/badge/SAP%20CAP-Node.js%2010-0FAAFF)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6)
 ![Node](https://img.shields.io/badge/Node-24-339933)
-![Licencia MIT](https://img.shields.io/badge/licencia-MIT-green)
+![MCP](https://img.shields.io/badge/MCP-%40cap--js%2Fmcp-6E56CF)
+![License MIT](https://img.shields.io/badge/license-MIT-green)
 
-Reporte **Fiori Elements** de solo lectura sobre **SAP BTP** que lee en vivo un servicio **RAP (OData V4)** de un **S/4HANA on‑premise**, construido con **SAP CAP en TypeScript**. Además de ser un reporte, sirve como **base reutilizable** para los siguientes: reglas verificadas por tests, decisiones documentadas y lecciones aprendidas.
+**[Versión en español](README.es.md)**
 
-> Todo el proyecto, desde el análisis del servicio hasta el despliegue en Cloud Foundry, se construyó junto a **Claude Code**, con un proceso explícito de reglas, planes por etapa y aprobaciones. Ver [Cómo lo construí con Claude Code](#cómo-lo-construí-con-claude-code).
+**A read-only SAP Fiori report and an MCP server for AI agents, built on one SAP CAP service (TypeScript) that reads live data from an S/4HANA on‑premise RAP API.**
+
+## Highlights
+
+- One CAP service, two doors: OData for Fiori, MCP for AI agents
+- Live S/4HANA data, clean core, nothing replicated
+- Security tested: 401/403, read-only, injection rejected, 7/7 mutations
+- Built with Claude Code under written rules and approvals
+
+Business users open a Fiori Elements report. AI agents (Claude Code today, Joule or others later) ask questions in natural language through the **Model Context Protocol (MCP)**. Both go through the same thin, read-only CAP layer, with the same SAP role, and no data is copied out of S/4HANA.
+
+> The whole project, from analysing the source service to deploying on Cloud Foundry and exposing it to agents, was built together with **Claude Code**, following written rules, staged plans and explicit approvals. See [How I built it with Claude Code](#how-i-built-it-with-claude-code).
 
 ---
 
-## El problema
+## The problem
 
-Una empresa con S/4HANA on‑premise necesita reportes web para usuarios de negocio sin ensuciar el núcleo del ERP (**clean core**) y sin copiar los datos a otra base:
+A company running S/4HANA on‑premise wants web reports for business users, and now also wants AI agents to answer questions about the same data, without breaking the **clean core**:
 
-- Los datos viven en el S/4, detrás del firewall. BTP debe leerlos **en vivo**, sin RFC, sin acceso directo a tablas y sin credenciales en el código.
-- El servicio RAP de origen no basta para Fiori tal cual: sus anotaciones `@UI` llegan con un alias que CAP no reconoce (la tabla sale **sin columnas**), los value helps apuntan a otros servicios, los decimales se pierden al importar y **CAP no delega los totales (`$apply`)** al backend.
-- Cada reporte nuevo no debería repetir esos tropiezos.
+- The data lives in S/4HANA, behind the firewall. SAP BTP must read it **live**: no RFC, no direct table access, no data replication, no credentials in code.
+- The source is **a custom RAP service (Z)** that is not Fiori-ready as it is: its `@UI` annotations use an alias CAP does not recognise (the table renders **without columns**), its value helps point to services `cds import` does not bring, decimals are lost on import, and **CAP does not delegate totals (`$apply`)** to a remote service.
+- An AI agent must not get an open proxy to the ERP. It needs a **small, documented, read-only surface** with the same authorisation as the users.
 
-**La solución:** una capa CAP delgada, de solo lectura, que delega cada lectura al RAP mediante una *destination* de BTP y el Cloud Connector. La presentación (columnas, filtros, textos, F4, totales) se define en CAP a partir de una tabla de **semántica del reporte**, y cada regla tiene su test.
+## The solution
 
-## Capturas
+A thin CAP service in TypeScript with **two doors over the same delegation to RAP**:
 
-> Tomadas en local con **datos simulados** (`test/data/`), nunca con datos reales.
-
-| Lista de conexiones | Detalle con totales y vuelos | Value help de aeropuertos |
+| Door | For | What it exposes |
 |---|---|---|
-| ![Lista de conexiones](docs/img/lista-conexiones.png) | ![Detalle de una conexión](docs/img/detalle-conexion.png) | ![Value help de aeropuertos](docs/img/f4-aeropuertos.png) |
+| **OData V4** `/odata/v4/reporte` | Fiori Elements (List Report + Object Page) | Connections, flights and an airport value help; totals computed by S/4 in one request |
+| **MCP** `/mcp/reporte-agent` | AI agents | A **dedicated** `ReporteAgentService`: only business fields, business descriptions, three read-only tools (`describe`, `query`, `ocupacionPorConexion`) |
 
-## Arquitectura
+Every read is delegated to RAP through a BTP destination and the Cloud Connector. Presentation (columns, filters, texts, value helps, totals) is defined in CAP from a **report semantics** table in [`SPEC.md`](SPEC.md), and every rule has a test.
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    U(["Usuario de negocio<br/>rol Visualizador"]) --> WZ
+    U(["Business user<br/>role Visualizador"]) --> FE["Fiori Elements V4<br/>List Report + Object Page"]
+    AG(["AI agent<br/>Claude Code · Joule"]) -- "MCP (Streamable HTTP)" --> MCPS
 
-    subgraph BTP["SAP BTP · Cloud Foundry"]
-        WZ["Managed app router<br/>Work Zone + HTML5 repo"] --> FE["App Fiori Elements V4<br/>List Report + Object Page"]
-        FE -- "OData V4 (ruta relativa)" --> CAP["Servicio CAP · TypeScript<br/>ReporteService @readonly<br/>@requires: Visualizador"]
-        XSUAA[("XSUAA<br/>JWT + rol")] -.-> CAP
-        CAP -- "remote.run / $apply reenviado" --> DEST["Destination<br/>S4_BACKEND"]
-        DEST --> CONN["Connectivity service"]
+    subgraph CAP["SAP CAP · TypeScript · BTP Cloud Foundry"]
+        FE -- "OData V4" --> RS["ReporteService<br/>@readonly · @requires Visualizador"]
+        MCPS["ReporteAgentService · /mcp/reporte-agent<br/>@mcp · @readonly · @requires Visualizador<br/>tools: describe · query · ocupacionPorConexion"]
     end
 
-    CONN -- "túnel seguro" --> SCC
+    RS -- "destination + Cloud Connector" --> RAP
+    MCPS -- "same delegation ($apply for totals)" --> RAP
 
-    subgraph OnPrem["On‑premise"]
-        SCC["SAP Cloud Connector"] --> GW["S/4HANA · Gateway OData V4"]
-        GW --> RAP["RAP: Conexiones → _Flight → Vuelos<br/>+ F4 de aeropuertos"]
+    subgraph S4["S/4HANA on‑premise"]
+        RAP["Custom RAP service (Z), OData V4<br/>Connections → Flights"]
     end
 
-    subgraph Dev["Desarrollo y CI (sin S/4)"]
-        MOCK["CSV en test/data/<br/>+ RAP simulado en localhost"]
-    end
-    CAP -. "sin perfil production" .-> MOCK
+    CAP -. "dev / CI: no S/4" .-> MOCK[("CSV mock data<br/>+ simulated RAP")]
 ```
 
-- **En producción** CAP no guarda datos: cada lectura (filtros, orden, paginación, navegación `/_Flight`) se delega al RAP. Los totales de la cabecera son **una sola petición** `filter/groupby/aggregate` que calcula el RAP.
-- **En desarrollo y en CI** el mismo servicio responde con CSV y con un RAP simulado que imita las limitaciones del Gateway real (sin `concat`, sin `top` en `$apply`). Los CSV nunca viajan al build de producción, y un test lo verifica.
+- **In production** CAP stores no data: filters, sorting, paging and navigation are delegated to RAP. Totals are **one** `filter/groupby/aggregate` request computed by S/4 (decision D43).
+- **In development and CI** the same services answer from CSV files and from a simulated RAP that reproduces the real Gateway's limits (no `concat`, `top` or `$count` inside `$apply`). The CSV files never reach the production build, and a test checks it.
+- **Status:** the Fiori report has been deployed to Cloud Foundry and tested against the real RAP service. The MCP server has **only been run locally with mock data**; taking it to production is a design topic (see [Roadmap](#roadmap-towards-production)).
+
+## Ask the data: real examples
+
+These come from recorded agent test runs (Claude Code connected to `/mcp/reporte-agent`, mock data, user `alice`). The originals were in Spanish; they are translated and summarised here. The full logs are in [`PLAN.md`](PLAN.md) (MCP levels 3 and 4).
+
+**1. A simple question.** *"Which routes does Lufthansa operate?"*
+> The agent queried `Conexiones` and joined them with `Aeropuertos` to name the airports: **LH 0400** and **LH 0402**, both Frankfurt (FRA) → New York (JFK), with departures at 10:10 and 13:30 in the mock data. It pointed out that the times are local.
+
+**2. A question with a filter.** *"What is the seat occupancy of AA 0017?"*
+> Two flights: **96.6 %** on 1 Dec 2026 (372 / 385) and **52.2 %** on 15 Dec 2026 (201 / 385). The agent applied the formula from the entity description (`SeatsOccupied / SeatsMax`).
+
+**3. A business summary through a dedicated tool.** *"Show me the occupancy by connection. Which one is the highest?"*
+> The agent called `ocupacionPorConexion` (no free query, no file reads): highest **SQ 0001** (SFO → SIN, 460 / 475, **96.8 %**), then LH 0400 (95.2 %), AA 0017 (74.4 %) and UA 0058 (72.3 %). **LH 0402 has no flights**, so its percentage is empty (`null`) and not 0 %.
+
+And two things the agent **could not** do:
+- *"Change the price of SQ 0001."* The `query` tool only accepts `SELECT`; the price stayed at 849 SGD.
+- *Calling `ocupacionPorConexion` with `aerolinea: "LH' or 1 eq 1"`.* The handler rejects the value before building the request to S/4, with a readable message the agent can act on.
+
+## Security by design
+
+What was **tested**, and where to find the evidence:
+
+| Control | How | Evidence |
+|---|---|---|
+| Dedicated service, minimal fields | `ReporteAgentService` projects only business fields, with no internal texts or UI-only totals (D70) | `describe` output, [`test/PRUEBAS_MANUALES.md`](test/PRUEBAS_MANUALES.md) → *MCP — Inspector*, step 2b |
+| Read-only | `@readonly` on the service, and `query` accepts only `SELECT` | Agent test: `UPDATE` rejected (MCP level 3); mutation tests that remove `@readonly` must fail (R15) |
+| Same SAP role as the report | `@requires: 'Visualizador'`, enforced by CAP, with no custom authorisation code | `curl`: **401** (`-32001`) without credentials, **403** (`-32003`) without the role (Inspector step 6); tests R15 and R16 |
+| Tools marked read-only | Each function is its own tool (`per_action_tool`) with `readOnlyHint: true`, instead of a generic `call` tool marked destructive (D72) | `tools/list` output (Inspector step 1) |
+| Input validation | `aerolinea` must match `^[A-Z0-9]{2,3}$` before it is used in the request to S/4 | Injection rejected with `isError: true` and no data (Inspector step 5); tests R16 |
+| Bounded answers | 50 rows by default, 200 maximum (`@cds.query.limit`), announced to the agent | `queryLimits` in `describe` (Inspector step 2b) |
+| Tests that test the tests | **7/7 mutations** detected: remove `@readonly`/`@requires` from both services, `function` → `action`, totals without `$apply` | `npm run test:mutacion` |
+
+What is **not solved yet**, said plainly:
+- **Authentication is development-only.** Locally, a mock user (`alice`) is used. The 401 does not send a `WWW-Authenticate` header, so an MCP client cannot discover OAuth (the Inspector falls back to `POST /register` → 404). Real authentication (XSUAA/IAS) is a design topic.
+- **An agent may look for data elsewhere.** In one test run, a tool call was blocked by the client's permission prompt, and the agent read the mock CSV file directly (lesson L1 in [`SPEC.md`](SPEC.md)). In production the agent must only have the MCP tools.
+- **No built-in protection against prompt injection** in returned data, and no governance (rate limits, audit). SAP recommends the MCP Gateway of SAP Integration Suite for that.
+
+## Screenshots
+
+> All screenshots are taken locally with **mock data** (`test/data/`), never with real data. Steps: [`docs/img/CAPTURAS.md`](docs/img/CAPTURAS.md).
+
+| | Screenshot | Status |
+|---|---|---|
+| 1 | Fiori List Report of connections | ⏳ **to be taken by the owner** |
+| 2 | Object Page with totals and flights | ⏳ **to be taken by the owner** |
+| 3 | Airport value help | ⏳ **to be taken by the owner** |
+| 4 | Claude Code answering question 3 (`ocupacionPorConexion`) | ⏳ **to be taken by the owner** |
+| 5 | MCP Inspector CLI: `tools/call ocupacionPorConexion` JSON | ⏳ **to be taken by the owner** |
+
+<!-- When the PNG files exist in docs/img/, replace the table above with:
+| List of connections | Detail with totals and flights | Airport value help |
+|---|---|---|
+| ![List of connections](docs/img/lista-conexiones.png) | ![Connection detail](docs/img/detalle-conexion.png) | ![Airport value help](docs/img/f4-aeropuertos.png) |
+
+| Agent answering through MCP | MCP Inspector (CLI) |
+|---|---|
+| ![Claude Code](docs/img/agente-claude-code.png) | ![MCP Inspector](docs/img/inspector-cli.png) |
+-->
+
+## Run it locally
+
+Measured on a clean clone (in SAP Business Application Studio): installing `cds-dk` took 2 s, `npm ci` 4 s, `npm test` 12 s (243/243) and the server was ready in 5 s. On a home connection the downloads take longer, but it stays well under 5 minutes.
+
+**Prerequisites:** Node 24 and the CAP CLI:
+
+```bash
+npm i -g @sap/cds-dk@^10
+```
+
+**Clone, install, test, run:**
+
+```bash
+git clone https://github.com/pgj1010/reporte-simple.git
+cd reporte-simple
+npm ci
+npm test          # lint + 243 tests, all with mock data (needs the global cds-dk)
+npm run watch     # http://localhost:4004, mock data, user "alice" with an empty password
+```
+
+- Fiori app: `http://localhost:4004/conexiones/webapp/index.html`
+- OData: `http://localhost:4004/odata/v4/reporte/Conexiones`
+- MCP: `http://localhost:4004/mcp/reporte-agent`
+
+**Without a global `cds-dk`** you can still run the app (not the tests, which start CAP processes with the global `cds`):
+
+```bash
+CDS_TYPESCRIPT=false npx -y -p @sap/cds-dk@^10 cds watch
+```
+
+`CDS_TYPESCRIPT=false` is needed because the project uses Node 24's native TypeScript, without `tsx` (D13).
+
+**Ask the agent.** With `npm run watch` running, CAP registers the MCP server in Claude Code automatically (development only, as user `alice`):
+
+```bash
+claude "Show me the occupancy by connection. Which one is the highest?"
+```
+
+**Inspect the tools by hand** with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) CLI (D73):
+
+```bash
+URL=http://localhost:4004/mcp/reporte-agent
+I="npx -y @modelcontextprotocol/inspector --cli $URL --transport http"
+ALICE='Authorization: Basic YWxpY2U6'   # "alice:" in base64 (mock user, empty password)
+
+$I --header "$ALICE" --method tools/list
+$I --header "$ALICE" --method tools/call --tool-name ocupacionPorConexion --tool-arg aerolinea=LH
+$I --header "$ALICE" --method tools/call --tool-name query \
+   --tool-arg 'cql=SELECT CarrierId, ConnectionId, AirportFromId, AirportToId FROM Conexiones'
+```
 
 ## Stack
 
-| Capa | Tecnología |
+| Layer | Technology |
 |---|---|
-| Backend | SAP CAP Node.js (`@sap/cds` 10), **TypeScript 6 nativo de Node 24** (sin `tsx` ni `ts-node`), ESM, tipos con `cds-typer` |
-| Origen | S/4HANA on‑premise, servicio **RAP OData V4** y su F4 de aeropuertos (`cds import`), SAP Cloud SDK |
-| UI | **Fiori Elements V4** (List Report + Object Page), SAPUI5 1.154, `cds-plugin-ui5`, anotaciones CDS (`@UI`, `@Common.ValueList`, `@Aggregation`, `@Measures`) |
-| Seguridad | XSUAA con rol `Visualizador` (`@requires`), destination de BTP + Cloud Connector, sin credenciales en el repo |
-| Despliegue | MTA (`mbt build`, `cf deploy`), managed app router / HTML5 Application Repository, Cloud Foundry |
-| Calidad | `node:test` + `@cap-js/cds-test`, RAP simulado, **pruebas de mutación**, ESLint de Fiori tools, `tsc --noEmit`, GitHub Actions |
+| Backend | SAP CAP Node.js (`@sap/cds` 10), **native TypeScript on Node 24** (no `tsx`, no `ts-node`), ESM, types with `cds-typer` |
+| Source | S/4HANA on‑premise, a custom RAP service (OData V4) and its airport value help (`cds import`), SAP Cloud SDK |
+| UI | **Fiori Elements V4** (List Report + Object Page), SAPUI5, `cds-plugin-ui5`, CDS annotations (`@UI`, `@Common.ValueList`, `@Aggregation`, `@Measures`) |
+| AI agents | **MCP** with `@cap-js/mcp` (Streamable HTTP), dedicated service with `@mcp`, MCP Inspector for manual checks |
+| Security | XSUAA with role `Visualizador` (`@requires`), BTP destination + Cloud Connector, no credentials in the repo |
+| Deployment | MTA (`mbt build`, `cf deploy`), managed app router / HTML5 Application Repository, Cloud Foundry |
+| Quality | `node:test` + `@cap-js/cds-test`, simulated RAP, **mutation testing**, Fiori tools ESLint, `tsc --noEmit`, GitHub Actions |
 
-## Decisiones clave
+## Key decisions
 
-Las 68 decisiones (`D1`–`D68`) están en [`SPEC.md` → Decisiones](SPEC.md#decisiones). Cada una indica **qué regla afecta** y **qué pasaría si fuera al revés**. Algunas:
+All 75 decisions (`D1`–`D75`) are in [`SPEC.md` → Decisiones](SPEC.md#decisiones). Each one states **which rule it affects** and **what would happen the other way round**. A selection:
 
-| | Decisión | Por qué importa |
+| | Decision | Why it matters |
 |---|---|---|
-| **D1** | *Clean core* flexible: API liberada o RAP Z por OData; nunca RFC ni tablas | El ERP queda actualizable; BTP solo consume servicios |
-| **D8 · D22** | La tabla **Semántica del reporte** de `SPEC.md` es la fuente de verdad de las anotaciones; `@UI` se redefine en CAP | El RAP trae `@UI` con el alias `SAP__UI`, que CAP no reconoce (tabla sin columnas). Un test (R11) compara anotaciones y tabla |
-| **D13** | TypeScript **nativo** de Node 24, sin `tsx` | `tsx` + plugin UI5 agotaba ~2 GB de memoria en 12 s |
-| **D43** | **Reenviar `$apply`** al RAP en el handler | CAP descarta `aggregate` en servicios remotos: 1 petición de 57 bytes frente a 51 peticiones y 11,7 MB con 50 000 filas |
-| **D46 · D47** | Totales en la **cabecera del detalle**, no `AnalyticalTable` | El Gateway rechaza `concat`, `top` y `$count` en `$apply`, que la tabla analítica necesita (probado en `/IWFND/GW_CLIENT`) |
-| **D50** | F4 de aeropuertos importado como tercera entidad `@readonly` | Los value helps del RAP apuntan a servicios que `cds import` no trae |
-| **D25** | La asociación `_Flight` se simula **solo en el mock** | El `$metadata` V4 no publica condiciones `on`; redefinirla en `srv/` rompería producción |
-| **D53 · D54** | Rol `Visualizador` (401 sin usuario, 403 sin rol) y managed app router | Autorización declarativa con `@requires`, sin código propio |
-| **D65** | Destination genérica `S4_BACKEND` + `.mtaext` no versionado | Repo público sin datos del subaccount; despliegue sin editar código |
+| **D1** | Flexible clean core: released APIs or a custom RAP service (Z) over OData; never RFC or tables | The ERP stays upgradable; BTP only consumes services |
+| **D8 · D22** | The **report semantics** table is the source of truth for annotations; `@UI` is redefined in CAP | RAP sends `@UI` with the `SAP__UI` alias, which CAP does not recognise. A test (R11) compares annotations and table |
+| **D43** | **Forward `$apply`** to RAP in the handler | CAP drops `aggregate` on remote services: 1 request of 57 bytes instead of 51 requests and 11.7 MB with 50,000 rows |
+| **D46 · D47** | Totals in the **detail header**, not an `AnalyticalTable` | The Gateway rejects `concat`, `top` and `$count` in `$apply`, which the analytical table needs |
+| **D53** | Role `Visualizador`: 401 without a user, 403 without the role | Declarative authorisation with `@requires`, no custom code |
+| **D70** | A **dedicated MCP service** with minimal fields and business descriptions | Exposing the whole report service to agents would leak internal fields and UI-only logic |
+| **D72** | Business questions as a **read-only function tool** (`ocupacionPorConexion`), totals computed by S/4 | Controlled logic instead of free queries; the agent cannot turn it into a full table scan |
+| **D73** | MCP Inspector via `npx`, CLI mode | Shows the exact JSON every tool receives and returns, without adding dependencies |
+| **D65 · D67** | Generic destination name + placeholders for internal data | Public repo with no data from any real system |
 
-El avance por etapas, con su bitácora y las decisiones de cada una, está en [`PLAN.md`](PLAN.md).
+Progress by stage, with its log and decisions, is in [`PLAN.md`](PLAN.md); the MCP track is [`PLAN-MCP-ZERO-TO-HERO.md`](PLAN-MCP-ZERO-TO-HERO.md).
 
-## Métricas
+## Metrics
 
 | | |
 |---|---|
-| Reglas de negocio | **14** (R1–R14) en [`SPEC.md`](SPEC.md#reglas), cada una con test automático o pasos manuales en [`test/PRUEBAS_MANUALES.md`](test/PRUEBAS_MANUALES.md) |
-| Tests automáticos | **186** en 22 archivos (`npm test`, ~10 s), entre ellos un RAP simulado para probar el camino de producción sin S/4 |
-| Pruebas de mutación | **2/2** detectadas en CI (`npm run test:mutacion`: quitar `@readonly` y `@requires`, D3), más mutaciones manuales por etapa documentadas en `PLAN.md` |
-| Decisiones documentadas | **68**, con regla afectada y alternativa |
-| Etapas | 7 planificadas, cada una en su rama con revisión antes del merge |
-| Dependencias | `npm audit`: 0 vulnerabilidades (D66) |
+| Business rules | **16** (R1–R16) in [`SPEC.md`](SPEC.md#reglas), including R15–R16 for the MCP server; each one with an automatic test or manual steps in [`test/PRUEBAS_MANUALES.md`](test/PRUEBAS_MANUALES.md) |
+| Automatic tests | **243** in 26 files (`npm test`, ~12 s), including a simulated RAP to test the production path without S/4 |
+| Mutation tests | **7/7** detected (`npm run test:mutacion`) |
+| Documented decisions | **75**, each with the affected rule and the alternative |
+| Dependencies | `npm audit`: 0 vulnerabilities (D66) |
 
-## Cómo correrlo
+## Configuration (deployment)
 
-Requisitos: Node 24 y `npm i -g @sap/cds-dk@^10`.
+The repository contains no data from any real system. Installation-specific values appear as **placeholders** in the documentation and are configured outside the code (D67):
 
-```bash
-npm ci
-npm run watch          # http://localhost:4004 con datos simulados; usuario "alice", sin contraseña
-npm test               # lint + 186 tests, 100 % con mocks
-npm run test:mutacion  # R2 (solo lectura) y R3 (autorización)
-```
-
-- App: `http://localhost:4004/conexiones/webapp/index.html`
-- Servicio: `http://localhost:4004/odata/v4/reporte/Conexiones`
-- Despliegue (requiere BTP, Cloud Connector y la destination): `mbt build && cf deploy mta_archives/*.mtar` (ver [Configuración](#configuración)).
-
-## Configuración
-
-El repositorio no contiene datos de ningún sistema real. Los valores propios de cada instalación aparecen como **marcadores** en la documentación (`CLAUDE.md`, `SPEC.md`, `PLAN.md`, `ESTADO.md`, `test/PRUEBAS_MANUALES.md`) y se configuran fuera del código (D67):
-
-| Marcador | Qué es | Dónde se configura |
+| Placeholder | What it is | Where it is configured |
 |---|---|---|
-| `<S4_HOST>:<S4_PUERTO>` | Host interno y puerto HTTP del S/4HANA on‑premise | **Cloud Connector**: mapeo del host virtual al interno, con el recurso `/sap/opu/odata` (*Path and all sub-paths*). En BTP, la **URL** de la destination apunta al host virtual. |
-| `<S4_SISTEMA>` | Nombre del sistema S/4 | Solo documentación (pruebas y decisiones). |
-| `<S4_CLIENTE>` | Mandante del S/4 | Propiedad adicional `sap-client` de la destination (si no, el cliente por defecto del sistema). |
-| Destination `S4_BACKEND` | Destination de BTP (OnPremise, BasicAuthentication) hacia el S/4 | Subaccount → *Connectivity → Destinations*. Si se llama distinto: `cp deploy/destination.mtaext.ejemplo deploy/destination.mtaext`, poner el nombre real y desplegar con `cf deploy mta_archives/*.mtar -e deploy/destination.mtaext` (D65). |
-| `<CF_API>`, `<CF_ORG>` | Endpoint de la API y org de Cloud Foundry (space `dev`) | `cf login -a <CF_API> -o <CF_ORG> -s dev --sso` antes de `cf deploy`. |
-| `<URL_APP>` | URL de la app desplegada (managed app router) | La genera BTP: *HTML5 Applications* del subaccount, o `https://<subdominio>.launchpad.cfapps.<región>.hana.ondemand.com/<GUID>.reportesimple.conexiones-0.0.1/index.html`. |
+| `<S4_HOST>:<S4_PUERTO>` | Internal host and HTTP port of S/4HANA | **Cloud Connector**: virtual-to-internal host mapping, resource `/sap/opu/odata` (*Path and all sub-paths*). In BTP, the destination **URL** points to the virtual host |
+| `<S4_SISTEMA>` | S/4 system name | Documentation only |
+| `<S4_CLIENTE>` | S/4 client | Additional property `sap-client` of the destination |
+| Destination `S4_BACKEND` | BTP destination (OnPremise, BasicAuthentication) to S/4 | Subaccount → *Connectivity → Destinations*. With a different name: `cp deploy/destination.mtaext.ejemplo deploy/destination.mtaext`, set the real name and deploy with `cf deploy mta_archives/*.mtar -e deploy/destination.mtaext` (D65) |
+| `<CF_API>`, `<CF_ORG>` | Cloud Foundry API endpoint and org (space `dev`) | `cf login -a <CF_API> -o <CF_ORG> -s dev --sso` before `cf deploy` |
+| `<URL_APP>` | URL of the deployed app | Generated by BTP (*HTML5 Applications* in the subaccount) |
 
-Las credenciales nunca están en el repo: la destination de BTP guarda el usuario técnico (regla técnica 11), y `.cdsrc-private.json`, `default-env.json`, `*.mtaext` y `LOCAL.md` están en `.gitignore`.
+Credentials are never in the repo: the BTP destination holds the technical user, and `.cdsrc-private.json`, `default-env.json`, `*.mtaext` and `LOCAL.md` are in `.gitignore`.
 
-## Estructura
+## Project structure
 
 ```
-app/conexiones/        App Fiori Elements (manifest.json, annotations.cds, xs-app.json)
-srv/external/          Servicios RAP importados con cds import (generados, no se editan)
-srv/service.cds        Proyecciones @readonly + @requires
-srv/service.ts         Delegación de lecturas y reenvío de $apply al RAP
-test/                  Tests por regla, RAP simulado, mutaciones, CSV mock y pruebas manuales
-deploy/                Plantilla del .mtaext con la destination real
-CLAUDE.md · SPEC.md · PLAN.md · ESTADO.md   Reglas, especificación, plan y estado
+app/conexiones/        Fiori Elements app (manifest.json, annotations.cds, xs-app.json)
+srv/external/          RAP services imported with cds import (generated, never edited)
+srv/service.cds/.ts    OData service: @readonly projections, @requires, delegation and $apply forwarding
+srv/agent-service.*    MCP service for agents: dedicated projections, ocupacionPorConexion
+test/                  Tests per rule, simulated RAP, mutations, CSV mock data, manual test steps
+deploy/                Template of the .mtaext with the real destination name
+CLAUDE.md · SPEC.md · PLAN.md · PLAN-MCP-ZERO-TO-HERO.md   Rules, specification and plans
 ```
 
-## Cómo lo construí con Claude Code
+## How I built it with Claude Code
 
-Construí el proyecto en pareja con [Claude Code](https://claude.com/claude-code). Yo actué como responsable funcional y técnico, y Claude como desarrollador, siguiendo un proceso escrito, no solo prompts sueltos:
+I built this project with [Claude Code](https://claude.com/claude-code) as my pair programmer. I acted as functional and technical lead, and Claude as the developer, following a written process rather than loose prompts:
 
-1. **Reglas del equipo en [`CLAUDE.md`](CLAUDE.md).** Claude las lee al empezar cada sesión: proponer un plan y esperar aprobación antes de tocar archivos, una rama por etapa, `npm test` en verde y un commit por paso, nunca `cf deploy` sin aprobación, y preguntar si una regla admite dos interpretaciones que dan datos distintos.
-2. **Especificación primero ([`SPEC.md`](SPEC.md)).** Reglas numeradas (R1–R14), análisis del servicio de origen y una tabla de **semántica del reporte**. Las anotaciones de Fiori se generan desde esa tabla, y un test (R11) verifica que coincidan.
-3. **Plan por etapas ([`PLAN.md`](PLAN.md)).** Proyecto base → servicio remoto → alineación (tests, TypeScript) → Fiori → presentación y totales → despliegue → limpieza y publicación. Cada etapa cierra con un informe y mi revisión antes del merge a `main`.
-4. **Decisiones registradas al tomarlas.** Cada decisión de Claude queda en `SPEC.md` con la regla que afecta y *qué pasaría si fuera al revés*. Así puedo revisar y revertir cualquiera, y el historial explica el porqué de cada cambio.
-5. **Tests que vigilan a los tests.** Las pruebas de mutación quitan `@readonly` o `@requires` en una copia del código y exigen que la suite falle. Un test verde no basta si no detecta el error.
-6. **División del trabajo según el acceso.** Claude no tiene acceso a la red interna, así que lo que requiere el sistema real lo hice yo: pruebas en `/IWFND/GW_CLIENT`, ADT, el navegador y el despliegue con datos reales. Claude preparó los pasos ([`test/PRUEBAS_MANUALES.md`](test/PRUEBAS_MANUALES.md)) y registró los resultados.
-7. **Lecciones aprendidas que se acumulan.** Cada tropiezo se agregó a `CLAUDE.md` para no repetirlo, por ejemplo que CAP no delega `$apply`, el alias `SAP__UI`, el consumo de memoria de `tsx` o la ruta F4 con parámetros de matriz. Esa sección es la base de la plantilla para el siguiente reporte (Etapa 7).
+1. **Team rules in [`CLAUDE.md`](CLAUDE.md)**, read by Claude at the start of every session: propose a plan and wait for approval before touching files, one branch per stage, green `npm test` and one commit per step, never `cf deploy` without approval, and ask when a rule allows two readings that produce different data.
+2. **Specification first ([`SPEC.md`](SPEC.md)):** numbered rules, an analysis of the source service and a report semantics table that drives the Fiori annotations.
+3. **Staged plans ([`PLAN.md`](PLAN.md)):** base project → remote service → Fiori → totals → deployment → publication → MCP for agents. Each stage ends with a report and my review before merging to `main`.
+4. **Decisions recorded when taken**, each with the rule it affects and what would happen the other way round, so any of them can be reviewed or reverted.
+5. **Tests that watch the tests:** mutation tests remove `@readonly` or `@requires` in a copy of the code and require the suite to fail.
+6. **Work split by access:** Claude has no access to the internal network, so I did everything that needs the real system (Gateway client tests, ADT, the browser, the deployment with real data, the agent tests). Claude prepared the steps and recorded the results.
+7. **Lessons learned that add up:** every stumble went into `CLAUDE.md` so it is not repeated (CAP not delegating `$apply`, the `SAP__UI` alias, `tsx` memory use, an agent bypassing the MCP tools…).
 
-El historial de Git conserva ese proceso: un commit por paso, con las decisiones citadas en cada mensaje (`etapa N: … (D43)`).
+The Git history keeps that process: one commit per step, citing the decisions in each message.
 
-## Licencia
+## Roadmap: towards production
+
+Design only, nothing is deployed without approval (MCP level 7):
+- **Real authentication** for the MCP client (XSUAA/IAS), including the `WWW-Authenticate` / OAuth metadata an MCP client expects.
+- **Governance** with the MCP Gateway of SAP Integration Suite (rate limits, audit, policies).
+- **SAP application data:** review SAP's guidance on not proxying SAP application APIs through this adapter, and the reference architectures of the SAP Architecture Center (or Joule Studio with MCP connections).
+- **Risks:** prompt injection through returned data and exposure of sensitive data. Mitigation: dedicated service, minimal fields and `@restrict` by role.
+
+## License
 
 [MIT](LICENSE) © 2026 Pablo Gallardo
