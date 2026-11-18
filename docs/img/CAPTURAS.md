@@ -1,6 +1,6 @@
 # Capturas del README
 
-`README.md` y `README.es.md` esperan estos cinco archivos en esta carpeta. **Todos los toma el usuario** (Claude no tiene navegador ni pantalla, D75). Mientras falten, los README muestran la tabla "⏳" y los enlaces a las imágenes quedan en un comentario HTML: al agregarlos, descomentar ese bloque en **los dos** README (D76).
+`README.md` y `README.es.md` esperan estos cinco archivos en esta carpeta. **Todos los toma el usuario** (Claude no tiene navegador ni pantalla, D75). Ya están las cinco y los dos README las muestran; si se reemplaza alguna, mantener el mismo nombre de archivo (las referencias están en **los dos** README, D76).
 
 | Archivo | Qué muestra |
 |---|---|

@@ -109,15 +109,6 @@ Lo que **todavía no está resuelto**, dicho sin rodeos:
 
 > Todas las capturas se toman en local con **datos simulados** (`test/data/`), nunca con datos reales. Pasos: [`docs/img/CAPTURAS.md`](docs/img/CAPTURAS.md).
 
-| | Captura | Estado |
-|---|---|---|
-| 1 | List Report de Fiori con las conexiones | ⏳ **la toma el autor** |
-| 2 | Object Page con totales y vuelos | ⏳ **la toma el autor** |
-| 3 | Value help de aeropuertos | ⏳ **la toma el autor** |
-| 4 | Claude Code respondiendo la pregunta 3 (`ocupacionPorConexion`) | ⏳ **la toma el autor** |
-| 5 | MCP Inspector CLI: JSON de `tools/call ocupacionPorConexion` | ⏳ **la toma el autor** |
-
-<!-- Cuando los PNG existan en docs/img/, reemplazar la tabla de arriba por:
 | Lista de conexiones | Detalle con totales y vuelos | Value help de aeropuertos |
 |---|---|---|
 | ![Lista de conexiones](docs/img/lista-conexiones.png) | ![Detalle de una conexión](docs/img/detalle-conexion.png) | ![Value help de aeropuertos](docs/img/f4-aeropuertos.png) |
@@ -125,7 +116,6 @@ Lo que **todavía no está resuelto**, dicho sin rodeos:
 | El agente respondiendo por MCP | MCP Inspector (CLI) |
 |---|---|
 | ![Claude Code](docs/img/agente-claude-code.png) | ![MCP Inspector](docs/img/inspector-cli.png) |
--->
 
 ## Cómo correrlo en local
 

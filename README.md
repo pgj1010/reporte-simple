@@ -109,15 +109,6 @@ What is **not solved yet**, said plainly:
 
 > All screenshots are taken locally with **mock data** (`test/data/`), never with real data. Steps: [`docs/img/CAPTURAS.md`](docs/img/CAPTURAS.md).
 
-| | Screenshot | Status |
-|---|---|---|
-| 1 | Fiori List Report of connections | ⏳ **to be taken by the owner** |
-| 2 | Object Page with totals and flights | ⏳ **to be taken by the owner** |
-| 3 | Airport value help | ⏳ **to be taken by the owner** |
-| 4 | Claude Code answering question 3 (`ocupacionPorConexion`) | ⏳ **to be taken by the owner** |
-| 5 | MCP Inspector CLI: `tools/call ocupacionPorConexion` JSON | ⏳ **to be taken by the owner** |
-
-<!-- When the PNG files exist in docs/img/, replace the table above with:
 | List of connections | Detail with totals and flights | Airport value help |
 |---|---|---|
 | ![List of connections](docs/img/lista-conexiones.png) | ![Connection detail](docs/img/detalle-conexion.png) | ![Airport value help](docs/img/f4-aeropuertos.png) |
@@ -125,7 +116,6 @@ What is **not solved yet**, said plainly:
 | Agent answering through MCP | MCP Inspector (CLI) |
 |---|---|
 | ![Claude Code](docs/img/agente-claude-code.png) | ![MCP Inspector](docs/img/inspector-cli.png) |
--->
 
 ## Run it locally
 
