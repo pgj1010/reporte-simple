@@ -11,6 +11,13 @@
 
 **A read-only SAP Fiori report and an MCP server for AI agents, built on one SAP CAP service (TypeScript) that reads live data from an S/4HANA on‑premise RAP API.**
 
+## Highlights
+
+- One CAP service, two doors: OData for Fiori, MCP for AI agents
+- Live S/4HANA data, clean core, nothing replicated
+- Security tested: 401/403, read-only, injection rejected, 7/7 mutations
+- Built with Claude Code under written rules and approvals
+
 Business users open a Fiori Elements report. AI agents (Claude Code today, Joule or others later) ask questions in natural language through the **Model Context Protocol (MCP)**. Both go through the same thin, read-only CAP layer, with the same SAP role, and no data is copied out of S/4HANA.
 
 > The whole project, from analysing the source service to deploying on Cloud Foundry and exposing it to agents, was built together with **Claude Code**, following written rules, staged plans and explicit approvals. See [How I built it with Claude Code](#how-i-built-it-with-claude-code).
@@ -240,7 +247,7 @@ CLAUDE.md · SPEC.md · PLAN.md · PLAN-MCP-ZERO-TO-HERO.md   Rules, specificati
 
 ## How I built it with Claude Code
 
-I built this project in pairs with [Claude Code](https://claude.com/claude-code). I acted as functional and technical lead, and Claude as the developer, following a written process rather than loose prompts:
+I built this project with [Claude Code](https://claude.com/claude-code) as my pair programmer. I acted as functional and technical lead, and Claude as the developer, following a written process rather than loose prompts:
 
 1. **Team rules in [`CLAUDE.md`](CLAUDE.md)**, read by Claude at the start of every session: propose a plan and wait for approval before touching files, one branch per stage, green `npm test` and one commit per step, never `cf deploy` without approval, and ask when a rule allows two readings that produce different data.
 2. **Specification first ([`SPEC.md`](SPEC.md)):** numbered rules, an analysis of the source service and a report semantics table that drives the Fiori annotations.

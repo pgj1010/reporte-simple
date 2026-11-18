@@ -11,6 +11,13 @@
 
 **Un reporte SAP Fiori de solo lectura y un servidor MCP para agentes de IA, construidos sobre un único servicio SAP CAP (TypeScript) que lee datos en vivo de una API RAP de un S/4HANA on‑premise.**
 
+## Puntos destacados
+
+- Un servicio CAP, dos puertas: OData para Fiori, MCP para agentes de IA
+- Datos de S/4HANA en vivo, clean core, nada replicado
+- Seguridad probada: 401/403, solo lectura, inyección rechazada, 7/7 mutaciones
+- Construido con Claude Code bajo reglas escritas y aprobaciones
+
 Los usuarios de negocio abren un reporte Fiori Elements. Los agentes de IA (hoy Claude Code; más adelante Joule u otros) hacen preguntas en lenguaje natural a través del **Model Context Protocol (MCP)**. Ambos pasan por la misma capa CAP delgada y de solo lectura, con el mismo rol de SAP, y ningún dato se copia fuera del S/4HANA.
 
 > Todo el proyecto, desde el análisis del servicio de origen hasta el despliegue en Cloud Foundry y su exposición a agentes, se construyó junto a **Claude Code**, siguiendo reglas escritas, planes por etapas y aprobaciones explícitas. Ver [Cómo lo construí con Claude Code](#cómo-lo-construí-con-claude-code).
@@ -240,7 +247,7 @@ CLAUDE.md · SPEC.md · PLAN.md · PLAN-MCP-ZERO-TO-HERO.md   Reglas, especifica
 
 ## Cómo lo construí con Claude Code
 
-Construí este proyecto en pareja con [Claude Code](https://claude.com/claude-code). Yo actué como responsable funcional y técnico, y Claude como desarrollador, siguiendo un proceso escrito y no prompts sueltos:
+Construí este proyecto con [Claude Code](https://claude.com/claude-code) como mi compañero de programación (pair programmer). Yo actué como responsable funcional y técnico, y Claude como desarrollador, siguiendo un proceso escrito y no prompts sueltos:
 
 1. **Reglas del equipo en [`CLAUDE.md`](CLAUDE.md)**, que Claude lee al empezar cada sesión: proponer un plan y esperar aprobación antes de tocar archivos, una rama por etapa, `npm test` en verde y un commit por paso, nunca `cf deploy` sin aprobación, y preguntar cuando una regla admite dos lecturas que producen datos distintos.
 2. **Especificación primero ([`SPEC.md`](SPEC.md)):** reglas numeradas, un análisis del servicio de origen y una tabla de semántica del reporte que guía las anotaciones de Fiori.
