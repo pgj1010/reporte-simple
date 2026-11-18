@@ -48,7 +48,7 @@ Antes de cualquier tarea, lee `PLAN.md` y `SPEC.md`, y trabaja **solo en la etap
 
 ## Sistema origen (RAP)
 
-> Los datos internos aparecen como marcadores (`<S4_HOST>`, `<S4_CLIENTE>`, `<CF_ORG>`…, D67). Los valores reales están en **`LOCAL.md`** (no versionado, solo en el Dev Space); dónde se configura cada uno: `README.md` → *Configuración*. Nunca volver a escribir los valores reales en archivos versionados.
+> Los datos internos aparecen como marcadores (`<S4_HOST>`, `<S4_CLIENTE>`, `<CF_ORG>`…, D67). Los valores reales están en **`LOCAL.md`** (no versionado, solo en el Dev Space); dónde se configura cada uno: `README.md` → *Configuration (deployment)* (en español: `README.es.md` → *Configuración (despliegue)*). Nunca volver a escribir los valores reales en archivos versionados.
 
 | Dato | Valor |
 |---|---|
@@ -85,6 +85,7 @@ reporte-simple/
 ## Reglas de desarrollo
 
 - Para dudas de CAP o del modelo CDS, usa primero las tools del servidor MCP cds-mcp (search_model, search_docs) antes de suponer.
+- **README.md (inglés) es la fuente; cada cambio se replica en README.es.md en el mismo commit** (D76). Traducción fiel: misma estructura, diagrama, tablas y métricas; los términos técnicos (MCP, CAP, RAP, OData, tools) quedan en inglés.
 - **No editar** `srv/external/*.cds`. Para regenerar: `cds import <archivo>.edmx --as cds --force`.
 - Exponer entidades remotas como proyecciones `@readonly` en `srv/service.cds`.
 - Lecturas remotas delegadas en `service.ts` con `this.on('READ', [...], req => remote.run(req.query))`. **Excepción, totales (D43):** las lecturas con `$apply` se reenvían tal cual al backend (`remote.send({ method: 'GET', path: req.req.url })`), porque CAP no delega `$apply`; el mock las resuelve con `cds.odata.parse`. Mientras exista ese reenvío, **ninguna entidad puede tener `@restrict` con `where`** (el reenvío no lo aplicaría): lo vigila un test.
