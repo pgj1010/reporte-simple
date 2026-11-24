@@ -182,7 +182,7 @@ $I --header "$ALICE" --method tools/call --tool-name query \
 
 ## Key decisions
 
-All 75 decisions (`D1`–`D75`) are in [`SPEC.md` → Decisiones](SPEC.md#decisiones). Each one states **which rule it affects** and **what would happen the other way round**. A selection:
+All 77 decisions (`D1`–`D77`) are in [`SPEC.md` → Decisiones](SPEC.md#decisiones). Each one states **which rule it affects** and **what would happen the other way round**. A selection:
 
 | | Decision | Why it matters |
 |---|---|---|
@@ -205,7 +205,7 @@ Progress by stage, with its log and decisions, is in [`PLAN.md`](PLAN.md); the M
 | Business rules | **16** (R1–R16) in [`SPEC.md`](SPEC.md#reglas), including R15–R16 for the MCP server; each one with an automatic test or manual steps in [`test/PRUEBAS_MANUALES.md`](test/PRUEBAS_MANUALES.md) |
 | Automatic tests | **243** in 26 files (`npm test`, ~12 s), including a simulated RAP to test the production path without S/4 |
 | Mutation tests | **7/7** detected (`npm run test:mutacion`) |
-| Documented decisions | **75**, each with the affected rule and the alternative |
+| Documented decisions | **77**, each with the affected rule and the alternative |
 | Dependencies | `npm audit`: 0 vulnerabilities (D66) |
 
 ## Configuration (deployment)
@@ -251,11 +251,11 @@ The Git history keeps that process: one commit per step, citing the decisions in
 
 ## Roadmap: towards production
 
-Design only, nothing is deployed without approval (MCP level 7):
-- **Real authentication** for the MCP client (XSUAA/IAS), including the `WWW-Authenticate` / OAuth metadata an MCP client expects.
-- **Governance** with the MCP Gateway of SAP Integration Suite (rate limits, audit, policies).
-- **SAP application data:** review SAP's guidance on not proxying SAP application APIs through this adapter, and the reference architectures of the SAP Architecture Center (or Joule Studio with MCP connections).
-- **Risks:** prompt injection through returned data and exposure of sensitive data. Mitigation: dedicated service, minimal fields and `@restrict` by role.
+Design only (MCP level 7); nothing is deployed without approval. Details, diagram and open questions: [`SPEC.md` → *MCP en producción*](SPEC.md#mcp-en-producción) (decision D77, provisional).
+- **Recommended architecture (B):** expose `ReporteAgentService` as OData and let the **MCP Gateway of SAP Integration Suite** turn it into MCP tools; a Joule Studio agent can consume them later. Running the `@cap-js/mcp` adapter in production (A) is discarded: it is beta and SAP advises against using it to proxy SAP application APIs.
+- **Authentication:** OAuth 2.0 authorization code with the user's delegated token (XSUAA or IAS). The Gateway publishes the `WWW-Authenticate` / OAuth metadata that MCP clients need. Principal propagation through the Cloud Connector up to S/4HANA, for the Fiori app as well as for MCP.
+- **Governance:** rate limits, audit and monitoring in the Gateway; CAP keeps `@requires`, `@readonly` and row limits.
+- **Risks:** prompt injection through returned data; agents get **only** the MCP tools (lesson L1).
 
 ## License
 

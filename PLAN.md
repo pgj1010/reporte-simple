@@ -546,6 +546,25 @@ Rama: `feature/mcp-nivel-6` (desde `main` = `9c931cb`). Estructura aprobada por 
 
 `npm test` 243/243, `tsc` OK, mutaciones 7/7, `npm audit` 0. Prueba de clonar y correr: < 30 s de máquina en BAS.
 
+### Nivel 7 — Rumbo a producción (diseño, sin código ni despliegue) ✅
+Rama: `feature/mcp-nivel-7` (desde `main` = `e129fc3`). Propuesta aprobada por el usuario el 2026-11-24, con D77 provisional.
+- [x] **Paso 1** Sección **MCP en producción** en `SPEC.md`: arquitecturas A/B/C con pros, contras y licencias (B recomendada), diagrama Mermaid de B, autenticación (OAuth 2.0 authorization code con token delegado, XSUAA o IAS, 401 sin `WWW-Authenticate` resuelto en el Gateway, principal propagation hasta S/4, **también para la app Fiori actual**), gobierno, riesgos (prompt injection, L1, guía de SAP de no hacer proxy) y preguntas abiertas para el jefe. D77 en Decisiones
+- [x] **Paso 2** Roadmap de `README.md` y `README.es.md` resumido, con enlace a la sección (el diagrama queda solo en `SPEC.md`, decisión del usuario); métricas de decisiones al día (77, D1–D77)
+- [x] **Paso 3** `npm test` en verde; un commit, sin push. Cierre por Pull Request (usuario)
+
+### Decisiones de la etapa (Nivel 7)
+- D77 — Opción B recomendada (provisional): `ReporteAgentService` como OData → tools del MCP Gateway; A descartada (adaptador beta, guía de SAP); C como capa de consumo futura. 401 resuelto en el Gateway; principal propagation con una sola destination para MCP y Fiori. Aprobada por el usuario como provisional, pendiente de las preguntas abiertas.
+
+### Informe de cierre — Nivel 7 (2026-11-24)
+| Decisión | Regla que afecta | Si fuera al revés |
+|---|---|---|
+| D77 — B recomendada, A descartada, C como consumo futuro (propuesta propia, aprobada como provisional) | R15, R3, regla técnica 15, L1 | Con A, producción dependería de un adaptador beta usado como la doc pide no usarlo, y el cliente MCP no podría descubrir OAuth |
+| D77 — el 401 sin `WWW-Authenticate` se resuelve en el Gateway, no en CAP (propia) | Regla técnica 15, D62 | Habría código propio de autenticación en `server.ts` |
+| D77 — principal propagation con una sola destination, también para la app Fiori (usuario: dejarlo explícito) | R3, R4 | Con dos destinations, la app y el MCP verían los mismos datos con dos niveles de autorización distintos |
+| Métricas del README al día: 77 decisiones (propia; ya decía 75 con D76 existente) | D76 | El README mostraría un número de decisiones desfasado |
+
+**Pendientes:** respuestas del jefe a las preguntas abiertas de `SPEC.md` → *MCP en producción*; cambio de R15 solo al implementar B, con aprobación; Pull Request de `feature/mcp-nivel-7` → `main` (usuario).
+
 ---
 
 ## Bitácora
@@ -592,3 +611,4 @@ Rama: `feature/mcp-nivel-6` (desde `main` = `9c931cb`). Estructura aprobada por 
 - 2026-11-18 — Después del cierre del Nivel 5 (en `main`, a pedido del usuario): D74, los 401/403 del servidor MCP en inglés son excepción de R10 (como D17/D62). `PLAN-MCP-ZERO-TO-HERO.md` Niveles 0, 4 y 5 corregidos con la evidencia del Nivel 5: `query` recibe solo `cql`; las funciones van por `call` o por una tool propia con `per_action_tool`, no `call_action`.
 - 2026-11-18 — MCP Nivel 6: README en inglés para portafolio (Highlights, dos puertas OData/MCP, Mermaid, preguntas reales, seguridad con evidencia y límites, cómo correrlo con tiempos medidos) y `README.es.md` como traducción fiel (D75, D76; regla de sincronización en `CLAUDE.md`). Guion del video (`docs/VIDEO.md`) y capturas de MCP en `docs/img/CAPTURAS.md`. Hallazgo: sin `cds-dk` global `npm test` falla (los tests de producción simulada usan el `cds` global). Merge pendiente por Pull Request.
 - 2026-11-18 — CI rojo en `bcb11e1` (en local verde): en GitHub Actions `cds env get` devolvía `false` con códigos ANSI de color y `test/r7-produccion.test.ts` comparaba con `'false'`. Corrección en `feature/mcp-nivel-6`: `SIN_COLOR` (`NO_COLOR=1`, `FORCE_COLOR=0`) y `sinAnsi` en `test/helpers.ts`, aplicados a `cdsCli` (R4, R5, R7), `test/rap-simulado.ts` (sus regex sobre el log) y `test/mutacion.ts`. Lección en `CLAUDE.md`.
+- 2026-11-24 — MCP Nivel 7 (solo diseño): sección **MCP en producción** en `SPEC.md` con tres arquitecturas (B recomendada: OData de `ReporteAgentService` → MCP Gateway), autenticación OAuth con token del usuario, 401 resuelto en el Gateway, principal propagation hasta S/4 también para la app Fiori, gobierno, riesgos y preguntas para el jefe (D77, provisional). Roadmap de los README con enlace. Sin código ni despliegue.
