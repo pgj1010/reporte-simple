@@ -204,9 +204,94 @@ Decidido en la Etapa 4: totales `SUM` de `SeatsOccupied` y `SeatsMax` (D38), en 
 | D74 | **Los 401/403 del servidor MCP en inglés son una excepción de R10**, igual que D17 y D62 (decisión del usuario, 2026-11-18). El texto (`Authorization error (401): …` / `(403): Not authorized to access ReporteAgentService.`, JSON-RPC `-32001`/`-32003`, `id: null`) lo genera el adaptador `@cap-js/mcp` antes de llegar a los handlers y no pasa por `_i18n/messages_es.properties`. Lo consume el agente (que responde al usuario en español, `@mcp.instructions`), no el usuario final. Evidencia: `test/PRUEBAS_MANUALES.md`, MCP — Inspector, pasos 6a, 6b y 6d. Los errores de negocio de las tools (p. ej. la validación de `aerolinea`, D72 punto 7) **siguen en español**. | R10, R15 | Corregirlo exigiría interceptar la respuesta del adaptador (capa propia sobre la autorización, contra la regla técnica 15) o esperar soporte i18n del paquete; mientras tanto R10 quedaría incumplida por un texto que el usuario final nunca ve. |
 | D75 | **MCP Nivel 6: README de portafolio en inglés** (decisiones del usuario, 2026-11-18). (1) `README.md` en inglés para reclutadores y clientes; el README anterior pasa a **`README.es.md`** con las métricas actualizadas, y cada uno enlaza al otro. (2) En el README el servicio de origen aparece como **"a custom RAP service (Z)"**, sin su nombre técnico; el código y la configuración no se tocan. (3) El video se graba con el **Inspector en modo CLI**, no con la interfaz web: reemplaza el punto (3) de D73. (4) Se documenta **`npx -p @sap/cds-dk@^10 cds watch`** como alternativa a instalar `cds-dk` global, y el criterio de "clonar y correr en 5 minutos" se verifica con una prueba cronometrada sobre un clon limpio. (5) En la sección de capturas quedan marcadas las que debe tomar el usuario (Claude no tiene navegador ni pantalla). **Propuestas propias al escribir el README (pendientes de la revisión del usuario):** (6) las capturas pendientes van en una tabla con estado ⏳ y los enlaces a las imágenes quedan en un comentario HTML, para que el repo público no muestre imágenes rotas; se suman dos capturas nuevas (`agente-claude-code.png`, `inspector-cli.png`); (7) los ejemplos de preguntas son las pruebas del agente de los Niveles 3 y 4, **traducidas y resumidas** (así se avisa), completadas con datos del mock (horas, fechas) y no con texto inventado del agente; (8) el README dice explícitamente que el servidor MCP **solo se probó en local con datos simulados** y lista lo no resuelto (autenticación solo de desarrollo, 401 sin `WWW-Authenticate`, L1, sin protección contra prompt injection); (9) la sección de configuración se mantiene, en inglés, porque `CLAUDE.md` remite a ella. | Regla de proceso (portafolio), D67, D73 | Sin (8), un cliente podría creer que el servidor MCP ya funciona en producción contra S/4. Con el README solo en español, reclutadores y clientes de afuera no lo leerían. Con el nombre técnico del servicio Z en el README, se expondría un prefijo que puede identificar a una empresa o consultor. Con la interfaz web del Inspector, la grabación dependería de la configuración de puertos de BAS (sin verificar). Sin prueba cronometrada, el criterio de los 5 minutos sería una suposición. |
 | D76 | **`README.md` (inglés) es la fuente y `README.es.md` es su traducción fiel** (decisión del usuario, 2026-11-18; reemplaza el punto (1) de D75 en cuanto a `README.es.md`, que era el README anterior con las métricas al día). Misma estructura, mismo diagrama (etiquetas en español), mismas tablas y métricas, enlace "English version" arriba; los términos técnicos (MCP, CAP, RAP, OData, tools) quedan en inglés. Regla en `CLAUDE.md`: cada cambio de `README.md` se replica en `README.es.md` en el mismo commit. Adaptaciones de la traducción (propias): en los ejemplos no se dice "traducidos" (en español son el idioma original) y la pregunta 3 usa el texto original del Nivel 4 ("Dame la ocupación por conexión y dime cuál es la más alta"); las otras dos son resúmenes, porque el texto exacto no se registró. | D75, D67 | Con dos README de contenido distinto, las métricas y la sección de seguridad se desfasarían, y un lector en español vería un proyecto sin MCP. |
+| D77 | **MCP en producción: opción B recomendada (provisional)** (MCP Nivel 7, solo diseño; aprobado por el usuario el 2026-11-24 como provisional). Sección **MCP en producción**: (A) `@cap-js/mcp` detrás del MCP Gateway, **descartada** por ser beta y por la guía de SAP de no usarlo como proxy de APIs de aplicación SAP; (B) `ReporteAgentService` como OData convertido en tools por el MCP Gateway de Integration Suite, **recomendada**; (C) agente de Joule Studio como capa de consumo futura sobre B. El 401 sin `WWW-Authenticate` se resuelve en el Gateway, no en CAP (regla técnica 15, como D62). Principal propagation hasta S/4 con una sola destination `S4_BACKEND`, también para la app Fiori actual. Queda pendiente de las preguntas abiertas de esa sección; nada se implementa ni se despliega sin aprobación. | R15 (B requiere OData además de MCP, cambio pendiente), R3, regla técnica 15, L1 | Con A, producción dependería de un adaptador beta usado justo como la doc pide no usarlo, y el cliente MCP no podría descubrir OAuth; sin principal propagation, S/4 seguiría viendo un usuario técnico para el MCP y para la app. |
 
 ---
 
 ## Lecciones aprendidas (MCP)
 
 - **L1 — El agente se saltó los guardrails del MCP leyendo el CSV directamente** (MCP Nivel 3, prueba del agente, 2026-11-17). En el primer intento de la prueba 3 (ocupación de `AA 0017`), la tool MCP `query` falló por el revisor de permisos de Claude Code, y el agente, para responder igual, leyó `test/data/ZMAKS_SB_CONEXIONES-Vuelos.csv` con sus herramientas de archivos. Así esquivó todo lo que protege `ReporteAgentService`: `@requires: 'Visualizador'`, `@readonly`, el límite 50/200, los campos de D70 y la delegación al RAP (R4). En el segundo intento respondió por MCP (96,6 % y 52,2 %, con la fórmula de la descripción de `Vuelos`). **Conclusión para el Nivel 7:** en producción el agente debe tener **solo las tools MCP**, sin acceso a archivos ni a la terminal; los guardrails de CAP solo valen si el MCP es el único camino a los datos. En desarrollo, una respuesta del agente cuenta como prueba de R15 solo si salió de `query`/`describe` (revisar las tools usadas).
+
+---
+
+## MCP en producción
+
+> **Solo diseño (MCP Nivel 7, D77 provisional).** Nada de esto está implementado ni desplegado, y no se despliega sin aprobación (regla de proceso 5). Lo marcado **(por verificar)** no está confirmado con documentación oficial de SAP: va también en las preguntas abiertas.
+
+### Arquitecturas evaluadas
+
+| | (A) `@cap-js/mcp` detrás del MCP Gateway | (B) OData de `ReporteAgentService` → tools del MCP Gateway ★ | (C) Agente de Joule Studio que consume el MCP |
+|---|---|---|---|
+| Cómo funciona | El adaptador de CAP es el servidor MCP (`/mcp/reporte-agent`); el MCP Gateway de SAP Integration Suite lo registra como servidor MCP externo y le agrega gobierno. | CAP expone `ReporteAgentService` como OData V4 (y su OpenAPI); el MCP Gateway convierte cada operación en una tool MCP. `@cap-js/mcp` no corre en producción. | Un agente de Joule Studio recibe las tools MCP (de A o de B) por una destination de BTP. Es una capa de **consumo**, no de exposición. |
+| Pros | Es lo probado en los Niveles 2–6 (`describe`, `query`, `ocupacionPorConexion`); poco cambio en CAP. | OData estable, no beta. Tools fijas, sin CQL libre: menos superficie. Gobierno nativo del Gateway. Sirve a cualquier cliente MCP (Claude, Copilot, Joule). La nota de SAP sobre el adaptador deja de aplicar. | Usuarios de negocio en Joule, con identidad SAP. El agente solo tiene las tools configuradas: L1 se cumple por diseño. |
+| Contras | El adaptador es beta y su doc indica no usarlo como proxy de APIs de aplicación SAP, que es este caso (lee el RAP). El 401 sin `WWW-Authenticate` obliga a que el Gateway resuelva OAuth. Dos capas MCP en serie. | Cambia R15 (OData además de MCP). Se pierde `query` con CQL: cada consulta nueva es una operación nueva. Las descripciones de negocio pasan de `describe` a la OpenAPI (por verificar que los `/** */` lleguen a la OpenAPI de CAP). Configuración en varios pasos (proxy de API → tools). | Licencia y costo de Joule, dependencia del proveedor, solo usuarios de Joule. No reemplaza a A ni a B: necesita una de ellas. |
+| Licencias | Integration Suite con MCP Gateway (edición o capacidad por verificar) + runtime de Cloud Foundry + XSUAA o IAS. | Igual que A. | Lo de A o B + Joule y Joule Studio (SAP Build), con su consumo de unidades de IA (por verificar). |
+
+**Recomendada: B.** Saca el adaptador beta del camino de producción, gobierna en el Gateway como recomienda SAP y deja abierta la opción C: un agente de Joule Studio puede consumir después las mismas tools de B sin cambiar CAP.
+
+**Cambio de regla pendiente:** B requiere exponer `ReporteAgentService` también por OData, lo que contradice R15 ("solo por MCP, sin ruta OData") y D70. Se cambiaría al implementar, con aprobación. Usar en su lugar `ReporteService` expondría todos sus campos y los totales `virtual` de R14, sin el recorte de D70.
+
+### Diagrama (opción B)
+
+```mermaid
+flowchart LR
+  U([Usuario de negocio]) --> C["Cliente MCP<br/>(Claude / Copilot / Joule Studio)<br/>solo tools MCP (L1)"]
+  C -- "1. OAuth 2.0 auth code + PKCE" --> IdP["XSUAA / IAS"]
+  IdP -- "token del usuario" --> C
+  C -- "2. MCP + Bearer<br/>(WWW-Authenticate + resource_metadata)" --> GW["MCP Gateway<br/>(Integration Suite)<br/>rate limit · auditoría · políticas"]
+  GW -- "3. OData V4 + token del usuario<br/>(intercambio por verificar)" --> CAP["CAP en Cloud Foundry<br/>ReporteAgentService (@odata)<br/>@requires Visualizador · @readonly · límites 50/200"]
+  F([App Fiori actual<br/>app router administrado]) -- "OData V4 + token del usuario" --> CAP
+  CAP -- "4. Destination S4_BACKEND<br/>PrincipalPropagation" --> CC["Cloud Connector<br/>certificado X.509 de corta duración"]
+  CC -- "5. HTTPS + certificado del usuario" --> S4["S/4HANA on-premise<br/>RAP (Z) OData V4<br/>autorizaciones del usuario"]
+  GW -. logs .-> MON["Monitoreo<br/>Gateway + Cloud Logging"]
+  CAP -. logs .-> MON
+```
+
+### Autenticación
+
+- **Flujo:** OAuth 2.0 *authorization code* con PKCE. El cliente MCP abre el login del usuario en XSUAA o IAS y obtiene un **token delegado de ese usuario**. Nada de *client credentials*: con un usuario técnico se perderían el `@requires: 'Visualizador'` por persona y la auditoría por usuario.
+- **XSUAA o IAS:** IAS si el landscape ya lo usa (Joule y SAP Build lo usan). XSUAA alcanza para A y B: el rol `Visualizador` ya está en `xs-security.json`. Con IAS, la role collection `ReporteSimple_Visualizador` se asigna por grupo de IAS. Por verificar si el cliente MCP necesita *Dynamic Client Registration*: si XSUAA o IAS no lo ofrecen, se usa un cliente registrado a mano.
+- **El 401 sin `WWW-Authenticate` (Niveles 5 y 6, `test/PRUEBAS_MANUALES.md`):** la autorización de MCP espera en el 401 una cabecera `WWW-Authenticate` con `resource_metadata` (*Protected Resource Metadata*, RFC 9728) para que el cliente descubra el servidor OAuth; el adaptador de CAP no la envía. **No se resuelve en CAP** (sería una capa de autenticación propia, regla técnica 15, mismo razonamiento que D62). Se resuelve **en el Gateway**: en B, el Gateway es el servidor MCP y publica los metadatos y la cabecera (por verificar). CAP solo recibe peticiones con token, y su 401 queda como hoy, visible solo para el Gateway.
+- **Principal propagation hasta S/4:**
+  1. El Gateway reenvía o intercambia el token del usuario hacia CAP (*token exchange* o *jwt-bearer*, por verificar).
+  2. CAP valida el JWT y aplica `@requires: 'Visualizador'`.
+  3. La destination `S4_BACKEND` pasa de `BasicAuthentication` a **`PrincipalPropagation`**.
+  4. El Cloud Connector convierte el token en un certificado X.509 de corta duración.
+  5. S/4 lo asigna a su usuario (`CERTRULE`) y aplica **sus propias autorizaciones** sobre el RAP.
+
+  Resultado: el usuario solo ve lo que S/4 le permite, además de lo que filtra CAP.
+- **También aplica a la app Fiori actual, no solo al MCP:** hay una sola destination `S4_BACKEND` para los dos canales. Hoy la app Fiori desplegada lee S/4 con el **usuario técnico** de BasicAuthentication, así que S/4 no sabe quién mira el reporte. Al pasar a `PrincipalPropagation`:
+  - la app (app router administrado → CAP con el token de XSUAA) también lee **como el usuario**;
+  - cada usuario de la app necesita su usuario en S/4, asignado al certificado, con autorización sobre el RAP;
+  - hay que repetir las pruebas desplegadas de la Etapa 5 (R7, R14, F4 de aeropuertos).
+
+  Las dos vías se migran juntas. Mantener la app con un usuario técnico requeriría una segunda destination y dejaría dos niveles de autorización distintos para los mismos datos.
+
+### Gobierno
+
+- **Límites:** en el Gateway, rate limit por usuario y por cliente (valores a definir con el equipo). En CAP siguen `@cds.query.limit` 50/200 (R15) y el máximo de 200 filas de `ocupacionPorConexion` (R16).
+- **Auditoría:** el Gateway registra quién llamó qué tool, cuándo y con qué resultado. Con principal propagation, S/4 registra al usuario real (también para la app Fiori). El reporte no tiene datos personales (vuelos y aeropuertos); si los tuviera, se evalúa `@cap-js/audit-logging`.
+- **Monitoreo:** analítica del Gateway (llamadas, errores, latencia), logs de CAP en SAP Cloud Logging y el monitor del Cloud Connector para las fallas hacia S/4. Alertas por picos de 401/403/5xx.
+- **Costos:** Integration Suite (por llamadas o mensajes, modelo por verificar), runtime de Cloud Foundry (ya existe), tokens del modelo de IA del cliente y, en C, el consumo de Joule. El Cloud Connector no tiene costo aparte.
+
+### Riesgos
+
+- **Prompt injection:** los datos que vuelven del RAP (nombres de ciudades, aerolíneas) llegan al modelo como texto y pueden traer instrucciones. Mitigaciones:
+  - solo lectura: no hay tools que escriban;
+  - campos mínimos (D70);
+  - tools fijas, sin CQL libre (B);
+  - el agente no combina estas tools con otras que puedan sacar datos (correo, HTTP libre);
+  - límites de tamaño de respuesta en el Gateway.
+- **L1 (solo tools MCP):** en producción el agente tiene **solo** las tools del Gateway, sin archivos, terminal ni web. Los guardrails de CAP solo valen si el MCP es el único camino a los datos. En C se cumple por diseño; con Claude o Copilot se configura así y se audita. Además los CSV de `test/data/` no viajan al build (R5).
+- **Guía de SAP de no hacer proxy de APIs de aplicación SAP:** aplica a `@cap-js/mcp` y es el motivo principal para descartar A. En B el adaptador no corre en producción, pero CAP sigue envolviendo un RAP. Hay que confirmar con SAP o con el equipo que se acepta un OData de CAP con valor agregado (campos mínimos, límites, función de ocupación, `@requires`) detrás del Gateway, frente a un Gateway directo sobre el RAP por el Cloud Connector.
+
+### Preguntas abiertas (para el jefe)
+
+1. ¿Tenemos o podemos contratar Integration Suite con **MCP Gateway**? ¿Con qué edición o capacidad y qué modelo de costo?
+2. ¿Qué clientes lo van a usar (Joule, Claude, Microsoft Copilot)? ¿Hay licencia de **Joule Studio** (opción C)?
+3. ¿El landscape usa **IAS**, o basta XSUAA?
+4. ¿Basis puede habilitar **principal propagation** (Cloud Connector + `CERTRULE` en S/4) para la app Fiori y el MCP? ¿O se acepta un usuario técnico, sin autorización por usuario en S/4?
+5. ¿Se aprueba cambiar **R15** para exponer `ReporteAgentService` por OData en producción?
+6. ¿Quién valida con SAP la guía de "no hacer proxy de APIs SAP" para este caso: CAP detrás del Gateway, o el Gateway directo sobre el RAP?
+7. ¿Qué rate limits, retención de auditoría y clasificación de datos exige la empresa?
+8. ¿Presupuesto y usuarios para un piloto?
